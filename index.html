@@ -1,5 +1,5 @@
 <!DOCTY<!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -29,6 +29,91 @@
     --capina: #60c689;
     --shadow: 0 4px 24px rgba(0,0,0,0.4);
   }
+
+  /* ── TEMA CLARO ────────────────────────────────────────────────────── */
+  [data-theme="light"] {
+    --bg:           #f0f2f7;
+    --surface:      #ffffff;
+    --surface2:     #f0f2f7;
+    --surface3:     #e4e8f0;
+    --border:       #d0d6e4;
+    --border-light: #b8c2d8;
+    --text:         #0f1623;
+    --text-muted:   #4a5568;
+    --text-dim:     #8896aa;
+    --shadow:       0 4px 24px rgba(0,0,0,0.10);
+    /* acentos levemente ajustados para legibilidade no fundo claro */
+    --accent:       #2f76e8;
+    --accent2:      #1fb98e;
+    --accent3:      #d4870d;
+    --accent-red:   #d9364a;
+    --custeio:      #2f76e8;
+    --capital:      #1fb98e;
+    --alem:         #9055d4;
+    --obras:        #d4870d;
+    --capina:       #2a9e5c;
+  }
+
+  [data-theme="light"] body::before {
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(47,118,232,0.05) 0%, transparent 50%),
+      radial-gradient(circle at 85% 70%, rgba(31,185,142,0.04) 0%, transparent 50%);
+  }
+
+  [data-theme="light"] thead tr { background: var(--surface3); }
+  [data-theme="light"] tbody tr:hover { background: rgba(0,0,0,0.025); }
+  [data-theme="light"] .modal-overlay { background: rgba(0,0,0,0.45); }
+  [data-theme="light"] .check-item.pending { border-color: rgba(217,54,74,0.3); background: rgba(217,54,74,0.04); }
+  [data-theme="light"] .check-item.pending-yellow { border-color: rgba(212,135,13,0.3); background: rgba(212,135,13,0.04); }
+  [data-theme="light"] .alert-info  { background: rgba(47,118,232,0.08);  border-color: rgba(47,118,232,0.25);  color: #1a4fa8; }
+  [data-theme="light"] .alert-warn  { background: rgba(212,135,13,0.08);  border-color: rgba(212,135,13,0.25);  color: #7a4e0a; }
+  [data-theme="light"] .alert-success { background: rgba(31,185,142,0.08); border-color: rgba(31,185,142,0.25); color: #0e6e53; }
+  [data-theme="light"] .badge-green  { background: rgba(31,185,142,0.12);  color: #0e6e53;  border-color: rgba(31,185,142,0.3); }
+  [data-theme="light"] .badge-blue   { background: rgba(47,118,232,0.12);  color: #1a4fa8;  border-color: rgba(47,118,232,0.3); }
+  [data-theme="light"] .badge-orange { background: rgba(212,135,13,0.12);  color: #7a4e0a;  border-color: rgba(212,135,13,0.3); }
+  [data-theme="light"] .badge-red    { background: rgba(217,54,74,0.12);   color: #8b1a27;  border-color: rgba(217,54,74,0.3); }
+  [data-theme="light"] .badge-purple { background: rgba(144,85,212,0.12);  color: #5c2d9e;  border-color: rgba(144,85,212,0.3); }
+  [data-theme="light"] .tipo-CUSTEIO    { background: rgba(47,118,232,0.1);  color: var(--custeio); border-color: rgba(47,118,232,0.25); }
+  [data-theme="light"] .tipo-CAPITAL    { background: rgba(31,185,142,0.1);  color: var(--capital); border-color: rgba(31,185,142,0.25); }
+  [data-theme="light"] .tipo-ALEM_MUROS { background: rgba(144,85,212,0.1);  color: var(--alem);    border-color: rgba(144,85,212,0.25); }
+  [data-theme="light"] .tipo-OBRAS      { background: rgba(212,135,13,0.1);  color: var(--obras);   border-color: rgba(212,135,13,0.25); }
+  [data-theme="light"] .tipo-CAPINA     { background: rgba(42,158,92,0.1);   color: var(--capina);  border-color: rgba(42,158,92,0.25); }
+  [data-theme="light"] .nav-item.active { background: rgba(47,118,232,0.1); color: var(--accent); border-color: rgba(47,118,232,0.2); }
+  [data-theme="light"] .parcela-tab.active { background: rgba(47,118,232,0.12); color: var(--accent); border-color: rgba(47,118,232,0.3); }
+  [data-theme="light"] ::-webkit-scrollbar-track { background: var(--surface2); }
+  [data-theme="light"] ::-webkit-scrollbar-thumb { background: var(--border); }
+  [data-theme="light"] .login-box { box-shadow: 0 8px 40px rgba(0,0,0,0.12); }
+
+  /* Botão toggle tema */
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    transition: all 0.15s;
+    width: 100%;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .theme-toggle:hover { background: var(--surface3); color: var(--text); }
+  .theme-toggle-icon { font-size: 14px; flex-shrink: 0; transition: transform 0.4s; }
+  [data-theme="light"] .theme-toggle-icon { transform: rotate(180deg); }
+
+  /* Transição suave ao trocar tema */
+  *, *::before, *::after {
+    transition-property: background-color, border-color, color, box-shadow;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
+  }
+  /* Exceções: não animar transforms nem dimensões */
+  .progress-bar-fill, .modal-overlay, .sidebar, .nav-item, .btn { transition: all 0.15s; }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1115,6 +1200,13 @@
     }
   }
 </style>
+<script>
+  // ── Anti-flash: aplica tema antes do render ──
+  (function() {
+    const saved = localStorage.getItem('pcTheme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+  })();
+</script>
 </head>
 <body>
 
@@ -1198,6 +1290,10 @@
         <div id="sidebar-user-role" style="font-size:11px;color:var(--text-dim);margin-top:2px">Prestador de Contas</div>
         <div style="font-size:10px;color:var(--text-dim);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);line-height:1.5;opacity:0.7">Criado e desenvolvido por<br><span style="color:var(--text-muted)">Prof. Everton Correa Alves</span></div>
       </div>
+      <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()">
+        <span class="theme-toggle-icon" id="theme-toggle-icon">🌙</span>
+        <span id="theme-toggle-label">Modo Claro</span>
+      </button>
       <div class="nav-item" onclick="fazerLogout()" style="color:var(--accent-red)">
         <span class="nav-icon">⎋</span> Sair
       </div>
@@ -10142,6 +10238,35 @@ function aplicarPerfil() {
     btn.style.display = 'none';
   });
 }
+
+// ==================== TEMA CLARO / ESCURO ====================
+function toggleTheme() {
+  const html    = document.documentElement;
+  const current = html.getAttribute('data-theme') || 'dark';
+  const next    = current === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('pcTheme', next);
+  _updateThemeBtn(next);
+}
+
+function _updateThemeBtn(theme) {
+  const icon  = document.getElementById('theme-toggle-icon');
+  const label = document.getElementById('theme-toggle-label');
+  if (!icon || !label) return;
+  if (theme === 'light') {
+    icon.textContent  = '🌙';
+    label.textContent = 'Modo Escuro';
+  } else {
+    icon.textContent  = '☀️';
+    label.textContent = 'Modo Claro';
+  }
+}
+
+// Sincroniza o botão ao carregar (o anti-flash já aplicou o data-theme)
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('pcTheme') || 'dark';
+  _updateThemeBtn(saved);
+});
 
 function mostrarLogin() {
   loginScreen.classList.add('visible');
