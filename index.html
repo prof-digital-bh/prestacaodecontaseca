@@ -62,6 +62,7 @@
 
   [data-theme="light"] thead tr { background: var(--surface3); }
   [data-theme="light"] tbody tr:hover { background: rgba(0,0,0,0.025); }
+  [data-theme="light"] .parcela-dist-table td { border-bottom-color: rgba(0,0,0,0.06); }
   [data-theme="light"] .modal-overlay { background: rgba(0,0,0,0.45); }
   [data-theme="light"] .check-item.pending { border-color: rgba(217,54,74,0.3); background: rgba(217,54,74,0.04); }
   [data-theme="light"] .check-item.pending-yellow { border-color: rgba(212,135,13,0.3); background: rgba(212,135,13,0.04); }
@@ -5834,27 +5835,115 @@ function renderTCs() {
       </div>` : ''}
       ${tc.obs?`<div style="margin-top:12px;font-size:12px;color:var(--text-muted);background:var(--surface2);padding:10px;border-radius:7px">${tc.obs}</div>`:''}
       ${(()=>{
-        // Show parcela distribution + situacao summary
-        const pvRows = (state.parcelaValores||[]).filter(r => String(r.tcId)===String(tc.id));
         const allItems2 = [tc, ...aditivos];
         const allPvRows = allItems2.flatMap(item => (state.parcelaValores||[]).filter(r => String(r.tcId)===String(item.id)));
         const allSitRows = allItems2.flatMap(item => (state.parcelaSituacoes||[]).filter(r => String(r.tcId)===String(item.id)));
         if (!allPvRows.length && !allSitRows.length) return `<div style="margin-top:10px;padding:8px 12px;background:rgba(246,166,35,0.05);border:1px solid rgba(246,166,35,0.2);border-radius:7px;font-size:11px;color:var(--accent3)">⚠ Nenhuma distribuição de valores por parcela cadastrada. Clique em <strong>📊 Parcelas</strong> para registrar.</div>`;
-        const parcelas = [...new Set([...allPvRows.map(r=>r.parcela), ...allSitRows.map(r=>r.parcela)])].sort();
-        const parNomes = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única'};
-        return `<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-          <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim)">Parcelas:</span>
-          ${parcelas.map(p => {
-            const pvR = allPvRows.find(r=>r.parcela===p);
-            const sitR = allSitRows.find(r=>r.parcela===p);
-            const sit = sitR ? sitR.situacao : '';
-            const total = pvR ? parseMoney(pvR.custeio)+parseMoney(pvR.capital)+parseMoney(pvR.alem)+parseMoney(pvR.obras)+parseMoney(pvR.capina) : 0;
-            return `<div style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px">
-              <span style="font-size:11px;font-weight:600;color:var(--text-muted)">${parNomes[p]||p}</span>
-              ${total>0?`<span style="font-size:10px;font-family:'DM Mono',monospace;color:var(--accent2)">${fmtMoney(total)}</span>`:''}
-              ${sit?`<span class="sit-pill ${sitCls(sit)}" style="padding:1px 7px;font-size:10px">${sitLabel(sit)}</span>`:'<span style="font-size:10px;color:var(--text-dim)">sem situação</span>'}
-            </div>`;
-          }).join('')}
+
+        const parNomes = {'01':'1ª Parcela','02':'2ª Parcela','03':'3ª Parcela','04':'4ª Parcela','05':'5ª Parcela','U':'Parcela Única'};
+        const tipoLbls = { custeio:'Custeio', capital:'Capital', alem:'Além dos Muros', obras:'Obras', capin:'Capina' };
+
+        // Monta linhas: para cada item (TC + aditivos), para cada parcela
+        const rows = [];
+        allItems2.forEach(item => {
+          const isAdit = !!item.tcPaiId;
+          const itemLabel = isAdit ? `Adit. ${item.numero}` : `TC ${tc.numero}`;
+          const itemColor = isAdit ? 'var(--accent3)' : 'var(--accent)';
+          const itemBg    = isAdit ? 'rgba(246,166,35,0.12)' : 'rgba(79,142,247,0.12)';
+
+          const pvs  = (state.parcelaValores||[]).filter(r => String(r.tcId)===String(item.id));
+          const sits = (state.parcelaSituacoes||[]).filter(r => String(r.tcId)===String(item.id));
+          const parcelas = [...new Set([...pvs.map(r=>r.parcela), ...sits.map(r=>r.parcela)])].sort((a,b)=>{
+            const ord = ['01','02','03','04','05','U'];
+            return ord.indexOf(a) - ord.indexOf(b);
+          });
+
+          parcelas.forEach(p => {
+            const pvR  = pvs.find(r=>r.parcela===p);
+            const sitR = sits.find(r=>r.parcela===p);
+            const sit  = sitR ? sitR.situacao : '';
+
+            const tipos = pvR ? [
+              { k:'custeio', v: parseMoney(pvR.custeio||'0') },
+              { k:'capital', v: parseMoney(pvR.capital||'0') },
+              { k:'alem',    v: parseMoney(pvR.alem||'0') },
+              { k:'obras',   v: parseMoney(pvR.obras||'0') },
+              { k:'capina',  v: parseMoney(pvR.capina||'0') },
+            ].filter(t=>t.v>0) : [];
+
+            const total = tipos.reduce((s,t)=>s+t.v,0);
+
+            const gastoTotal = state.despesas
+              .filter(d => String(d.tcVinculo)===String(item.id) && d.parcela===p)
+              .reduce((s,d)=>s+parseMoney(d.valor),0);
+
+            const pct = total>0 ? Math.round(gastoTotal/total*100) : 0;
+            const pctColor = pct>=90 ? 'var(--accent-red)' : pct>=60 ? 'var(--accent3)' : 'var(--accent2)';
+
+            rows.push({ itemLabel, itemColor, itemBg, isAdit, p, parNomes, pvR, sitR, sit, tipos, total, gastoTotal, pct, pctColor });
+          });
+        });
+
+        if (!rows.length) return '';
+
+        const rowsHtml = rows.map((r, i) => {
+          const tiposHtml = r.tipos.length
+            ? r.tipos.map(t=>`<span style="font-size:10px;padding:1px 7px;border-radius:10px;background:var(--surface3);color:var(--text-muted);border:1px solid var(--border)">${tipoLbls[t.k]||t.k}: R$ ${fmtMoneyStr(t.v)}</span>`).join('')
+            : `<span style="font-size:11px;color:var(--text-dim)">—</span>`;
+
+          const barWidth = Math.min(r.pct, 100);
+
+          return `
+          <tr style="border-bottom:1px solid var(--border);${i%2===1?'background:rgba(255,255,255,0.015)':''}">
+            <td style="padding:9px 12px;white-space:nowrap;vertical-align:middle">
+              <span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;background:${r.itemBg};color:${r.itemColor};border:1px solid ${r.itemColor.replace('var(','').replace(')','').replace('--accent','rgba(79,142,247,0.3)').replace('--accent3','rgba(246,166,35,0.3)')}">${r.itemLabel}</span>
+            </td>
+            <td style="padding:9px 12px;white-space:nowrap;vertical-align:middle">
+              <span style="font-size:12px;font-weight:600;color:var(--text)">${r.parNomes[r.p]||r.p}</span>
+            </td>
+            <td style="padding:9px 12px;vertical-align:middle">
+              <div style="display:flex;flex-wrap:wrap;gap:4px">${tiposHtml}</div>
+            </td>
+            <td style="padding:9px 12px;white-space:nowrap;vertical-align:middle;text-align:right">
+              <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--accent2);font-weight:600">R$ ${fmtMoneyStr(r.total)}</div>
+              ${r.total>0?`<div style="margin-top:4px">
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-bottom:2px">
+                  <span>Gasto: R$ ${fmtMoneyStr(r.gastoTotal)}</span>
+                  <span style="color:${r.pctColor};font-weight:700">${r.pct}%</span>
+                </div>
+                <div style="height:4px;background:var(--surface3);border-radius:4px;overflow:hidden;width:120px;margin-left:auto">
+                  <div style="height:100%;width:${barWidth}%;background:${r.pctColor};border-radius:4px;transition:width 0.4s"></div>
+                </div>
+              </div>`:''}
+            </td>
+            <td style="padding:9px 12px;white-space:nowrap;vertical-align:middle">
+              ${r.sit
+                ? `<span class="sit-pill ${sitCls(r.sit)}">${sitLabel(r.sit)}</span>`
+                : `<span style="font-size:11px;color:var(--text-dim)">—</span>`}
+            </td>
+          </tr>`;
+        }).join('');
+
+        return `
+        <div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <div style="padding:8px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim)">📊 Parcelas</span>
+            <span style="font-size:10px;color:var(--text-dim)">${rows.length} parcela${rows.length!==1?'s':''}</span>
+          </div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:12px">
+              <thead>
+                <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
+                  <th style="padding:7px 12px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.7px;color:var(--text-dim);white-space:nowrap">TC / Adit.</th>
+                  <th style="padding:7px 12px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.7px;color:var(--text-dim);white-space:nowrap">Parcela</th>
+                  <th style="padding:7px 12px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.7px;color:var(--text-dim)">Distribuição por Tipo</th>
+                  <th style="padding:7px 12px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.7px;color:var(--text-dim);white-space:nowrap">Valor / Utilização</th>
+                  <th style="padding:7px 12px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.7px;color:var(--text-dim)">Situação</th>
+                </tr>
+              </thead>
+              <tbody>${rowsHtml}</tbody>
+            </table>
+          </div>
         </div>`;
       })()}
     </div>
