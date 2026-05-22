@@ -1448,27 +1448,18 @@
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
           <span style="font-size:12px;font-weight:600;color:var(--text-muted);white-space:nowrap">Filtrar por:</span>
           <div class="field" style="margin:0;min-width:180px">
-            <select id="chk-filtro-tc" onchange="renderChecklist()" style="font-size:12px;padding:7px 10px">
+            <select id="chk-filtro-tc" onchange="onChecklistTCChange()" style="font-size:12px;padding:7px 10px">
               <option value="">Todos os TCs</option>
             </select>
           </div>
           <div class="field" style="margin:0;min-width:150px">
-            <select id="chk-filtro-parcela" onchange="renderChecklist()" style="font-size:12px;padding:7px 10px">
+            <select id="chk-filtro-parcela" onchange="onChecklistParcelaChange()" style="font-size:12px;padding:7px 10px">
               <option value="">Todas as Parcelas</option>
-              <option value="01">Parcela 01</option>
-              <option value="02">Parcela 02</option>
-              <option value="03">Parcela 03</option>
-              <option value="04">Parcela 04</option>
             </select>
           </div>
           <div class="field" style="margin:0;min-width:160px">
             <select id="chk-filtro-tipo" onchange="renderChecklist()" style="font-size:12px;padding:7px 10px">
               <option value="">Todos os Tipos</option>
-              <option value="CUSTEIO">Custeio</option>
-              <option value="CAPITAL">Capital</option>
-              <option value="ALEM_MUROS">Além dos Muros</option>
-              <option value="OBRAS">Obras</option>
-              <option value="CAPINA">Capina / Roçamento</option>
             </select>
           </div>
           <button class="btn btn-ghost" style="font-size:12px;padding:7px 12px" onclick="limparFiltrosChecklist()">✕ Limpar</button>
@@ -6129,10 +6120,97 @@ function populateChecklistTCFilter() {
   if (current) sel.value = current;
 }
 
+// Popula o select de Parcela com base no TC selecionado
+function populateChecklistParcelaFilter(filtroTC) {
+  const sel = document.getElementById('chk-filtro-parcela');
+  if (!sel) return;
+  const current = sel.value;
+
+  // Filtra despesas do TC (ou todas se nenhum TC selecionado)
+  const despesasBase = filtroTC
+    ? (state.despesas||[]).filter(d => String(d.tcVinculo) === String(filtroTC))
+    : (state.despesas||[]);
+
+  const parcelasExistentes = [...new Set(despesasBase.map(d => d.parcela).filter(Boolean))].sort();
+
+  const parNomes = {
+    '01': '1ª Parcela', '02': '2ª Parcela', '03': '3ª Parcela',
+    '04': '4ª Parcela', '05': '5ª Parcela', 'U': 'Parcela Única'
+  };
+
+  sel.innerHTML = '<option value="">Todas as Parcelas</option>';
+  parcelasExistentes.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p;
+    opt.textContent = parNomes[p] || `Parcela ${p}`;
+    sel.appendChild(opt);
+  });
+
+  // Mantém seleção anterior se ainda existir, senão limpa
+  if (parcelasExistentes.includes(current)) {
+    sel.value = current;
+  } else {
+    sel.value = '';
+  }
+}
+
+// Popula o select de Tipo com base no TC + Parcela selecionados
+function populateChecklistTipoFilter(filtroTC, filtroParcela) {
+  const sel = document.getElementById('chk-filtro-tipo');
+  if (!sel) return;
+  const current = sel.value;
+
+  let despesasBase = (state.despesas||[]);
+  if (filtroTC)      despesasBase = despesasBase.filter(d => String(d.tcVinculo) === String(filtroTC));
+  if (filtroParcela) despesasBase = despesasBase.filter(d => d.parcela === filtroParcela);
+
+  const tiposExistentes = [...new Set(despesasBase.map(d => d.tipo).filter(Boolean))];
+
+  const tipoLbls = {
+    CUSTEIO: 'Custeio', CAPITAL: 'Capital',
+    ALEM_MUROS: 'Além dos Muros', OBRAS: 'Obras', CAPINA: 'Capina / Roçamento'
+  };
+  // Ordem fixa para tipos conhecidos
+  const ordemTipos = ['CUSTEIO', 'CAPITAL', 'ALEM_MUROS', 'OBRAS', 'CAPINA'];
+  const tiposOrdenados = ordemTipos.filter(t => tiposExistentes.includes(t))
+    .concat(tiposExistentes.filter(t => !ordemTipos.includes(t)));
+
+  sel.innerHTML = '<option value="">Todos os Tipos</option>';
+  tiposOrdenados.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = tipoLbls[t] || t;
+    sel.appendChild(opt);
+  });
+
+  // Mantém seleção anterior se ainda existir, senão limpa
+  if (tiposExistentes.includes(current)) {
+    sel.value = current;
+  } else {
+    sel.value = '';
+  }
+}
+
+// Chamado quando o TC muda → repopula Parcela e Tipo, depois re-renderiza
+function onChecklistTCChange() {
+  const filtroTC = document.getElementById('chk-filtro-tc')?.value || '';
+  populateChecklistParcelaFilter(filtroTC);
+  populateChecklistTipoFilter(filtroTC, '');
+  renderChecklist();
+}
+
+// Chamado quando a Parcela muda → repopula Tipo, depois re-renderiza
+function onChecklistParcelaChange() {
+  const filtroTC      = document.getElementById('chk-filtro-tc')?.value || '';
+  const filtroParcela = document.getElementById('chk-filtro-parcela')?.value || '';
+  populateChecklistTipoFilter(filtroTC, filtroParcela);
+  renderChecklist();
+}
+
 function limparFiltrosChecklist() {
   document.getElementById('chk-filtro-tc').value = '';
-  document.getElementById('chk-filtro-parcela').value = '';
-  document.getElementById('chk-filtro-tipo').value = '';
+  populateChecklistParcelaFilter('');
+  populateChecklistTipoFilter('', '');
   renderChecklist();
 }
 
@@ -6141,6 +6219,12 @@ function renderChecklist() {
   const filtroTC      = document.getElementById('chk-filtro-tc')?.value || '';
   const filtroParcela = document.getElementById('chk-filtro-parcela')?.value || '';
   const filtroTipo    = document.getElementById('chk-filtro-tipo')?.value || '';
+
+  // Inicializa os selects em cascata se ainda estiverem com apenas a opção padrão
+  const selParcela = document.getElementById('chk-filtro-parcela');
+  const selTipo    = document.getElementById('chk-filtro-tipo');
+  if (selParcela && selParcela.options.length <= 1) populateChecklistParcelaFilter(filtroTC);
+  if (selTipo    && selTipo.options.length    <= 1) populateChecklistTipoFilter(filtroTC, filtroParcela);
 
   let despesasFiltradas = state.despesas.filter(d => {
     if (filtroTC      && String(d.tcVinculo) !== String(filtroTC)) return false;
@@ -6161,7 +6245,7 @@ function renderChecklist() {
   const el = document.getElementById('checklist-area');
   if (!despesasFiltradas.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">☑</div><div class="empty-title">' + (state.despesas.length ? 'Nenhuma despesa para o filtro selecionado' : 'Nenhuma despesa') + '</div><div class="empty-sub">' + (state.despesas.length ? 'Ajuste os filtros acima' : 'Lance despesas para gerar o checklist') + '</div></div>';
-    updatePendenciasSummary();
+    updatePendenciasSummary(despesasFiltradas);
     return;
   }
 
@@ -6320,7 +6404,7 @@ function renderChecklist() {
   html += '</div>'; // end 2-col grid
 
   el.innerHTML = html;
-  updatePendenciasSummary();
+  updatePendenciasSummary(despesasFiltradas);
 }
 
 // ==================== DOCS NECESSÁRIOS POR PARCELA ====================
@@ -6561,7 +6645,7 @@ function setDoiEstado(chave, novoEstado) {
     atualizado_em: new Date().toISOString()
   });
 
-  updatePendenciasSummary();
+  updatePendenciasSummary(_getDespesasFiltradas());
   refreshPendenciaBadge();
 }
 
@@ -6633,7 +6717,7 @@ async function toggleCheck(key) {
   else { ci.classList.remove('done'); }
   const { error } = await supa.from('checklist_states').upsert({ chave: key, marcado: state.checkStates[key], atualizado_em: new Date().toISOString() });
   if (error) { setSyncStatus('error'); } else { setSyncStatus('ok'); }
-  updatePendenciasSummary();
+  updatePendenciasSummary(_getDespesasFiltradas());
   refreshPendenciaBadge();
 }
 
@@ -6653,9 +6737,25 @@ const _ANEXO_LABELS = {
 };
 
 // ── Calcula totais reais de Anexos + Fornecedores a partir dos dados ──
-function _calcProgressData() {
+// Retorna as despesas já filtradas pelos selects do checklist
+function _getDespesasFiltradas() {
+  const filtroTC      = document.getElementById('chk-filtro-tc')?.value      || '';
+  const filtroParcela = document.getElementById('chk-filtro-parcela')?.value  || '';
+  const filtroTipo    = document.getElementById('chk-filtro-tipo')?.value     || '';
+  return (state.despesas||[]).filter(d => {
+    if (filtroTC      && String(d.tcVinculo) !== String(filtroTC)) return false;
+    if (filtroParcela && d.parcela !== filtroParcela)              return false;
+    if (filtroTipo    && d.tipo    !== filtroTipo)                 return false;
+    return true;
+  });
+}
+
+function _calcProgressData(despesasFiltradas) {
+  // Se não vier parâmetro, usa o filtro ativo (retrocompatibilidade)
+  if (!despesasFiltradas) despesasFiltradas = _getDespesasFiltradas();
+
   // ── 1. ANEXOS OBRIGATÓRIOS ─────────────────────────────────────────────
-  const tipos = new Set((state.despesas||[]).map(d => d.tipo));
+  const tipos = new Set(despesasFiltradas.map(d => d.tipo));
   const TODOS_ANEXOS = ['anx1','anx2','anx3','anx4','anx5','anx6','anx7','anx8','anx9','anx10','anx11'];
   const COND = { anx6:'CAPITAL', anx7:'ALEM_MUROS', anx8:'OBRAS' };
   const anexosAtivos = TODOS_ANEXOS.filter(k => {
@@ -6682,9 +6782,9 @@ function _calcProgressData() {
   const anxTotal = anexosAtivos.length;
 
   // ── 2. DOCUMENTOS POR FORNECEDOR ──────────────────────────────────────
-  // Agrupa exatamente como renderChecklist faz
+  // Agrupa apenas as despesas filtradas, exatamente como renderChecklist faz
   const fornecedores = {};
-  (state.despesas||[]).forEach(d => {
+  despesasFiltradas.forEach(d => {
     const key = d.cnpj || d.credor;
     if (!fornecedores[key]) {
       fornecedores[key] = {
@@ -6748,8 +6848,8 @@ function _calcProgressData() {
 
 let _prevWas100 = false; // evita disparar o modal múltiplas vezes
 
-function updatePendenciasSummary() {
-  const d = _calcProgressData();
+function updatePendenciasSummary(despesasFiltradas) {
+  const d = _calcProgressData(despesasFiltradas);
   const { grandTotal, grandOk, grandPend, allPendLines } = d;
 
   // ── Progresso Geral ───────────────────────────────────────────────────
@@ -6843,8 +6943,7 @@ function mostrarModalEnvioSEDUC() {
 }
 
 function refreshChecklist() {
-  renderChecklist();
-  updatePendenciasSummary();
+  renderChecklist(); // já chama updatePendenciasSummary internamente com filtro correto
   refreshPendenciaBadge();
   // Feedback visual no botão
   const btn = document.querySelector('[onclick="refreshChecklist()"]');
@@ -6857,7 +6956,7 @@ function refreshChecklist() {
 }
 
 function refreshPendenciaBadge() {
-  const d = _calcProgressData();
+  const d = _calcProgressData(_getDespesasFiltradas());
   const pending = d.grandPend;
   const badge = document.getElementById('pendencia-badge');
   if (badge) {
@@ -6867,7 +6966,7 @@ function refreshPendenciaBadge() {
 }
 
 function imprimirPendencias() {
-  const d = _calcProgressData();
+  const d = _calcProgressData(_getDespesasFiltradas());
   const { allPendLines, anxTotal, anxOk, fornTotal, fornOk, grandTotal, grandOk } = d;
 
   // Dados da escola para o cabeçalho
