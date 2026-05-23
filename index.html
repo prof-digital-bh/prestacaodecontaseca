@@ -6025,44 +6025,29 @@ function onParcelaOrTipoChange() {
 }
 
 
-// Reconstrói todas as tabs de parcela do zero com base nas despesas atuais,
-// usando chave composta tcVinculo+parcela para não mesclar parcelas homônimas de TCs diferentes.
+// Reconstrói as tabs de parcela — apenas 2 botões: "Todas" e "Filtrar ▾" (dropdown)
 function reconstruirParcelaTabs() {
   const tabs = document.getElementById('parcela-tabs');
   if (!tabs) return;
-  // Remove todas as tabs exceto "Todas"
-  [...tabs.querySelectorAll('.parcela-tab')].forEach(t => {
-    if (t.dataset.parcela !== 'todas') t.remove();
-  });
 
   const parNomesLong = {'01':'1ª Parcela','02':'2ª Parcela','03':'3ª Parcela','04':'4ª Parcela','05':'5ª Parcela','U':'Parcela Única'};
+  const tipoAbrevFull = { CUSTEIO: 'Custeio', CAPITAL: 'Capital', ALEM_MUROS: 'Além dos Muros', OBRAS: 'Obras', CAPINA: 'Capina' };
 
-  // Coleta combos únicos { tcVinculo, parcela } presentes nas despesas
+  // Coleta combos únicos { tcVinculo, parcela }
   const seen = new Set();
   const combos = [];
   (state.despesas || []).forEach(d => {
     const key = `${d.tcVinculo||''}||${d.parcela}`;
     if (!seen.has(key)) { seen.add(key); combos.push({ tcId: d.tcVinculo, parcela: d.parcela }); }
   });
-
-  // Detecta quais nomes de parcela aparecem em mais de um TC (colisão de nome)
-  const parcelaCount = {};
-  combos.forEach(c => { parcelaCount[c.parcela] = (parcelaCount[c.parcela]||0) + 1; });
-
-  // Ordena: por parcela primeiro, depois por tcId
   combos.sort((a, b) => {
     if (a.parcela < b.parcela) return -1;
     if (a.parcela > b.parcela) return 1;
     return String(a.tcId||'').localeCompare(String(b.tcId||''));
   });
 
-  combos.forEach(({ tcId, parcela }) => {
-    const tab = document.createElement('div');
-    tab.className = 'parcela-tab';
-    tab.dataset.parcela = parcela;
-    tab.dataset.tcFiltro = tcId || '';
-
-    // Sempre exibe o TC/Aditivo de origem
+  // Monta os itens do dropdown com label completo
+  const opcoes = combos.map(({ tcId, parcela }) => {
     let label = parNomesLong[parcela] || ('Parcela ' + parcela);
     if (tcId) {
       const tcObj = (state.tcs||[]).find(t => String(t.id) === String(tcId));
@@ -6071,40 +6056,81 @@ function reconstruirParcelaTabs() {
         label = prefixo + ' · ' + label;
       }
     }
-
-    // Adiciona os tipos/categorias presentes nas despesas desta parcela+TC
     const tiposPresentes = [...new Set(
       (state.despesas||[])
-        .filter(d => d.parcela === parcela && (tcId === undefined || tcId === null || String(d.tcVinculo||'') === String(tcId||'')))
-        .map(d => d.tipo)
-        .filter(Boolean)
+        .filter(d => d.parcela === parcela && String(d.tcVinculo||'') === String(tcId||''))
+        .map(d => d.tipo).filter(Boolean)
     )];
-    const tipoAbrev = { CUSTEIO: 'Cust.', CAPITAL: 'Cap.', ALEM_MUROS: 'Além', OBRAS: 'Obras', CAPINA: 'Cap.' };
-    const tipoAbrevFull = { CUSTEIO: 'Custeio', CAPITAL: 'Capital', ALEM_MUROS: 'Além dos Muros', OBRAS: 'Obras', CAPINA: 'Capina' };
-    if (tiposPresentes.length) {
-      label += ' · ' + tiposPresentes.map(t => tipoAbrevFull[t] || t).join(', ');
-    }
-
-    tab.textContent = label;
-    tab.onclick = (function(p, id) { return function() { filtrarParcela(p, id, this); }; })(parcela, tcId||'');
-    tabs.appendChild(tab);
+    if (tiposPresentes.length) label += ' · ' + tiposPresentes.map(t => tipoAbrevFull[t] || t).join(', ');
+    return { label, parcela, tcId: tcId || '' };
   });
 
-  // Garante que a tab ativa ainda exista; senão, volta para "todas"
-  const fAtiva = state.parcelaFiltro;
-  const fTcAtivo = state.parcelaTcFiltro || '';
-  const tabAtiva = fAtiva === 'todas'
-    ? tabs.querySelector('[data-parcela="todas"]')
-    : tabs.querySelector(`[data-parcela="${fAtiva}"][data-tc-filtro="${fTcAtivo}"]`);
-  document.querySelectorAll('.parcela-tab').forEach(t => t.classList.remove('active'));
-  if (tabAtiva) {
-    tabAtiva.classList.add('active');
-  } else {
-    state.parcelaFiltro = 'todas';
-    state.parcelaTcFiltro = '';
-    const tabTodas = tabs.querySelector('[data-parcela="todas"]');
-    if (tabTodas) tabTodas.classList.add('active');
+  // Determina estado ativo
+  const fAtiva    = state.parcelaFiltro    || 'todas';
+  const fTcAtivo  = state.parcelaTcFiltro  || '';
+  const filtrando = fAtiva !== 'todas';
+  const labelAtivo = filtrando
+    ? (opcoes.find(o => o.parcela === fAtiva && o.tcId === fTcAtivo) || {}).label || 'Filtro'
+    : null;
+
+  // Reconstrói o container de tabs
+  tabs.innerHTML = '';
+
+  // Botão "Todas"
+  const btnTodas = document.createElement('div');
+  btnTodas.className = 'parcela-tab' + (filtrando ? '' : ' active');
+  btnTodas.dataset.parcela = 'todas';
+  btnTodas.textContent = 'Todas';
+  btnTodas.onclick = function() { _fecharParcelaDropdown(); filtrarParcela('todas', '', this); };
+  tabs.appendChild(btnTodas);
+
+  // Botão "Filtrar ▾" com dropdown inline (só aparece se houver combos)
+  if (opcoes.length) {
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:relative;display:inline-block';
+
+    const btnFiltro = document.createElement('div');
+    btnFiltro.className = 'parcela-tab' + (filtrando ? ' active' : '');
+    btnFiltro.id = 'parcela-filtro-btn';
+    btnFiltro.style.cssText = 'display:flex;align-items:center;gap:6px;user-select:none';
+    btnFiltro.innerHTML = filtrando
+      ? `<span style="max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${labelAtivo}</span><span style="font-size:10px;opacity:0.7">▾</span>`
+      : `<span>Filtrar</span><span style="font-size:10px;opacity:0.7">▾</span>`;
+    btnFiltro.onclick = function(e) { e.stopPropagation(); _toggleParcelaDropdown(); };
+
+    const dropdown = document.createElement('div');
+    dropdown.id = 'parcela-dropdown';
+    dropdown.style.cssText = 'display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:320px;max-width:480px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.35);z-index:50;padding:6px;max-height:320px;overflow-y:auto';
+    dropdown.innerHTML = opcoes.map(o =>
+      `<div onclick="_selecionarParcela('${o.parcela}','${o.tcId}')" style="padding:9px 12px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--text);transition:background 0.1s;${o.parcela===fAtiva&&o.tcId===fTcAtivo?'background:rgba(79,142,247,0.15);color:var(--accent);font-weight:600':''}" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='${o.parcela===fAtiva&&o.tcId===fTcAtivo?'rgba(79,142,247,0.15)':''}'">
+        ${o.label}
+      </div>`
+    ).join('');
+
+    wrapper.appendChild(btnFiltro);
+    wrapper.appendChild(dropdown);
+    tabs.appendChild(wrapper);
   }
+
+  // Fecha dropdown ao clicar fora
+  document.addEventListener('click', _fecharParcelaDropdown, { once: false });
+}
+
+function _toggleParcelaDropdown() {
+  const dd = document.getElementById('parcela-dropdown');
+  if (!dd) return;
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+function _fecharParcelaDropdown() {
+  const dd = document.getElementById('parcela-dropdown');
+  if (dd) dd.style.display = 'none';
+}
+function _selecionarParcela(parcela, tcId) {
+  _fecharParcelaDropdown();
+  state.parcelaFiltro   = parcela;
+  state.parcelaTcFiltro = tcId;
+  reconstruirParcelaTabs();
+  renderDespesas();
 }
 
 // Mantido por compatibilidade — apenas aciona a reconstrução completa
@@ -6113,10 +6139,9 @@ function addParcelaTab(_p) {
 }
 
 function filtrarParcela(p, tcId, el) {
-  state.parcelaFiltro = p;
+  state.parcelaFiltro   = p;
   state.parcelaTcFiltro = tcId || '';
-  document.querySelectorAll('.parcela-tab').forEach(t => t.classList.remove('active'));
-  if (el) el.classList.add('active');
+  reconstruirParcelaTabs();
   renderDespesas();
 }
 
