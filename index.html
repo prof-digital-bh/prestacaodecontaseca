@@ -7718,7 +7718,8 @@ function imprimirAba(nomeAba, filtros) {
     const naoCreditada = situacao === 'nao_creditada';
 
     const totalGasto    = despesas.reduce((s,d) => s+_pm(d.valor), 0);
-    const totalPrevisto = pvRow ? tiposParaExibir.reduce((s,t2) => s+_pm(pvRow[tipoKey[t2]]||'0'), 0) : 0;
+    const rendimentosDash = (!filtroTipo && pvRow) ? _pm(pvRow.rendimentos||'0,00') : 0;
+    const totalPrevisto = pvRow ? tiposParaExibir.reduce((s,t2) => s+_pm(pvRow[tipoKey[t2]]||'0'), 0) + rendimentosDash : 0;
     const saldoGeral    = totalPrevisto - totalGasto;
     const pct           = totalPrevisto > 0 ? Math.min(totalGasto/totalPrevisto*100, 100) : 0;
 
@@ -8671,7 +8672,8 @@ function renderDashAcomp() {
 
   // Total geral desta parcela/tipo
   const totalGasto = despesas.reduce((s,d) => s+parseMoney(d.valor), 0);
-  const totalPrevisto = pvRow ? tiposParaExibir.reduce((s,t2) => s + parseMoney(pvRow[tipoKey[t2]]||'0'), 0) : 0;
+  const rendimentosParc = (!tipo && pvRow) ? parseMoney(pvRow.rendimentos||'0,00') : 0;
+  const totalPrevisto = pvRow ? tiposParaExibir.reduce((s,t2) => s + parseMoney(pvRow[tipoKey[t2]]||'0'), 0) + rendimentosParc : 0;
   const saldoGeral = totalPrevisto - totalGasto;
 
   // Label do TC/aditivo
@@ -8740,6 +8742,15 @@ function renderDashAcomp() {
         <td style="padding:5px 8px;text-align:right;font-family:'DM Mono',monospace;color:${sld<0?'var(--accent-red)':prev>0?'var(--accent2)':'var(--text-dim)'}">${prev>0?fmtMoney(sld):gasto>0?'<span style="color:var(--accent3);font-size:10px">Sem previsão</span>':'—'}</td>
       </tr>`;
     });
+    // Linha de Rendimentos Financeiros (suplementar, sem tipo de despesa associado)
+    if (!tipo && rendimentosParc > 0) {
+      html += `<tr style="border-bottom:1px solid rgba(56,217,169,0.15);background:rgba(56,217,169,0.04)">
+        <td style="padding:5px 8px"><span style="font-size:11px;font-weight:600;color:var(--accent2)">📈 Rendimentos Financeiros</span></td>
+        <td style="padding:5px 8px;text-align:right;font-family:'DM Mono',monospace;color:var(--accent2)">${fmtMoney(rendimentosParc)}</td>
+        <td style="padding:5px 8px;text-align:right;color:var(--text-dim);font-size:11px">—</td>
+        <td style="padding:5px 8px;text-align:right;font-family:'DM Mono',monospace;color:var(--accent2)">${fmtMoney(rendimentosParc)}</td>
+      </tr>`;
+    }
     html += `</tbody></table></div>`;
   }
 
