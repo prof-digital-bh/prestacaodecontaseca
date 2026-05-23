@@ -10237,6 +10237,7 @@ function abrirModalParcelaValores(tcId) {
       alem:    v.alem    || '0,00',
       obras:   v.obras   || '0,00',
       capina:  v.capina  || '0,00',
+      rendimentos: v.rendimentos || '0,00',
       situacao: s ? s.situacao : '',
       mesAnoInicio: v.mesAnoInicio || '',
       dataCredito: v.dataCredito || '',
@@ -10252,7 +10253,7 @@ function abrirModalParcelaValores(tcId) {
         linhasMap.set(key, {
           tcItemId: String(id),
           parcela: p,
-          custeio: '0,00', capital: '0,00', alem: '0,00', obras: '0,00', capina: '0,00',
+          custeio: '0,00', capital: '0,00', alem: '0,00', obras: '0,00', capina: '0,00', rendimentos: '0,00',
           situacao: '', mesAnoInicio: '', dataCredito: '', dataLimite: '', dataTermino: ''
         });
       }
@@ -10266,7 +10267,7 @@ function abrirModalParcelaValores(tcId) {
 
   // Se não há nenhuma linha ainda, começa com uma em branco para o TC original
   if (!_pvRows.length) {
-    _pvRows.push({ tcItemId: String(tc.id), parcela: '01', custeio:'0,00', capital:'0,00', alem:'0,00', obras:'0,00', capina:'0,00', situacao:'', mesAnoInicio:'', dataCredito:'', dataLimite:'', dataTermino:'' });
+    _pvRows.push({ tcItemId: String(tc.id), parcela: '01', custeio:'0,00', capital:'0,00', alem:'0,00', obras:'0,00', capina:'0,00', rendimentos:'0,00', situacao:'', mesAnoInicio:'', dataCredito:'', dataLimite:'', dataTermino:'' });
   }
 
   renderPVTable();
