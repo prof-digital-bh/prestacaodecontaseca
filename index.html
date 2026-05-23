@@ -1430,6 +1430,27 @@
     flex: 1;
   }
 
+  /* ── EXPANDIR TABELA DE DESPESAS ── */
+  .desp-expand-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 11px 0;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: background 0.15s, color 0.15s;
+    border-radius: 0 0 12px 12px;
+    user-select: none;
+  }
+  .desp-expand-bar:hover { background: var(--surface3); color: var(--accent); }
+  .desp-expand-arrow { font-style: normal; display: inline-block; transition: transform 0.22s; font-size: 11px; }
+  .desp-expand-bar.expanded .desp-expand-arrow { transform: rotate(180deg); }
+
   /* PRINT STYLES */
   @media print {
     .sidebar, .page-header .btn, .action-btn, .modal-overlay { display: none !important; }
@@ -1710,17 +1731,26 @@
 
       <div class="card" style="padding:0;overflow:hidden">
         <div class="table-wrap" style="border:none;border-radius:0">
-          <table>
+          <table style="table-layout:fixed;width:100%">
+            <colgroup>
+              <col style="width:32px">         <!-- # -->
+              <col style="width:120px">        <!-- TC/Parcela -->
+              <col style="width:88px">         <!-- Tipo -->
+              <col style="width:160px">        <!-- Credor -->
+              <col style="width:130px">        <!-- CNPJ -->
+              <col style="width:130px">        <!-- NF / Data -->
+              <col style="min-width:100px">    <!-- Descrição -->
+              <col style="width:100px">        <!-- Valor -->
+              <col style="width:66px">         <!-- Ações -->
+            </colgroup>
             <thead>
               <tr>
                 <th>#</th>
-                <th>TC/Aditivo</th>
+                <th>TC / Parcela</th>
                 <th>Tipo</th>
-                <th>Parcela</th>
                 <th>Credor</th>
                 <th>CNPJ/CPF</th>
-                <th>Nº NF</th>
-                <th>Data NF</th>
+                <th>NF / Data</th>
                 <th>Descrição</th>
                 <th class="text-right">Valor</th>
                 <th>Ações</th>
@@ -1739,6 +1769,11 @@
             </tbody>
           </table>
         </div>
+      </div>
+      <!-- Barra expandir/recolher -->
+      <div class="desp-expand-bar" id="desp-expand-bar" onclick="toggleDespExpand()" style="display:none">
+        <span id="desp-expand-label">Ver todas as despesas</span>
+        <span class="desp-expand-arrow" id="desp-expand-arrow">▼</span>
       </div>
 
       <div class="gap-8 mt-16" style="justify-content:flex-end">
@@ -6456,31 +6491,54 @@ function renderDespesas() {
     const db = b.nfData ? new Date(b.nfData) : new Date(0);
     return da - db;
   });
+
+  const expandBar  = document.getElementById('desp-expand-bar');
+  const expandLbl  = document.getElementById('desp-expand-label');
+  const expandArr  = document.getElementById('desp-expand-arrow');
+  const isExpanded = state._despExpanded || false;
+  const PREVIEW    = 5;
+
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><div class="empty-icon">📊</div><div class="empty-title">Nenhuma despesa</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📊</div><div class="empty-title">Nenhuma despesa</div></div></td></tr>`;
     document.getElementById('total-tabela').textContent = 'R$ 0,00';
+    if (expandBar) expandBar.style.display = 'none';
     return;
   }
+
+  // Decide quais linhas mostrar
+  const displayList = (!isExpanded && list.length > PREVIEW) ? list.slice(-PREVIEW) : list;
+  const hidden = list.length - displayList.length;
+
   let total = 0;
-  tbody.innerHTML = list.map((d, i) => {
-    const v = parseMoney(d.valor);
-    total += v;
+  // total sempre do total completo
+  list.forEach(d => { total += parseMoney(d.valor); });
+
+  tbody.innerHTML = displayList.map((d, i) => {
     const tcVinc = d.tcVinculo ? (state.tcs||[]).find(t => String(t.id) === String(d.tcVinculo)) : null;
-    const tcLabel = tcVinc ? (tcVinc.tcPaiId ? `Adit. ${tcVinc.numero}` : `TC ${tcVinc.numero}`) : '—';
-    const parNomesDesp = {'01':'1ª Parcela','02':'2ª Parcela','03':'3ª Parcela','04':'4ª Parcela','05':'5ª Parcela','U':'Parcela Única'};
-    const parcelaLabel = parNomesDesp[d.parcela] || ('Parcela ' + d.parcela);
+    const tcPai  = tcVinc?.tcPaiId ? (state.tcs||[]).find(t => String(t.id) === String(tcVinc.tcPaiId)) : null;
+    const tcLine1 = tcVinc ? (tcVinc.tcPaiId ? `Adit. ${tcVinc.numero}` : `TC ${tcVinc.numero}`) : '—';
+    const tcLine2 = tcVinc?.tcPaiId && tcPai ? `<span style="color:var(--text-dim);font-size:10px">TC ${tcPai.numero}</span>` : '';
+    const parNomesDesp = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única','UI':'Única(i)','UII':'Única(ii)','ALI':'Alim.','SVC':'Serv.','MAT':'Mat.'};
+    const parcelaLabel = parNomesDesp[d.parcela] || d.parcela;
+    const nfData  = fmtDate(d.nfData) || '—';
+    const nfNum   = d.nfNum || '—';
+    const modalLabel = {TED:'TED',DOC:'DOC',PIX:'PIX',BOLETO:'Boleto',DEBITO_CONTA:'Déb.Conta',ESPECIE:'⛔Espécie','':''};
+    const modalTip = d.modalidadePgto ? ` | Pgto: ${modalLabel[d.modalidadePgto]||d.modalidadePgto}` : '';
+    // Índice real na lista completa
+    const idxReal = list.indexOf(d);
     return `
       <tr>
-        <td class="td-muted">${i+1}</td>
-        <td class="td-mono td-muted" style="font-size:11px;color:var(--accent)">${tcLabel}</td>
+        <td class="td-muted" style="font-size:11px">${idxReal+1}</td>
+        <td style="font-size:11px;line-height:1.4">
+          <span style="color:var(--accent);font-weight:600">${tcLine1}</span><br>
+          ${tcLine2 ? tcLine2 + '<br>' : ''}<span style="color:var(--text-muted)">${parcelaLabel} Parcela</span>
+        </td>
         <td><span class="tipo-pill tipo-${d.tipo}">${tipoLabel(d.tipo)}</span></td>
-        <td class="td-muted" style="font-size:11px;white-space:nowrap">${parcelaLabel}</td>
-        <td style="font-weight:500">${d.credor}</td>
-        <td class="td-mono td-muted">${d.cnpj||'—'}</td>
-        <td class="td-muted">${d.nfNum||'—'}</td>
-        <td class="td-muted">${fmtDate(d.nfData)||'—'}</td>
-        <td class="td-muted" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.descricao}">${d.descricao||'—'}</td>
-        <td class="td-value text-right" style="color:var(--accent2)">R$ ${d.valor}</td>
+        <td style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.credor}${d.cnpj?' — '+d.cnpj:''}">${d.credor}</td>
+        <td class="td-mono td-muted" style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.cnpj||''}">${d.cnpj||'—'}</td>
+        <td class="td-muted" style="font-size:11px;line-height:1.5">${nfNum}<br><span style="color:var(--text-dim)">${nfData}</span></td>
+        <td class="td-muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(d.descricao||'')+modalTip}">${d.descricao||'—'}</td>
+        <td class="td-value text-right" style="color:var(--accent2);white-space:nowrap">R$ ${d.valor}</td>
         <td style="white-space:nowrap">
           <button class="action-btn" onclick="editarDespesa(${d.id})" title="Editar">✏️</button>
           <button class="action-btn del" onclick="removerDespesa(${d.id})" title="Remover">✕</button>
@@ -6488,7 +6546,26 @@ function renderDespesas() {
       </tr>
     `;
   }).join('');
+
   document.getElementById('total-tabela').textContent = fmtMoney(total);
+
+  // Atualizar barra de expansão
+  if (expandBar) {
+    if (list.length > PREVIEW) {
+      expandBar.style.display = 'flex';
+      if (isExpanded) {
+        expandBar.classList.add('expanded');
+        expandLbl.textContent = 'Recolher listagem';
+        expandArr.textContent = '▼';
+      } else {
+        expandBar.classList.remove('expanded');
+        expandLbl.textContent = `Ver todas as ${list.length} despesas (${hidden} ocultas)`;
+        expandArr.textContent = '▼';
+      }
+    } else {
+      expandBar.style.display = 'none';
+    }
+  }
 }
 
 async function removerDespesa(id) {
@@ -10393,6 +10470,16 @@ function validarModalidadePgtoEdit() {
 // ══════════════════════════════════════════════════════════
 //  REC.7 — MOBILE NAV
 // ══════════════════════════════════════════════════════════
+function toggleDespExpand() {
+  state._despExpanded = !state._despExpanded;
+  renderDespesas();
+  // Se recolheu, volta ao topo da tabela suavemente
+  if (!state._despExpanded) {
+    const tbody = document.getElementById('despesas-tbody');
+    if (tbody) tbody.closest('.card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
 function toggleMobileNav() {
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.getElementById('mobile-nav-overlay');
