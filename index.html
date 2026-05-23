@@ -7796,6 +7796,21 @@ function imprimirAba(nomeAba, filtros) {
       ? `<span class="badge" style="background:${sitBg[situacao]||'#eee'};color:${sitColors[situacao]||'#555'}">${sitLabels[situacao]||situacao}</span>`
       : '';
 
+    // Composição do previsto total para o card
+    const composicaoPrevisto = pvRow ? (() => {
+      let baseTotal = 0, rendTotal = 0, saldoAntTotal = 0;
+      tiposParaExibir.forEach(t2 => {
+        const cr = getCreditoReal(filtroTcId, filtroParcela, t2);
+        if (cr) { baseTotal += cr.base; rendTotal += cr.rendimentos; saldoAntTotal += cr.saldoAnterior; }
+      });
+      const extras = [];
+      if (rendTotal > 0)    extras.push(`<span style="color:#1a9e6e">+ ${_fmt(rendTotal)} rendimentos</span>`);
+      if (saldoAntTotal > 0) extras.push(`<span style="color:#2980b9">+ ${_fmt(saldoAntTotal)} saldo anterior</span>`);
+      return extras.length
+        ? `<div style="font-size:11px;color:#888;margin-top:4px;line-height:1.6">${_fmt(baseTotal)} base&nbsp;${extras.join('&nbsp;')}</div>`
+        : '';
+    })() : '';
+
     // ── Cards de totais ──
     const saldoCardHtml = naoCreditada
       ? `<span class="badge badge-red" style="font-size:13px;padding:4px 12px">Indisponível</span>`
@@ -7806,6 +7821,7 @@ function imprimirAba(nomeAba, filtros) {
         <div class="info-box">
           <div class="lbl">Previsto (Parcela)</div>
           <div class="val mono">${totalPrevisto>0?_fmt(totalPrevisto):'Não configurado'}</div>
+          ${composicaoPrevisto}
         </div>
         <div class="info-box">
           <div class="lbl">Lançado (${despesas.length} desp.)</div>
@@ -7829,7 +7845,8 @@ function imprimirAba(nomeAba, filtros) {
 
     // ── Tabela de rubricas ──
     const rubricas = tiposParaExibir.filter(t2 => {
-      const prev  = pvRow ? _pm(pvRow[tipoKey[t2]]||'0') : 0;
+      const cr   = pvRow ? getCreditoReal(filtroTcId, filtroParcela, t2) : null;
+      const prev = cr ? cr.credito : (pvRow ? _pm(pvRow[tipoKey[t2]]||'0') : 0);
       const gasto = despesas.filter(d=>d.tipo===t2).reduce((s,d)=>s+_pm(d.valor),0);
       return prev > 0 || gasto > 0;
     });
@@ -7839,19 +7856,29 @@ function imprimirAba(nomeAba, filtros) {
       <table>
         <thead><tr>
           <th>Rubrica</th>
-          <th class="right">Previsto</th>
+          <th class="right">Base</th>
+          <th class="right" style="color:#1a9e6e">+ Rendimentos</th>
+          <th class="right" style="color:#2980b9">+ Saldo Anterior</th>
+          <th class="right">= Previsto Real</th>
           <th class="right">Lançado</th>
           <th class="right">Saldo</th>
         </tr></thead>
         <tbody>
           ${rubricas.map(t2 => {
-            const prev  = pvRow ? _pm(pvRow[tipoKey[t2]]||'0') : 0;
-            const gasto = despesas.filter(d=>d.tipo===t2).reduce((s,d)=>s+_pm(d.valor),0);
-            const sld   = prev - gasto;
-            const naoCred = naoCreditada;
+            const cr        = pvRow ? getCreditoReal(filtroTcId, filtroParcela, t2) : null;
+            const base      = pvRow ? _pm(pvRow[tipoKey[t2]]||'0') : 0;
+            const rendimentos   = cr ? cr.rendimentos   : 0;
+            const saldoAnterior = cr ? cr.saldoAnterior : 0;
+            const prev      = cr ? cr.credito : base;
+            const gasto     = despesas.filter(d=>d.tipo===t2).reduce((s,d)=>s+_pm(d.valor),0);
+            const sld       = prev - gasto;
+            const naoCred   = naoCreditada;
             return `<tr>
               <td><span style="font-weight:600;color:${tipoColor[t2]||'#333'}">${_tl(t2)}</span></td>
-              <td class="right mono muted">${prev>0?_fmt(prev):'—'}</td>
+              <td class="right mono muted">${base>0?_fmt(base):'—'}</td>
+              <td class="right mono" style="color:#1a9e6e">${rendimentos>0?'+'+_fmt(rendimentos):'—'}</td>
+              <td class="right mono" style="color:#2980b9">${saldoAnterior>0?'+'+_fmt(saldoAnterior):'—'}</td>
+              <td class="right mono bold">${prev>0?_fmt(prev):'—'}</td>
               <td class="right mono" style="color:#c0392b">${gasto>0?_fmt(gasto):'—'}</td>
               <td class="right">${naoCred
                 ? '<span class="badge badge-red">Indisponível</span>'
@@ -7972,20 +7999,27 @@ function imprimirAba(nomeAba, filtros) {
             <th>Parcela</th>
             <th class="right">Custeio</th><th class="right">Capital</th>
             <th class="right">Além dos Muros</th><th class="right">Obras</th><th class="right">Capina</th>
-            <th class="right" style="color:#1a9e6e">Rendimentos</th>
-            <th class="right">Total Previsto</th><th class="right">Total Gasto</th><th class="right">Saldo</th>
+            <th class="right" style="color:#1a9e6e">+ Rendimentos</th>
+            <th class="right" style="color:#2980b9">+ Saldo Anterior</th>
+            <th class="right">= Total Previsto</th><th class="right">Total Gasto</th><th class="right">Saldo</th>
             <th>Situação</th>
           </tr></thead>
           <tbody>
             ${parcelas.map(p => {
               const pv = pvRows.find(r=>r.parcela===p)||{};
               const sit = (sitRows.find(r=>r.parcela===p)||{}).situacao||'';
-              const cu=_pm(pv.custeio),ca=_pm(pv.capital),al=_pm(pv.alem),ob=_pm(pv.obras),ci=_pm(pv.capina),re=_pm(pv.rendimentos||'0,00');
-              // prevTot via getCreditoReal: inclui rendimentos + saldo anterior de cada tipo
+              const cu=_pm(pv.custeio),ca=_pm(pv.capital),al=_pm(pv.alem),ob=_pm(pv.obras),ci=_pm(pv.capina);
               const _tcIdImp = String(pvRows.find(r=>r.parcela===p)?.tcId || tc.id);
-              // prevTot via getCreditoReal (rendimentos só em CUSTEIO, sem fallback com re)
+              // Agrega rendimentos e saldo anterior de todos os tipos
+              let totalRendimentos = 0, totalSaldoAnterior = 0;
               const prevTot = ['CUSTEIO','CAPITAL','ALEM_MUROS','OBRAS','CAPINA'].reduce((s,tipo) => {
-                const cr = getCreditoReal(_tcIdImp, p, tipo); return s + (cr ? cr.credito : 0);
+                const cr = getCreditoReal(_tcIdImp, p, tipo);
+                if (cr) {
+                  totalRendimentos   += cr.rendimentos   || 0;
+                  totalSaldoAnterior += cr.saldoAnterior || 0;
+                  return s + cr.credito;
+                }
+                return s;
               }, 0) || (cu+ca+al+ob+ci);
               const gastoParc = despTc.filter(d=>d.parcela===p).reduce((s,d)=>s+_pm(d.valor),0);
               const saldoParc = prevTot - gastoParc;
@@ -8000,7 +8034,8 @@ function imprimirAba(nomeAba, filtros) {
                 <td class="right mono">${al?_fmt(al):'—'}</td>
                 <td class="right mono">${ob?_fmt(ob):'—'}</td>
                 <td class="right mono">${ci?_fmt(ci):'—'}</td>
-                <td class="right mono" style="color:#1a9e6e">${re?_fmt(re):'—'}</td>
+                <td class="right mono" style="color:#1a9e6e">${totalRendimentos>0?'+'+_fmt(totalRendimentos):'—'}</td>
+                <td class="right mono" style="color:#2980b9">${totalSaldoAnterior>0?'+'+_fmt(totalSaldoAnterior):'—'}</td>
                 <td class="right mono bold">${_fmt(prevTot)}</td>
                 <td class="right mono" style="color:#c0392b">${_fmt(gastoParc)}</td>
                 <td class="right">${saldoHtml}</td>
