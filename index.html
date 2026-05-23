@@ -8590,7 +8590,13 @@ function renderDashVisaoTermos() {
               ${sit ? `<span class="sit-pill ${sitCls(sit)}">${sitLabel(sit)}</span>` : `<span style="font-size:12px;color:var(--text-dim)">—</span>`}
             </td>
             <td style="padding:11px 14px;vertical-align:middle" onclick="event.stopPropagation()">
-              ${renderBtnComprobatorio(String(itemId), p, sit, true)}
+              ${(() => {
+                const url = getComprobatorio(String(itemId), p);
+                if (url) {
+                  return `<button class="btn-comprobatorio has-link" onclick="event.stopPropagation();verComprobatorio('${itemId}','${p}',event)" title="Ver documento comprobatório">📄 Ver Comprobatório</button>`;
+                }
+                return '<span style="font-size:12px;color:var(--text-dim)">—</span>';
+              })()}
             </td>
           </tr>`;
         });
