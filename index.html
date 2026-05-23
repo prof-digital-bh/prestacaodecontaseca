@@ -1430,6 +1430,48 @@
     flex: 1;
   }
 
+  /* ── CIÊNCIA DO PRESIDENTE ── */
+  .ciencia-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .ciencia-ok {
+    background: rgba(56,217,169,0.12);
+    color: var(--accent2);
+    border: 1px solid rgba(56,217,169,0.3);
+  }
+  .ciencia-pend {
+    background: rgba(246,166,35,0.10);
+    color: var(--accent3);
+    border: 1px solid rgba(246,166,35,0.25);
+  }
+  .btn-ciencia {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid rgba(56,217,169,0.35);
+    background: rgba(56,217,169,0.08);
+    color: var(--accent2);
+    font-family: 'Outfit', sans-serif;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-ciencia:hover {
+    background: rgba(56,217,169,0.2);
+    border-color: var(--accent2);
+  }
+
   /* ── EXPANDIR TABELA DE DESPESAS ── */
   .desp-expand-bar {
     display: flex;
@@ -1733,15 +1775,16 @@
         <div class="table-wrap" style="border:none;border-radius:0">
           <table style="table-layout:fixed;width:100%">
             <colgroup>
-              <col style="width:32px">         <!-- # -->
-              <col style="width:120px">        <!-- TC/Parcela -->
-              <col style="width:88px">         <!-- Tipo -->
-              <col style="width:160px">        <!-- Credor -->
-              <col style="width:130px">        <!-- CNPJ -->
-              <col style="width:130px">        <!-- NF / Data -->
-              <col style="min-width:100px">    <!-- Descrição -->
-              <col style="width:100px">        <!-- Valor -->
-              <col style="width:66px">         <!-- Ações -->
+              <col style="width:32px">
+              <col style="width:120px">
+              <col style="width:88px">
+              <col style="width:160px">
+              <col style="width:130px">
+              <col style="width:130px">
+              <col style="min-width:100px">
+              <col style="width:100px">
+              <col style="width:100px">  <!-- Ciência -->
+              <col style="width:66px">
             </colgroup>
             <thead>
               <tr>
@@ -1753,6 +1796,7 @@
                 <th>NF / Data</th>
                 <th>Descrição</th>
                 <th class="text-right">Valor</th>
+                <th id="th-ciencia" style="display:none">Ciência</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -5789,7 +5833,10 @@ function despesaToRow(d) {
     justificativa: d.justificativa || null,
     justificativa_pend: d.justificativaPend || null,
     confirmacao_patrimonio: d.confirmacaoPatrimonio || null,
-    modalidade_pgto: d.modalidadePgto || null
+    modalidade_pgto: d.modalidadePgto || null,
+    ciencia: d.ciencia || false,
+    ciencia_data: d.cienciaData || null,
+    ciencia_por: d.cienciaPor || null
   };
 }
 
@@ -5820,7 +5867,10 @@ function rowToDespesa(r) {
     justificativa: r.justificativa,
     justificativaPend: r.justificativa_pend,
     confirmacaoPatrimonio: r.confirmacao_patrimonio || null,
-    modalidadePgto: r.modalidade_pgto || ''
+    modalidadePgto: r.modalidade_pgto || '',
+    ciencia:     r.ciencia     || false,
+    cienciaData: r.ciencia_data|| null,
+    cienciaPor:  r.ciencia_por || null
   };
 }
 
@@ -6539,6 +6589,7 @@ function renderDespesas() {
         <td class="td-muted" style="font-size:11px;line-height:1.5">${nfNum}<br><span style="color:var(--text-dim)">${nfData}</span></td>
         <td class="td-muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(d.descricao||'')+modalTip}">${d.descricao||'—'}</td>
         <td class="td-value text-right" style="color:var(--accent2);white-space:nowrap">R$ ${d.valor}</td>
+        <td class="td-ciencia" style="display:none">${renderCienciaCelula(d)}</td>
         <td style="white-space:nowrap">
           <button class="action-btn" onclick="editarDespesa(${d.id})" title="Editar">✏️</button>
           <button class="action-btn del" onclick="removerDespesa(${d.id})" title="Remover">✕</button>
@@ -11138,7 +11189,6 @@ async function inicializarApp() {
 }
 
 async function mostrarApp(user) {
-  // Detecta perfil: user_metadata.role === 'viewer' → somente leitura
   const role = (user && user.user_metadata && user.user_metadata.role) || 'admin';
   state.role = role;
   state.userEmail = (user && user.email) || '';
@@ -11147,98 +11197,242 @@ async function mostrarApp(user) {
   appShell.classList.add('authed');
   await inicializarApp();
   aplicarPerfil();
+  // Para o admin, exibe o badge de ciências pendentes após carregar
+  if (role === 'admin') _atualizarBadgeCiencia();
 }
 
 // ==================== PERFIL DE ACESSO ====================
-// Para criar um usuário viewer, defina user_metadata.role = 'viewer'
-// e opcionalmente user_metadata.nome = 'Nome Completo'
-// no painel Supabase: Authentication → Users → Edit → user_metadata
+// Perfis suportados via user_metadata.role no Supabase Auth:
+//   'admin'      → escriturador (acesso total) — padrão
+//   'presidente' → presidente da Caixa Escolar (ver tudo + dar ciência)
+//   'viewer'     → somente leitura básica (dashboard + links)
 function aplicarPerfil() {
-  // ── Nome dinâmico na sidebar (vale para todos os perfis) ──
-  const nomeEl  = document.getElementById('sidebar-user-name');
-  const roleEl  = document.getElementById('sidebar-user-role');
+  const nomeEl = document.getElementById('sidebar-user-name');
+  const roleEl = document.getElementById('sidebar-user-role');
+
+  // Nome dinâmico na sidebar
   if (nomeEl && state.userName) nomeEl.textContent = state.userName;
   else if (nomeEl && state.userEmail) {
-    // Usa a parte antes do @ como fallback amigável
     const fallback = state.userEmail.split('@')[0].replace(/[._]/g, ' ')
       .replace(/\b\w/g, c => c.toUpperCase());
     nomeEl.textContent = fallback;
   }
 
-  const isViewer = state.role === 'viewer';
-  if (!isViewer) return; // admin: nada muda além do nome
+  const role = state.role;
 
-  // 1. Esconde itens de menu restritos
-  const sectionsHidden = ['tc', 'despesas', 'alertas', 'checklist', 'gerador', 'fornecedores'];
-  document.querySelectorAll('.nav-item').forEach(item => {
-    const oc = item.getAttribute('onclick') || '';
-    const match = oc.match(/showSection\('([^']+)'\)/);
-    if (match && sectionsHidden.includes(match[1])) {
-      item.style.display = 'none';
+  // ── PERFIL PRESIDENTE ──────────────────────────────────────────────
+  if (role === 'presidente') {
+    if (roleEl) {
+      roleEl.innerHTML =
+        '<span style="display:inline-flex;align-items:center;gap:5px">' +
+        'Presidente' +
+        '<span style="font-size:9px;padding:1px 6px;border-radius:20px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.3)">Caixa Escolar</span>' +
+        '</span>';
     }
-  });
 
-  // 2. Esconde labels de seção que ficarem sem itens visíveis
-  document.querySelectorAll('.nav-label').forEach(lbl => {
-    const nav = lbl.closest('nav');
-    if (!nav) return;
-    const visibleItems = [...nav.querySelectorAll('.nav-item')].filter(i => i.style.display !== 'none');
-    if (!visibleItems.length) nav.style.display = 'none';
-    else lbl.style.display = 'none';
-  });
+    // Seções permitidas: tudo exceto gerador de documentos e fornecedores
+    const sectionsHidden = ['gerador', 'fornecedores'];
+    document.querySelectorAll('.nav-item').forEach(item => {
+      const oc = item.getAttribute('onclick') || '';
+      const match = oc.match(/showSection\('([^']+)'\)/);
+      if (match && sectionsHidden.includes(match[1])) item.style.display = 'none';
+    });
 
-  // 3. Desabilita botão "+ Lançar Despesa" no dashboard
-  document.querySelectorAll('button').forEach(btn => {
-    if (btn.textContent.includes('Lançar Despesa')) {
-      btn.disabled = true;
-      btn.title = 'Acesso restrito — perfil somente leitura';
-      btn.style.opacity = '0.35';
-      btn.style.cursor = 'not-allowed';
-      btn.style.pointerEvents = 'none';
-    }
-  });
+    // Esconder labels de seções sem itens
+    document.querySelectorAll('.nav-label').forEach(lbl => {
+      const nav = lbl.closest('nav');
+      if (!nav) return;
+      const visibleItems = [...nav.querySelectorAll('.nav-item')].filter(i => i.style.display !== 'none');
+      if (!visibleItems.length) nav.style.display = 'none';
+    });
 
-  // 4. Atualiza cargo e adiciona badge "Somente leitura" na sidebar
-  if (roleEl) {
-    roleEl.innerHTML =
-      '<span style="display:inline-flex;align-items:center;gap:5px">' +
-      'Visualizador' +
-      '<span style="font-size:9px;padding:1px 6px;border-radius:20px;background:rgba(246,166,35,0.15);color:var(--accent3);border:1px solid rgba(246,166,35,0.3)">Somente leitura</span>' +
-      '</span>';
-  }
-
-  // 5. Bloqueia showSection para seções não permitidas
-  const _showSectionOrig = showSection;
-  window.showSection = function(id) {
-    const permitidas = ['dashboard', 'links'];
-    if (!permitidas.includes(id)) return;
-    _showSectionOrig(id);
-  };
-
-  // 6. Desabilita controles de edição em Links Rápidos
-  //    (botão Adicionar + botões editar/remover de cada card)
-  //    Feito via patch em renderLinks para remover os botões após renderização
-  const _renderLinksOrig = window.renderLinks;
-  window.renderLinks = function() {
-    _renderLinksOrig && _renderLinksOrig();
-    // Esconde botão "+ Adicionar Link" no header da seção
-    document.querySelectorAll('#section-links button').forEach(btn => {
-      if (btn.textContent.includes('Adicionar Link')) {
-        btn.style.display = 'none';
+    // Desabilitar botões de ação de escrita (lançar, editar, remover, cadastrar)
+    const btnTextsProibidos = ['Lançar Despesa', 'Novo Fornecedor', 'Exportar CSV', '+ Lançar'];
+    document.querySelectorAll('button').forEach(btn => {
+      const txt = btn.textContent.trim();
+      if (btnTextsProibidos.some(p => txt.includes(p))) {
+        btn.disabled = true;
+        btn.style.opacity = '0.35';
+        btn.style.cursor  = 'not-allowed';
+        btn.style.pointerEvents = 'none';
+        btn.title = 'Restrito ao escriturador';
       }
     });
-    // Remove botões ✏️ e ✕ de cada card de link
-    document.querySelectorAll('#section-links .link-card button').forEach(btn => {
-      btn.style.display = 'none';
+
+    // Bloquear showSection para seções não permitidas
+    const _origShow = window.showSection;
+    const permitidasPres = ['dashboard', 'tc', 'despesas', 'alertas', 'checklist', 'links', 'anexos'];
+    window.showSection = function(id) {
+      if (!permitidasPres.includes(id)) return;
+      _origShow(id);
+      closeMobileNav && closeMobileNav();
+      const titleEl = document.getElementById('mobile-topbar-title');
+      const titles  = { dashboard:'Dashboard', tc:'Termos de Compromisso', despesas:'Despesas', alertas:'Alertas e Prazos', checklist:'Checklist', links:'Links Rápidos', anexos:'Gerar Anexos' };
+      if (titleEl && titles[id]) titleEl.textContent = titles[id];
+    };
+
+    // Mostrar coluna de Ciência na tabela de despesas
+    _ativarColunaCiencia();
+
+    // Patch: renderDespesas não mostra botões ✏️ ✕ para o presidente
+    _patchRenderDespesasPresidente();
+
+    // Patch: checklist somente leitura para o presidente
+    _patchChecklistReadOnly();
+
+    return;
+  }
+
+  // ── PERFIL VIEWER (somente leitura básica) ─────────────────────────
+  if (role === 'viewer') {
+    if (roleEl) {
+      roleEl.innerHTML =
+        '<span style="display:inline-flex;align-items:center;gap:5px">' +
+        'Visualizador' +
+        '<span style="font-size:9px;padding:1px 6px;border-radius:20px;background:rgba(246,166,35,0.15);color:var(--accent3);border:1px solid rgba(246,166,35,0.3)">Somente leitura</span>' +
+        '</span>';
+    }
+    const sectionsHidden = ['tc', 'despesas', 'alertas', 'checklist', 'gerador', 'fornecedores'];
+    document.querySelectorAll('.nav-item').forEach(item => {
+      const oc = item.getAttribute('onclick') || '';
+      const match = oc.match(/showSection\('([^']+)'\)/);
+      if (match && sectionsHidden.includes(match[1])) item.style.display = 'none';
+    });
+    document.querySelectorAll('.nav-label').forEach(lbl => {
+      const nav = lbl.closest('nav');
+      if (!nav) return;
+      const visibleItems = [...nav.querySelectorAll('.nav-item')].filter(i => i.style.display !== 'none');
+      if (!visibleItems.length) nav.style.display = 'none';
+      else lbl.style.display = 'none';
+    });
+    document.querySelectorAll('button').forEach(btn => {
+      if (btn.textContent.includes('Lançar Despesa')) {
+        btn.disabled = true; btn.style.opacity = '0.35';
+        btn.style.cursor = 'not-allowed'; btn.style.pointerEvents = 'none';
+        btn.title = 'Acesso restrito';
+      }
+    });
+    const _showOrig = window.showSection;
+    window.showSection = function(id) {
+      if (!['dashboard','links'].includes(id)) return;
+      _showOrig(id);
+    };
+    const _rlOrig = window.renderLinks;
+    window.renderLinks = function() {
+      _rlOrig && _rlOrig();
+      document.querySelectorAll('#section-links button').forEach(btn => {
+        if (btn.textContent.includes('Adicionar Link')) btn.style.display = 'none';
+      });
+      document.querySelectorAll('#section-links .link-card button').forEach(btn => btn.style.display = 'none');
+    };
+    document.querySelectorAll('#section-links button').forEach(btn => {
+      if (btn.textContent.includes('Adicionar Link')) btn.style.display = 'none';
+    });
+    document.querySelectorAll('#section-links .link-card button').forEach(btn => btn.style.display = 'none');
+    return;
+  }
+
+  // ── PERFIL ADMIN — nenhuma restrição ───────────────────────────────
+  // Exibe contador de ciências pendentes no badge da aba Despesas
+  _atualizarBadgeCiencia();
+}
+
+// ── HELPERS DE CIÊNCIA ─────────────────────────────────────────────────────
+
+function _ativarColunaCiencia() {
+  // Mostra o <th> e todas as células td-ciencia
+  const th = document.getElementById('th-ciencia');
+  if (th) th.style.display = '';
+  document.querySelectorAll('.td-ciencia').forEach(td => td.style.display = '');
+}
+
+function renderCienciaCelula(d) {
+  if (d.ciencia) {
+    const data = d.cienciaData ? new Date(d.cienciaData).toLocaleDateString('pt-BR') : '';
+    return `<span class="ciencia-badge ciencia-ok" title="Ciência em ${data}">✅ ${data}</span>`;
+  }
+  // Botão visível apenas para presidente; admin vê apenas o badge pendente
+  if (state.role === 'presidente') {
+    return `<button class="btn-ciencia" onclick="darCiencia(${d.id})" title="Confirmar ciência desta despesa">✍ Dar ciência</button>`;
+  }
+  return `<span class="ciencia-badge ciencia-pend" title="Aguardando ciência do presidente">⏳ Pendente</span>`;
+}
+
+async function darCiencia(despesaId) {
+  const d = state.despesas.find(x => x.id === despesaId);
+  if (!d) return;
+  if (!confirm(`Confirmar ciência da despesa:\n\n${d.credor} — R$ ${d.valor}\n\nEsta ação registrará seu nome e a data/hora atual.`)) return;
+
+  const agora = new Date().toISOString();
+  const nome  = state.userName || state.userEmail || 'Presidente';
+
+  setSyncStatus('syncing');
+  const { error } = await supa.from('despesas')
+    .update({ ciencia: true, ciencia_data: agora, ciencia_por: nome })
+    .eq('id', despesaId);
+
+  if (error) { setSyncStatus('error'); alert('Erro ao registrar ciência: ' + error.message); return; }
+  setSyncStatus('ok');
+
+  d.ciencia      = true;
+  d.cienciaData  = agora;
+  d.cienciaPor   = nome;
+
+  renderDespesas();
+  _ativarColunaCiencia(); // reativa após re-render
+  _atualizarBadgeCiencia();
+}
+
+function _atualizarBadgeCiencia() {
+  // Mostra contador de despesas sem ciência no nav item de Despesas (para o admin)
+  const semCiencia = (state.despesas || []).filter(d => !d.ciencia).length;
+  // Reutiliza ou cria badge no nav item de despesas
+  let badge = document.getElementById('desp-ciencia-badge');
+  const navDesp = [...document.querySelectorAll('.nav-item')].find(el =>
+    (el.getAttribute('onclick') || '').includes("showSection('despesas')")
+  );
+  if (!navDesp) return;
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.id = 'desp-ciencia-badge';
+    badge.className = 'pendencia-count';
+    badge.style.cssText = 'background:var(--accent3);margin-left:auto';
+    navDesp.appendChild(badge);
+  }
+  if (semCiencia > 0) {
+    badge.textContent = semCiencia;
+    badge.style.display = 'flex';
+    badge.title = `${semCiencia} despesa(s) sem ciência do presidente`;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function _patchRenderDespesasPresidente() {
+  // Remove botões ✏️ ✕ após cada renderização
+  const _origRender = window.renderDespesas;
+  window.renderDespesas = function() {
+    _origRender();
+    // Esconder botões de edição e remoção
+    document.querySelectorAll('#despesas-tbody .action-btn').forEach(btn => btn.style.display = 'none');
+    // Reativar coluna ciência que o re-render reseta
+    _ativarColunaCiencia();
+  };
+}
+
+function _patchChecklistReadOnly() {
+  // Desabilita checkboxes do checklist para o presidente
+  const _origRenderCk = window.renderChecklist;
+  window.renderChecklist = function() {
+    _origRenderCk && _origRenderCk();
+    document.querySelectorAll('#section-checklist input[type=checkbox]').forEach(cb => {
+      cb.disabled = true;
+      cb.title = 'Somente o escriturador pode marcar itens';
+    });
+    document.querySelectorAll('#section-checklist .doi-btn').forEach(btn => {
+      btn.disabled = true; btn.style.opacity = '0.4'; btn.style.pointerEvents = 'none';
     });
   };
-  // Aplica imediatamente caso links já tenham sido renderizados
-  document.querySelectorAll('#section-links button').forEach(btn => {
-    if (btn.textContent.includes('Adicionar Link')) btn.style.display = 'none';
-  });
-  document.querySelectorAll('#section-links .link-card button').forEach(btn => {
-    btn.style.display = 'none';
-  });
 }
 
 // ==================== COMPROBATÓRIO ====================
