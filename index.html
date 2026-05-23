@@ -3438,7 +3438,7 @@ function preencherCamposAutomaticos() {
   // Valor creditado (da parcela)
   let valorCreditado = &#x27;&#x27;;
   if (pv) {
-    const total = parseMoney(pv.custeio) + parseMoney(pv.capital) + parseMoney(pv.alem) + parseMoney(pv.obras);
+    const total = parseMoney(pv.custeio) + parseMoney(pv.capital) + parseMoney(pv.alem) + parseMoney(pv.obras) + parseMoney(pv.capina||'0,00') + parseMoney(pv.rendimentos||'0,00');
     if (total &gt; 0) valorCreditado = fmtMoneyStr(total);
   }
 
@@ -3480,7 +3480,7 @@ function atualizarDashboard() {
 
   // Cards
   let valorCredTotal = 0;
-  if (pv) valorCredTotal = parseMoney(pv.custeio) + parseMoney(pv.capital) + parseMoney(pv.alem) + parseMoney(pv.obras);
+  if (pv) valorCredTotal = parseMoney(pv.custeio) + parseMoney(pv.capital) + parseMoney(pv.alem) + parseMoney(pv.obras) + parseMoney(pv.capina||'0,00') + parseMoney(pv.rendimentos||'0,00');
 
   document.getElementById(&#x27;dash-cards&#x27;).innerHTML = `
     &lt;div class=&quot;info-card&quot;&gt;
@@ -4392,6 +4392,7 @@ init();
             <th>Além Muros (R$)</th>
             <th>Obras (R$)</th>
             <th>Capina (R$)</th>
+            <th style="color:var(--accent2)">Rendimentos (R$)</th>
             <th style="min-width:180px">Situação da Prestação</th>
             <th style="min-width:110px">Mês/Ano Início</th>
             <th style="min-width:120px">Data do Crédito</th>
@@ -5227,6 +5228,9 @@ function mostrarSaldoParcela(tcId, parcela) {
     </div>`;
   }).join('');
 
+  // Rendimentos: suplemento geral da parcela
+  const rendimentosParc = parseMoney(pvRow.rendimentos||'0,00');
+
   el.innerHTML = `
     <div style="background:var(--surface3);border:1px solid var(--border-light);border-radius:9px;padding:11px 14px">
       <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.7px;color:var(--accent3);font-weight:700;margin-bottom:8px">
@@ -5234,6 +5238,11 @@ function mostrarSaldoParcela(tcId, parcela) {
       </div>
       ${cats.length > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:6px">${resumoCats}</div>` :
         `<div style="font-size:12px;color:var(--text-dim)">Nenhum valor distribuído para esta parcela.</div>`}
+      ${rendimentosParc > 0 ? `
+      <div style="margin-top:8px;display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;background:rgba(56,217,169,0.07);border:1px solid rgba(56,217,169,0.25);font-size:12px;color:var(--text-muted)">
+        <span style="font-size:13px">📈</span>
+        <span>Rendimentos Financeiros acrescidos ao crédito desta parcela: <strong style="font-family:'DM Mono',monospace;color:var(--accent2)">${fmtMoney(rendimentosParc)}</strong></span>
+      </div>` : ''}
       ${campo && valorDistrib > 0 ? `
       <div style="margin-top:10px;padding:8px 10px;border-radius:7px;background:${saldoParc<0?'rgba(240,80,96,0.1)':'rgba(56,217,169,0.08)'};border:1px solid ${saldoParc<0?'rgba(240,80,96,0.3)':'rgba(56,217,169,0.2)'};font-size:12px">
         ${saldoParc < 0
@@ -5563,6 +5572,7 @@ async function carregarDados() {
     alem: r.alem_muros || '0,00',
     obras: r.obras || '0,00',
     capina: r.capina || '0,00',
+    rendimentos: r.rendimentos || '0,00',
     mesAnoInicio: r.mes_ano_inicio || '',
     dataCredito: r.data_credito || '',
     dataLimite: r.data_limite || '',
@@ -7879,7 +7889,7 @@ function imprimirAba(nomeAba, filtros) {
       const gastoTC = despTc.reduce((s,d)=>s+_pm(d.valor),0);
       // Saldo: quando parcela filtrada, usa previsto da parcela vs gasto da parcela
       const saldo = filtroParcela
-        ? (() => { const pv=(state.parcelaValores||[]).find(r=>String(r.tcId)===String(tc.id)&&r.parcela===filtroParcela); return pv ? (_pm(pv.custeio)+_pm(pv.capital)+_pm(pv.alem)+_pm(pv.obras)+_pm(pv.capina)) - gastoTC : -gastoTC; })()
+        ? (() => { const pv=(state.parcelaValores||[]).find(r=>String(r.tcId)===String(tc.id)&&r.parcela===filtroParcela); return pv ? (_pm(pv.custeio)+_pm(pv.capital)+_pm(pv.alem)+_pm(pv.obras)+_pm(pv.capina)+_pm(pv.rendimentos||'0,00')) - gastoTC : -gastoTC; })()
         : totalTC - gastoTcTotal;
 
       const st = typeof calcStatusTC==='function' && tc.inicio && tc.fim && tc.status!=='suspenso'
@@ -7903,6 +7913,7 @@ function imprimirAba(nomeAba, filtros) {
             <th>Parcela</th>
             <th class="right">Custeio</th><th class="right">Capital</th>
             <th class="right">Além dos Muros</th><th class="right">Obras</th><th class="right">Capina</th>
+            <th class="right" style="color:#1a9e6e">Rendimentos</th>
             <th class="right">Total Previsto</th><th class="right">Total Gasto</th><th class="right">Saldo</th>
             <th>Situação</th>
           </tr></thead>
@@ -7910,8 +7921,8 @@ function imprimirAba(nomeAba, filtros) {
             ${parcelas.map(p => {
               const pv = pvRows.find(r=>r.parcela===p)||{};
               const sit = (sitRows.find(r=>r.parcela===p)||{}).situacao||'';
-              const cu=_pm(pv.custeio),ca=_pm(pv.capital),al=_pm(pv.alem),ob=_pm(pv.obras),ci=_pm(pv.capina);
-              const prevTot = cu+ca+al+ob+ci;
+              const cu=_pm(pv.custeio),ca=_pm(pv.capital),al=_pm(pv.alem),ob=_pm(pv.obras),ci=_pm(pv.capina),re=_pm(pv.rendimentos||'0,00');
+              const prevTot = cu+ca+al+ob+ci+re;
               const gastoParc = despTc.filter(d=>d.parcela===p).reduce((s,d)=>s+_pm(d.valor),0);
               const saldoParc = prevTot - gastoParc;
               const naoCreditada = sit === 'nao_creditada';
@@ -7925,6 +7936,7 @@ function imprimirAba(nomeAba, filtros) {
                 <td class="right mono">${al?_fmt(al):'—'}</td>
                 <td class="right mono">${ob?_fmt(ob):'—'}</td>
                 <td class="right mono">${ci?_fmt(ci):'—'}</td>
+                <td class="right mono" style="color:#1a9e6e">${re?_fmt(re):'—'}</td>
                 <td class="right mono bold">${_fmt(prevTot)}</td>
                 <td class="right mono" style="color:#c0392b">${_fmt(gastoParc)}</td>
                 <td class="right">${saldoHtml}</td>
@@ -8888,7 +8900,7 @@ function renderDashboard() {
       // Sum distributed for this parcela across TC + aditivos
       const pvRows = (state.parcelaValores||[]).filter(pv => allTcIds.some(id => String(id)===String(pv.tcId)) && pv.parcela === filtroParcela);
       if (pvRows.length) {
-        previsto = pvRows.reduce((s,pv) => s + parseMoney(pv.custeio) + parseMoney(pv.capital) + parseMoney(pv.alem) + parseMoney(pv.obras) + parseMoney(pv.capina), 0);
+        previsto = pvRows.reduce((s,pv) => s + parseMoney(pv.custeio) + parseMoney(pv.capital) + parseMoney(pv.alem) + parseMoney(pv.obras) + parseMoney(pv.capina) + parseMoney(pv.rendimentos||'0,00'), 0);
         if (notaEl) notaEl.textContent = `(distribuição da ${filtroParcela}ª parcela)`;
       } else {
         if (notaEl) notaEl.textContent = '(valor total do TC — cadastre distribuição para mais precisão)';
@@ -10315,11 +10327,12 @@ function renderPVTable() {
           ${parcelaOpts.map(v => `<option value="${v}" ${r.parcela===v?'selected':''}>${parcelaNomes[v]||v}</option>`).join('')}
         </select>
       </td>
-      <td><input type="text" value="${r.custeio}" oninput="_pvRows[${i}].custeio=this.value" data-money placeholder="0,00" style="width:100px"></td>
-      <td><input type="text" value="${r.capital}" oninput="_pvRows[${i}].capital=this.value" data-money placeholder="0,00" style="width:100px"></td>
-      <td><input type="text" value="${r.alem}"    oninput="_pvRows[${i}].alem=this.value"    data-money placeholder="0,00" style="width:100px"></td>
-      <td><input type="text" value="${r.obras}"   oninput="_pvRows[${i}].obras=this.value"   data-money placeholder="0,00" style="width:100px"></td>
-      <td><input type="text" value="${r.capina}"  oninput="_pvRows[${i}].capina=this.value"  data-money placeholder="0,00" style="width:100px"></td>
+      <td><input type="text" value="${r.custeio}"     oninput="_pvRows[${i}].custeio=this.value"     data-money placeholder="0,00" style="width:100px"></td>
+      <td><input type="text" value="${r.capital}"     oninput="_pvRows[${i}].capital=this.value"     data-money placeholder="0,00" style="width:100px"></td>
+      <td><input type="text" value="${r.alem}"        oninput="_pvRows[${i}].alem=this.value"        data-money placeholder="0,00" style="width:100px"></td>
+      <td><input type="text" value="${r.obras}"       oninput="_pvRows[${i}].obras=this.value"       data-money placeholder="0,00" style="width:100px"></td>
+      <td><input type="text" value="${r.capina}"      oninput="_pvRows[${i}].capina=this.value"      data-money placeholder="0,00" style="width:100px"></td>
+      <td><input type="text" value="${r.rendimentos||'0,00'}" oninput="_pvRows[${i}].rendimentos=this.value" data-money placeholder="0,00" style="width:110px;border-color:rgba(56,217,169,0.4);color:var(--accent2)"></td>
       <td>
         <select onchange="_pvRows[${i}].situacao=this.value" style="background:var(--surface3);border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-size:11px;color:var(--text);width:175px">
           ${SIT_OPTIONS.map(o => `<option value="${o.value}" ${r.situacao===o.value?'selected':''}>${o.label}</option>`).join('')}
@@ -10348,7 +10361,7 @@ function renderPVTable() {
 function adicionarLinhaPV() {
   // Nova linha aponta por padrão para o TC original
   const defaultId = _pvAllItems.length ? String(_pvAllItems[0].id) : '';
-  _pvRows.push({ tcItemId: defaultId, parcela:'01', custeio:'0,00', capital:'0,00', alem:'0,00', obras:'0,00', capina:'0,00', situacao:'', mesAnoInicio:'', dataCredito:'', dataLimite:'', dataTermino:'' });
+  _pvRows.push({ tcItemId: defaultId, parcela:'01', custeio:'0,00', capital:'0,00', alem:'0,00', obras:'0,00', capina:'0,00', rendimentos:'0,00', situacao:'', mesAnoInicio:'', dataCredito:'', dataLimite:'', dataTermino:'' });
   renderPVTable();
 }
 
@@ -10375,11 +10388,12 @@ async function salvarParcelaValores() {
   const pvInserts = _pvRows.map(r => ({
     tc_id:          Number(r.tcItemId),
     parcela:        r.parcela,
-    custeio:        r.custeio    || '0,00',
-    capital:        r.capital    || '0,00',
-    alem_muros:     r.alem       || '0,00',
-    obras:          r.obras      || '0,00',
-    capina:         r.capina     || '0,00',
+    custeio:        r.custeio      || '0,00',
+    capital:        r.capital      || '0,00',
+    alem_muros:     r.alem         || '0,00',
+    obras:          r.obras        || '0,00',
+    capina:         r.capina       || '0,00',
+    rendimentos:    r.rendimentos  || '0,00',
     mes_ano_inicio: r.mesAnoInicio || null,
     data_credito:   r.dataCredito  || null,
     data_limite:    r.dataLimite   || null,
@@ -10402,7 +10416,8 @@ async function salvarParcelaValores() {
   _pvRows.forEach(r => {
     state.parcelaValores.push({
       tcId: Number(r.tcItemId), parcela: r.parcela,
-      custeio: r.custeio, capital: r.capital, alem: r.alem, obras: r.obras, capina: r.capina,
+      custeio: r.custeio, capital: r.capital, alem: r.alem, obras: r.obras, capina: r.capina, rendimentos: r.rendimentos||'0,00',
+      rendimentos: r.rendimentos || '0,00',
       mesAnoInicio: r.mesAnoInicio, dataCredito: r.dataCredito, dataLimite: r.dataLimite, dataTermino: r.dataTermino
     });
     if (r.situacao) state.parcelaSituacoes.push({ tcId: Number(r.tcItemId), parcela: r.parcela, situacao: r.situacao });
@@ -10430,7 +10445,7 @@ function getValorDistribuido(tcId, parcela, tipo) {
 function getTotalDistribuido(tcId, parcela) {
   const r = (state.parcelaValores||[]).find(v => String(v.tcId) === String(tcId) && v.parcela === parcela);
   if (!r) return null;
-  return parseMoney(r.custeio) + parseMoney(r.capital) + parseMoney(r.alem) + parseMoney(r.obras) + parseMoney(r.capina);
+  return parseMoney(r.custeio) + parseMoney(r.capital) + parseMoney(r.alem) + parseMoney(r.obras) + parseMoney(r.capina) + parseMoney(r.rendimentos||'0,00');
 }
 
 // Helper: get situacao
