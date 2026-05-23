@@ -5915,7 +5915,8 @@ function renderTCs() {
               { k:'capina',  v: parseMoney(pvR.capina||'0') },
             ].filter(t=>t.v>0) : [];
 
-            const total = tipos.reduce((s,t)=>s+t.v,0);
+            const rendimentosRow = pvR ? parseMoney(pvR.rendimentos||'0,00') : 0;
+            const total = tipos.reduce((s,t)=>s+t.v,0) + rendimentosRow;
 
             const gastoTotal = state.despesas
               .filter(d => String(d.tcVinculo)===String(item.id) && d.parcela===p)
@@ -8491,7 +8492,8 @@ function renderDashVisaoTermos() {
             { k:'obras',   v: parseMoney(pvR.obras||'0') },
             { k:'capina',  v: parseMoney(pvR.capina||'0') },
           ].filter(t=>t.v>0) : [];
-          const total = tipos.reduce((s,t)=>s+t.v,0);
+          const rendimentosRow2 = pvR ? parseMoney(pvR.rendimentos||'0,00') : 0;
+          const total = tipos.reduce((s,t)=>s+t.v,0) + rendimentosRow2;
           const gastoTotal = state.despesas.filter(d => String(d.tcVinculo)===String(itemId) && d.parcela===p)
             .reduce((s,d) => s+parseMoney(d.valor), 0);
           const pct = total>0 ? Math.round(gastoTotal/total*100) : 0;
