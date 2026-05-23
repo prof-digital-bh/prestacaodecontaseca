@@ -8733,27 +8733,30 @@ function renderDashAcomp() {
         <th style="text-align:right;padding:5px 8px;font-size:10px;text-transform:uppercase;color:var(--text-dim)">Lançado</th>
         <th style="text-align:right;padding:5px 8px;font-size:10px;text-transform:uppercase;color:var(--text-dim)">Saldo</th>
       </tr></thead><tbody>`;
+    // Rendimentos somados à rubrica com maior previsto (ou à única rubrica ativa)
+    const rubricaMaiorPrev = rubricas.length === 1 ? rubricas[0] : rubricas.reduce((best, t2) => {
+      const v    = pvRow ? parseMoney(pvRow[tipoKey[t2]]||'0') : 0;
+      const vBest = pvRow ? parseMoney(pvRow[tipoKey[best]]||'0') : 0;
+      return v > vBest ? t2 : best;
+    }, rubricas[0]);
+
     rubricas.forEach(t2 => {
-      const prev  = pvRow ? parseMoney(pvRow[tipoKey[t2]]||'0') : 0;
+      const prevBase = pvRow ? parseMoney(pvRow[tipoKey[t2]]||'0') : 0;
+      const rendExtra = (!tipo && rendimentosParc > 0 && t2 === rubricaMaiorPrev) ? rendimentosParc : 0;
+      const prev  = prevBase + rendExtra;
       const gasto = despesas.filter(d=>d.tipo===t2).reduce((s,d)=>s+parseMoney(d.valor),0);
       const sld   = prev - gasto;
       const tColor = t2==='CUSTEIO'?'var(--custeio)':t2==='CAPITAL'?'var(--capital)':t2==='ALEM_MUROS'?'var(--alem)':t2==='CAPINA'?'var(--capina)':'var(--obras)';
       html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
-        <td style="padding:5px 8px"><span style="font-size:11px;font-weight:600;color:${tColor}">${tipoLabel(t2)}</span></td>
+        <td style="padding:5px 8px">
+          <span style="font-size:11px;font-weight:600;color:${tColor}">${tipoLabel(t2)}</span>
+          ${rendExtra>0?`<span style="font-size:9px;color:var(--accent2);margin-left:6px;font-family:'DM Mono',monospace">+${fmtMoney(rendExtra)} rend.</span>`:''}
+        </td>
         <td style="padding:5px 8px;text-align:right;font-family:'DM Mono',monospace;color:var(--text-muted)">${prev>0?fmtMoney(prev):'—'}</td>
         <td style="padding:5px 8px;text-align:right;font-family:'DM Mono',monospace;color:var(--accent-red)">${gasto>0?fmtMoney(gasto):'—'}</td>
         <td style="padding:5px 8px;text-align:right;font-family:'DM Mono',monospace;color:${sld<0?'var(--accent-red)':prev>0?'var(--accent2)':'var(--text-dim)'}">${prev>0?fmtMoney(sld):gasto>0?'<span style="color:var(--accent3);font-size:10px">Sem previsão</span>':'—'}</td>
       </tr>`;
     });
-    // Linha de Rendimentos Financeiros (suplementar, sem tipo de despesa associado)
-    if (!tipo && rendimentosParc > 0) {
-      html += `<tr style="border-bottom:1px solid rgba(56,217,169,0.15);background:rgba(56,217,169,0.04)">
-        <td style="padding:5px 8px"><span style="font-size:11px;font-weight:600;color:var(--accent2)">📈 Rendimentos Financeiros</span></td>
-        <td style="padding:5px 8px;text-align:right;font-family:'DM Mono',monospace;color:var(--accent2)">${fmtMoney(rendimentosParc)}</td>
-        <td style="padding:5px 8px;text-align:right;color:var(--text-dim);font-size:11px">—</td>
-        <td style="padding:5px 8px;text-align:right;font-family:'DM Mono',monospace;color:var(--accent2)">${fmtMoney(rendimentosParc)}</td>
-      </tr>`;
-    }
     html += `</tbody></table></div>`;
   }
 
