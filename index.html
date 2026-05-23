@@ -5190,12 +5190,12 @@ function mostrarSaldoParcela(tcId, parcela) {
   const tipoMap = { CUSTEIO:'custeio', CAPITAL:'capital', ALEM_MUROS:'alem', OBRAS:'obras', CAPINA:'capina' };
   const campo = tipoMap[tipo];
 
-  // Rendimentos: suplemento geral da parcela — somados ao crédito da categoria selecionada
-  const rendimentosParc = parseMoney(pvRow.rendimentos||'0,00');
-
-  // Valor distribuído para esta parcela/tipo + rendimentos (fazem parte do crédito)
+  // Crédito real = base + rendimentos + saldo de parcelas anteriores do mesmo tipo
+  const cr = campo ? getCreditoReal(tcId, parcela, tipo) : null;
   const valorDistribBase = campo ? parseMoney(pvRow[campo]||'0,00') : 0;
-  const valorDistrib = valorDistribBase + rendimentosParc;
+  const rendimentosParc  = parseMoney(pvRow.rendimentos||'0,00');
+  const saldoAnterior    = cr ? cr.saldoAnterior : 0;
+  const valorDistrib     = cr ? cr.credito : 0;
 
   // Já gasto nesta parcela+tipo+tcId
   const gastoParc = (state.despesas||[])
@@ -5219,16 +5219,21 @@ function mostrarSaldoParcela(tcId, parcela) {
 
   const resumoCats = cats.map(c => {
     const vDistBase = parseMoney(pvRow[c.campo]||'0,00');
-    // Rendimentos são somados ao crédito da categoria ativa
-    const vDist = (c.key === tipo) ? vDistBase + rendimentosParc : vDistBase;
+    const crCat = getCreditoReal(tcId, parcela, c.key);
+    const vDist  = crCat ? crCat.credito : vDistBase;
+    const vRend  = crCat ? crCat.rendimentos : 0;
+    const vAnt   = crCat ? crCat.saldoAnterior : 0;
     const vGasto = (state.despesas||[])
       .filter(d => String(d.tcVinculo)===String(tcId) && d.parcela===parcela && d.tipo===c.key)
       .reduce((s,d)=>s+parseMoney(d.valor),0);
     const vSaldo = vDist - vGasto;
     const ativo = c.key === tipo;
+    const extras = [];
+    if (vRend > 0) extras.push(`+${fmtMoney(vRend)} rend.`);
+    if (vAnt  > 0) extras.push(`+${fmtMoney(vAnt)} ant.`);
     return `<div style="display:flex;flex-direction:column;gap:2px;min-width:80px;padding:6px 9px;border-radius:7px;background:${ativo?'rgba(79,142,247,0.12)':'transparent'};border:1px solid ${ativo?'rgba(79,142,247,0.3)':'transparent'}">
       <span style="font-size:9px;text-transform:uppercase;letter-spacing:0.5px;color:${c.color};font-weight:700">${c.label}</span>
-      <span style="font-size:10px;color:var(--text-dim)">Dist: <span style="font-family:'DM Mono',monospace;color:var(--text)">${fmtMoney(vDistBase)}</span>${ativo && rendimentosParc > 0 ? `<span style="color:var(--accent2);margin-left:3px">+${fmtMoney(rendimentosParc)}</span>` : ''}</span>
+      <span style="font-size:10px;color:var(--text-dim)">Crédito: <span style="font-family:'DM Mono',monospace;color:var(--text)">${fmtMoney(vDist)}</span>${extras.length?` <span style="color:var(--accent2);font-size:9px">${extras.join(' ')}</span>`:''}</span>
       <span style="font-size:10px;color:var(--text-dim)">Gasto: <span style="font-family:'DM Mono',monospace;color:var(--accent-red)">${fmtMoney(vGasto)}</span></span>
       <span style="font-size:10px;color:var(--text-dim)">Saldo: <span style="font-family:'DM Mono',monospace;color:${vSaldo<0?'var(--accent-red)':'var(--accent2)'};font-weight:600">${fmtMoney(vSaldo)}</span></span>
     </div>`;
@@ -5915,8 +5920,12 @@ function renderTCs() {
               { k:'capina',  v: parseMoney(pvR.capina||'0') },
             ].filter(t=>t.v>0) : [];
 
-            const rendimentosRow = pvR ? parseMoney(pvR.rendimentos||'0,00') : 0;
-            const total = tipos.reduce((s,t)=>s+t.v,0) + rendimentosRow;
+            // Crédito real: base + rendimentos + saldo anterior por tipo
+            const _tipoKeyMap5 = {custeio:'CUSTEIO',capital:'CAPITAL',alem:'ALEM_MUROS',obras:'OBRAS',capina:'CAPINA'};
+            const total = tipos.reduce((s,t) => {
+              const cr = getCreditoReal(item.id, p, _tipoKeyMap5[t.k]||t.k.toUpperCase());
+              return s + (cr ? cr.credito : t.v);
+            }, 0);
 
             const gastoTotal = state.despesas
               .filter(d => String(d.tcVinculo)===String(item.id) && d.parcela===p)
@@ -7722,8 +7731,10 @@ function imprimirAba(nomeAba, filtros) {
     const naoCreditada = situacao === 'nao_creditada';
 
     const totalGasto    = despesas.reduce((s,d) => s+_pm(d.valor), 0);
-    const rendimentosDash = (!filtroTipo && pvRow) ? _pm(pvRow.rendimentos||'0,00') : 0;
-    const totalPrevisto = pvRow ? tiposParaExibir.reduce((s,t2) => s+_pm(pvRow[tipoKey[t2]]||'0'), 0) + rendimentosDash : 0;
+    const totalPrevisto = pvRow ? tiposParaExibir.reduce((s,t2) => {
+      const cr = getCreditoReal(filtroTcId, filtroParcela, t2);
+      return s + (cr ? cr.credito : _pm(pvRow[tipoKey[t2]]||'0'));
+    }, 0) : 0;
     const saldoGeral    = totalPrevisto - totalGasto;
     const pct           = totalPrevisto > 0 ? Math.min(totalGasto/totalPrevisto*100, 100) : 0;
 
@@ -7927,7 +7938,11 @@ function imprimirAba(nomeAba, filtros) {
               const pv = pvRows.find(r=>r.parcela===p)||{};
               const sit = (sitRows.find(r=>r.parcela===p)||{}).situacao||'';
               const cu=_pm(pv.custeio),ca=_pm(pv.capital),al=_pm(pv.alem),ob=_pm(pv.obras),ci=_pm(pv.capina),re=_pm(pv.rendimentos||'0,00');
-              const prevTot = cu+ca+al+ob+ci+re;
+              // prevTot via getCreditoReal: inclui rendimentos + saldo anterior de cada tipo
+              const _tcIdImp = String(pvRows.find(r=>r.parcela===p)?.tcId || tc.id);
+              const prevTot = ['CUSTEIO','CAPITAL','ALEM_MUROS','OBRAS','CAPINA'].reduce((s,tipo) => {
+                const cr = getCreditoReal(_tcIdImp, p, tipo); return s + (cr ? cr.credito : 0);
+              }, 0) || (cu+ca+al+ob+ci+re);
               const gastoParc = despTc.filter(d=>d.parcela===p).reduce((s,d)=>s+_pm(d.valor),0);
               const saldoParc = prevTot - gastoParc;
               const naoCreditada = sit === 'nao_creditada';
@@ -8492,8 +8507,12 @@ function renderDashVisaoTermos() {
             { k:'obras',   v: parseMoney(pvR.obras||'0') },
             { k:'capina',  v: parseMoney(pvR.capina||'0') },
           ].filter(t=>t.v>0) : [];
-          const rendimentosRow2 = pvR ? parseMoney(pvR.rendimentos||'0,00') : 0;
-          const total = tipos.reduce((s,t)=>s+t.v,0) + rendimentosRow2;
+          // Crédito real: base + rendimentos + saldo anterior por tipo
+          const _tipoKeyMap6 = {custeio:'CUSTEIO',capital:'CAPITAL',alem:'ALEM_MUROS',obras:'OBRAS',capina:'CAPINA'};
+          const total = tipos.reduce((s,t) => {
+            const cr = getCreditoReal(itemId, p, _tipoKeyMap6[t.k]||t.k.toUpperCase());
+            return s + (cr ? cr.credito : t.v);
+          }, 0);
           const gastoTotal = state.despesas.filter(d => String(d.tcVinculo)===String(itemId) && d.parcela===p)
             .reduce((s,d) => s+parseMoney(d.valor), 0);
           const pct = total>0 ? Math.round(gastoTotal/total*100) : 0;
@@ -8675,10 +8694,12 @@ function renderDashAcomp() {
   const tipoKey = { CUSTEIO:'custeio', CAPITAL:'capital', ALEM_MUROS:'alem', OBRAS:'obras', CAPINA:'capina' };
   const tiposParaExibir = tipo ? [tipo] : TIPOS;
 
-  // Total geral desta parcela/tipo
+  // Total geral desta parcela/tipo — usando crédito real (base + rendimentos + saldo anterior)
   const totalGasto = despesas.reduce((s,d) => s+parseMoney(d.valor), 0);
-  const rendimentosParc = (!tipo && pvRow) ? parseMoney(pvRow.rendimentos||'0,00') : 0;
-  const totalPrevisto = pvRow ? tiposParaExibir.reduce((s,t2) => s + parseMoney(pvRow[tipoKey[t2]]||'0'), 0) + rendimentosParc : 0;
+  const totalPrevisto = pvRow ? tiposParaExibir.reduce((s,t2) => {
+    const cr = getCreditoReal(tcId, parcela, t2);
+    return s + (cr ? cr.credito : parseMoney(pvRow[tipoKey[t2]]||'0'));
+  }, 0) : 0;
   const saldoGeral = totalPrevisto - totalGasto;
 
   // Label do TC/aditivo
@@ -8735,24 +8756,19 @@ function renderDashAcomp() {
         <th style="text-align:right;padding:5px 8px;font-size:10px;text-transform:uppercase;color:var(--text-dim)">Lançado</th>
         <th style="text-align:right;padding:5px 8px;font-size:10px;text-transform:uppercase;color:var(--text-dim)">Saldo</th>
       </tr></thead><tbody>`;
-    // Rendimentos somados à rubrica com maior previsto (ou à única rubrica ativa)
-    const rubricaMaiorPrev = rubricas.length === 1 ? rubricas[0] : rubricas.reduce((best, t2) => {
-      const v    = pvRow ? parseMoney(pvRow[tipoKey[t2]]||'0') : 0;
-      const vBest = pvRow ? parseMoney(pvRow[tipoKey[best]]||'0') : 0;
-      return v > vBest ? t2 : best;
-    }, rubricas[0]);
-
     rubricas.forEach(t2 => {
-      const prevBase = pvRow ? parseMoney(pvRow[tipoKey[t2]]||'0') : 0;
-      const rendExtra = (!tipo && rendimentosParc > 0 && t2 === rubricaMaiorPrev) ? rendimentosParc : 0;
-      const prev  = prevBase + rendExtra;
+      const crT2  = getCreditoReal(tcId, parcela, t2);
+      const prev  = crT2 ? crT2.credito : (pvRow ? parseMoney(pvRow[tipoKey[t2]]||'0') : 0);
+      const extras = [];
+      if (crT2 && crT2.rendimentos > 0)   extras.push(`+${fmtMoney(crT2.rendimentos)} rend.`);
+      if (crT2 && crT2.saldoAnterior > 0) extras.push(`+${fmtMoney(crT2.saldoAnterior)} ant.`);
       const gasto = despesas.filter(d=>d.tipo===t2).reduce((s,d)=>s+parseMoney(d.valor),0);
       const sld   = prev - gasto;
       const tColor = t2==='CUSTEIO'?'var(--custeio)':t2==='CAPITAL'?'var(--capital)':t2==='ALEM_MUROS'?'var(--alem)':t2==='CAPINA'?'var(--capina)':'var(--obras)';
       html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
         <td style="padding:5px 8px">
           <span style="font-size:11px;font-weight:600;color:${tColor}">${tipoLabel(t2)}</span>
-          ${rendExtra>0?`<span style="font-size:9px;color:var(--accent2);margin-left:6px;font-family:'DM Mono',monospace">+${fmtMoney(rendExtra)} rend.</span>`:''}
+          ${extras.length?`<span style="font-size:9px;color:var(--accent2);margin-left:6px;font-family:'DM Mono',monospace">${extras.join(' ')}</span>`:''}
         </td>
         <td style="padding:5px 8px;text-align:right;font-family:'DM Mono',monospace;color:var(--text-muted)">${prev>0?fmtMoney(prev):'—'}</td>
         <td style="padding:5px 8px;text-align:right;font-family:'DM Mono',monospace;color:var(--accent-red)">${gasto>0?fmtMoney(gasto):'—'}</td>
@@ -8919,7 +8935,13 @@ function renderDashboard() {
       // Sum distributed for this parcela across TC + aditivos
       const pvRows = (state.parcelaValores||[]).filter(pv => allTcIds.some(id => String(id)===String(pv.tcId)) && pv.parcela === filtroParcela);
       if (pvRows.length) {
-        previsto = pvRows.reduce((s,pv) => s + parseMoney(pv.custeio) + parseMoney(pv.capital) + parseMoney(pv.alem) + parseMoney(pv.obras) + parseMoney(pv.capina) + parseMoney(pv.rendimentos||'0,00'), 0);
+        previsto = pvRows.reduce((s,pv) => {
+          const TIPOS_ALL = ['CUSTEIO','CAPITAL','ALEM_MUROS','OBRAS','CAPINA'];
+          return s + TIPOS_ALL.reduce((ts, tipo) => {
+            const cr = getCreditoReal(pv.tcId, filtroParcela, tipo);
+            return ts + (cr ? cr.credito : 0);
+          }, 0);
+        }, 0);
         if (notaEl) notaEl.textContent = `(distribuição da ${filtroParcela}ª parcela)`;
       } else {
         if (notaEl) notaEl.textContent = '(valor total do TC — cadastre distribuição para mais precisão)';
@@ -10447,6 +10469,68 @@ async function salvarParcelaValores() {
   closeModal('modal-parcela-valores');
   renderDashboard();
   renderTCs();
+}
+
+
+// ─── ORDEM CANÔNICA DE PARCELAS ───────────────────────────────────────────────
+const PARCELA_ORDER = ['01','02','03','04','05','U'];
+
+/**
+ * getCreditoReal(tcId, parcela, tipo)
+ *
+ * Crédito estrutural real disponível para uma parcela/tipo:
+ *   1. Valor base distribuído para o tipo nesta parcela
+ *   2. + Rendimentos financeiros registrados para esta parcela
+ *   3. + Saldo remanescente de parcelas ANTERIORES do mesmo TC e mesmo tipo
+ *
+ * Retorna { credito, base, rendimentos, saldoAnterior } ou null se sem pvRow.
+ */
+function getCreditoReal(tcId, parcela, tipo) {
+  const tipoMap = { CUSTEIO:'custeio', CAPITAL:'capital', ALEM_MUROS:'alem', OBRAS:'obras', CAPINA:'capina' };
+  const campo = tipoMap[tipo];
+  if (!campo) return null;
+
+  const pvRow = (state.parcelaValores||[]).find(v => String(v.tcId) === String(tcId) && v.parcela === parcela);
+  if (!pvRow) return null;
+
+  // 1. Base distribuída
+  const base = parseMoney(pvRow[campo]||'0,00');
+
+  // 2. Rendimentos desta parcela
+  const rendimentos = parseMoney(pvRow.rendimentos||'0,00');
+
+  // 3. Saldo remanescente de parcelas anteriores do mesmo tipo
+  const idxAtual = PARCELA_ORDER.indexOf(parcela);
+  const parcelasAnteriores = idxAtual > 0 ? PARCELA_ORDER.slice(0, idxAtual) : [];
+
+  const saldoAnterior = parcelasAnteriores.reduce((acc, p) => {
+    const pvAnt = (state.parcelaValores||[]).find(v => String(v.tcId) === String(tcId) && v.parcela === p);
+    if (!pvAnt) return acc;
+    const baseAnt = parseMoney(pvAnt[campo]||'0,00');
+    const rendAnt = parseMoney(pvAnt.rendimentos||'0,00');
+    const gastoAnt = (state.despesas||[])
+      .filter(d => String(d.tcVinculo) === String(tcId) && d.parcela === p && d.tipo === tipo)
+      .reduce((s,d) => s + parseMoney(d.valor), 0);
+    const livre = (baseAnt + rendAnt) - gastoAnt;
+    return acc + (livre > 0 ? livre : 0);
+  }, 0);
+
+  const credito = base + rendimentos + saldoAnterior;
+  return { credito, base, rendimentos, saldoAnterior };
+}
+
+/**
+ * getCreditoRealTotal(tcId, parcela)
+ * Soma getCreditoReal para todos os tipos.
+ */
+function getCreditoRealTotal(tcId, parcela) {
+  const TIPOS_ALL = ['CUSTEIO','CAPITAL','ALEM_MUROS','OBRAS','CAPINA'];
+  const pvRow = (state.parcelaValores||[]).find(v => String(v.tcId) === String(tcId) && v.parcela === parcela);
+  if (!pvRow) return null;
+  return TIPOS_ALL.reduce((s, tipo) => {
+    const cr = getCreditoReal(tcId, parcela, tipo);
+    return s + (cr ? cr.credito : 0);
+  }, 0);
 }
 
 // Helper: get distributed value for a TC+parcela+tipo
