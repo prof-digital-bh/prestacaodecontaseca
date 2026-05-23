@@ -7905,7 +7905,7 @@ function imprimirAba(nomeAba, filtros) {
       const gastoTC = despTc.reduce((s,d)=>s+_pm(d.valor),0);
       // Saldo: quando parcela filtrada, usa previsto da parcela vs gasto da parcela
       const saldo = filtroParcela
-        ? (() => { const pv=(state.parcelaValores||[]).find(r=>String(r.tcId)===String(tc.id)&&r.parcela===filtroParcela); return pv ? (_pm(pv.custeio)+_pm(pv.capital)+_pm(pv.alem)+_pm(pv.obras)+_pm(pv.capina)+_pm(pv.rendimentos||'0,00')) - gastoTC : -gastoTC; })()
+        ? (() => { const pv=(state.parcelaValores||[]).find(r=>String(r.tcId)===String(tc.id)&&r.parcela===filtroParcela); if (!pv) return -gastoTC; const prevImp=['CUSTEIO','CAPITAL','ALEM_MUROS','OBRAS','CAPINA'].reduce((s,t2)=>{const cr=getCreditoReal(tc.id,filtroParcela,t2);return s+(cr?cr.credito:0);},0); return prevImp - gastoTC; })()
         : totalTC - gastoTcTotal;
 
       const st = typeof calcStatusTC==='function' && tc.inicio && tc.fim && tc.status!=='suspenso'
@@ -7940,9 +7940,10 @@ function imprimirAba(nomeAba, filtros) {
               const cu=_pm(pv.custeio),ca=_pm(pv.capital),al=_pm(pv.alem),ob=_pm(pv.obras),ci=_pm(pv.capina),re=_pm(pv.rendimentos||'0,00');
               // prevTot via getCreditoReal: inclui rendimentos + saldo anterior de cada tipo
               const _tcIdImp = String(pvRows.find(r=>r.parcela===p)?.tcId || tc.id);
+              // prevTot via getCreditoReal (rendimentos só em CUSTEIO, sem fallback com re)
               const prevTot = ['CUSTEIO','CAPITAL','ALEM_MUROS','OBRAS','CAPINA'].reduce((s,tipo) => {
                 const cr = getCreditoReal(_tcIdImp, p, tipo); return s + (cr ? cr.credito : 0);
-              }, 0) || (cu+ca+al+ob+ci+re);
+              }, 0) || (cu+ca+al+ob+ci);
               const gastoParc = despTc.filter(d=>d.parcela===p).reduce((s,d)=>s+_pm(d.valor),0);
               const saldoParc = prevTot - gastoParc;
               const naoCreditada = sit === 'nao_creditada';
@@ -10480,8 +10481,12 @@ const PARCELA_ORDER = ['01','02','03','04','05','U'];
  *
  * Crédito estrutural real disponível para uma parcela/tipo:
  *   1. Valor base distribuído para o tipo nesta parcela
- *   2. + Rendimentos financeiros registrados para esta parcela
- *   3. + Saldo remanescente de parcelas ANTERIORES do mesmo TC e mesmo tipo
+ *   2. + Rendimentos financeiros inseridos NESTA parcela (não transita para outras)
+ *   3. + Saldo remanescente de parcelas anteriores do MESMO tcId — APENAS para CUSTEIO
+ *      Regras estritas:
+ *        - Só CUSTEIO tem carry-over de saldo entre parcelas
+ *        - O carry-over é restrito ao MESMO tcId (TC ou aditivo individualmente)
+ *        - Saldo de TC pai NÃO passa para aditivo; saldo de aditivo NÃO passa para TC pai
  *
  * Retorna { credito, base, rendimentos, saldoAnterior } ou null se sem pvRow.
  */
@@ -10493,27 +10498,33 @@ function getCreditoReal(tcId, parcela, tipo) {
   const pvRow = (state.parcelaValores||[]).find(v => String(v.tcId) === String(tcId) && v.parcela === parcela);
   if (!pvRow) return null;
 
-  // 1. Base distribuída
+  // 1. Base distribuída para este tipo nesta parcela
   const base = parseMoney(pvRow[campo]||'0,00');
 
-  // 2. Rendimentos desta parcela
-  const rendimentos = parseMoney(pvRow.rendimentos||'0,00');
+  // 2. Rendimentos: SOMENTE para CUSTEIO, SOMENTE na parcela onde foram inseridos
+  //    Capital, Além Muros, Obras e Capina NÃO recebem rendimentos
+  const rendimentos = (tipo === 'CUSTEIO') ? parseMoney(pvRow.rendimentos||'0,00') : 0;
 
-  // 3. Saldo remanescente de parcelas anteriores do mesmo tipo
-  const idxAtual = PARCELA_ORDER.indexOf(parcela);
-  const parcelasAnteriores = idxAtual > 0 ? PARCELA_ORDER.slice(0, idxAtual) : [];
+  // 3. Carry-over de saldo: EXCLUSIVO para CUSTEIO, MESMO tcId, parcelas anteriores
+  //    Não cruza entre TC pai e aditivo — cada um é isolado pelo seu tcId
+  let saldoAnterior = 0;
+  if (tipo === 'CUSTEIO') {
+    const idxAtual = PARCELA_ORDER.indexOf(parcela);
+    const parcelasAnteriores = idxAtual > 0 ? PARCELA_ORDER.slice(0, idxAtual) : [];
 
-  const saldoAnterior = parcelasAnteriores.reduce((acc, p) => {
-    const pvAnt = (state.parcelaValores||[]).find(v => String(v.tcId) === String(tcId) && v.parcela === p);
-    if (!pvAnt) return acc;
-    const baseAnt = parseMoney(pvAnt[campo]||'0,00');
-    const rendAnt = parseMoney(pvAnt.rendimentos||'0,00');
-    const gastoAnt = (state.despesas||[])
-      .filter(d => String(d.tcVinculo) === String(tcId) && d.parcela === p && d.tipo === tipo)
-      .reduce((s,d) => s + parseMoney(d.valor), 0);
-    const livre = (baseAnt + rendAnt) - gastoAnt;
-    return acc + (livre > 0 ? livre : 0);
-  }, 0);
+    saldoAnterior = parcelasAnteriores.reduce((acc, p) => {
+      const pvAnt = (state.parcelaValores||[]).find(v => String(v.tcId) === String(tcId) && v.parcela === p);
+      if (!pvAnt) return acc;
+      const baseAnt = parseMoney(pvAnt.custeio||'0,00');
+      // Rendimentos da parcela anterior também compõem o crédito custeio disponível
+      const rendAnt = parseMoney(pvAnt.rendimentos||'0,00');
+      const gastoAnt = (state.despesas||[])
+        .filter(d => String(d.tcVinculo) === String(tcId) && d.parcela === p && d.tipo === 'CUSTEIO')
+        .reduce((s,d) => s + parseMoney(d.valor), 0);
+      const livre = (baseAnt + rendAnt) - gastoAnt;
+      return acc + (livre > 0 ? livre : 0);
+    }, 0);
+  }
 
   const credito = base + rendimentos + saldoAnterior;
   return { credito, base, rendimentos, saldoAnterior };
