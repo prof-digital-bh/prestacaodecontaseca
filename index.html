@@ -1250,6 +1250,186 @@
     opacity: 1;
   }
 
+  /* ══════════════════════════════════════════
+     REC.1 — ALERTAS AUTOMÁTICOS APRIMORADOS
+     ══════════════════════════════════════════ */
+  .alerta-card {
+    display: flex;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    margin-bottom: 10px;
+    align-items: flex-start;
+    animation: alertaSlideIn 0.25s ease;
+  }
+  @keyframes alertaSlideIn {
+    from { opacity:0; transform:translateY(-6px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .alerta-card.alerta-red    { background:rgba(240,80,96,0.08);  border-color:rgba(240,80,96,0.3);  }
+  .alerta-card.alerta-orange { background:rgba(246,166,35,0.08); border-color:rgba(246,166,35,0.3); }
+  .alerta-card.alerta-blue   { background:rgba(79,142,247,0.07); border-color:rgba(79,142,247,0.25);}
+  .alerta-card.alerta-green  { background:rgba(56,217,169,0.07); border-color:rgba(56,217,169,0.25);}
+
+  .alerta-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+    line-height: 1;
+    margin-top: 1px;
+  }
+  .alerta-body { flex: 1; min-width: 0; }
+  .alerta-titulo {
+    font-size: 13.5px;
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+  .alerta-card.alerta-red    .alerta-titulo { color: var(--accent-red); }
+  .alerta-card.alerta-orange .alerta-titulo { color: var(--accent3); }
+  .alerta-card.alerta-blue   .alerta-titulo { color: var(--accent); }
+  .alerta-card.alerta-green  .alerta-titulo { color: var(--accent2); }
+
+  .alerta-desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; }
+
+  .alerta-countdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 7px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid transparent;
+  }
+  .alerta-card.alerta-red    .alerta-countdown { background:rgba(240,80,96,0.15);  color:var(--accent-red); border-color:rgba(240,80,96,0.3); }
+  .alerta-card.alerta-orange .alerta-countdown { background:rgba(246,166,35,0.15); color:var(--accent3);    border-color:rgba(246,166,35,0.3); }
+  .alerta-card.alerta-blue   .alerta-countdown { background:rgba(79,142,247,0.12); color:var(--accent);     border-color:rgba(79,142,247,0.25); }
+
+  .alerta-ref {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 5px;
+  }
+
+  /* ══════════════════════════════════════
+     REC.3 — ALERTA DE FRACIONAMENTO
+     ══════════════════════════════════════ */
+  .frac-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+  .frac-aviso  { background:rgba(246,166,35,0.15); color:var(--accent3); border:1px solid rgba(246,166,35,0.3); }
+  .frac-alerta { background:rgba(240,80,96,0.15);  color:var(--accent-red); border:1px solid rgba(240,80,96,0.3); }
+
+  /* ══════════════════════════════════════
+     REC.5 — MODALIDADE DE PAGAMENTO
+     ══════════════════════════════════════ */
+  .modal-pgto-aviso {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 13px;
+    background: rgba(240,80,96,0.08);
+    border: 1px solid rgba(240,80,96,0.25);
+    border-radius: 7px;
+    font-size: 12px;
+    color: var(--accent-red);
+    margin-top: 6px;
+    font-weight: 600;
+  }
+
+  /* ══════════════════════════════════════
+     REC.7 — MOBILE RESPONSIVO
+     ══════════════════════════════════════ */
+  @media (max-width: 900px) {
+    .main { padding: 20px 16px 40px; }
+    .page-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+    .page-header .gap-8 { flex-wrap: wrap; }
+    .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-card { padding: 14px 14px; }
+    .stat-value { font-size: 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid-3 { grid-template-columns: 1fr; }
+    .modal { padding: 18px 16px; max-height: 92vh; }
+    .modal-overlay.open { align-items: flex-end; }
+    .modal { border-radius: 16px 16px 0 0; width: 100% !important; max-width: 100% !important; }
+    .alerta-card { gap: 10px; padding: 12px 14px; }
+    /* Dashboard: cards empilhados no mobile */
+    #section-dashboard .card { padding: 16px; }
+    /* Checklist: legível em telas pequenas */
+    .check-item { flex-direction: column; gap: 8px; }
+    .doc-obrig-item { flex-direction: column; gap: 6px; }
+    .doi-actions { justify-content: flex-start; }
+    /* Tabelas: scroll horizontal */
+    .table-wrap { -webkit-overflow-scrolling: touch; }
+    /* Ocultar colunas menos críticas em mobile */
+    .mobile-hide { display: none !important; }
+    /* Nav mobile burger */
+    .sidebar {
+      position: fixed;
+      left: -260px;
+      top: 0;
+      height: 100vh;
+      z-index: 500;
+      transition: left 0.25s ease;
+      display: flex !important;
+    }
+    .sidebar.mobile-open { left: 0; box-shadow: 4px 0 24px rgba(0,0,0,0.5); }
+    .mobile-nav-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 499;
+    }
+    .mobile-nav-overlay.visible { display: block; }
+    .mobile-topbar {
+      display: flex !important;
+    }
+  }
+  .mobile-topbar {
+    display: none;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    align-items: center;
+    gap: 12px;
+  }
+  .mobile-menu-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .mobile-topbar-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    flex: 1;
+  }
+
   /* PRINT STYLES */
   @media print {
     .sidebar, .page-header .btn, .action-btn, .modal-overlay { display: none !important; }
@@ -1299,6 +1479,14 @@
     <div class="login-error" id="login-erro"></div>
   </div>
 </div>
+
+<!-- TOPBAR MOBILE -->
+<div class="mobile-topbar" id="mobile-topbar">
+  <div class="mobile-menu-btn" onclick="toggleMobileNav()">☰</div>
+  <div class="mobile-topbar-title" id="mobile-topbar-title">Dashboard</div>
+  <button class="btn btn-primary" style="font-size:12px;padding:7px 12px" onclick="showSection('despesas');openModal('modal-despesa')">+ Despesa</button>
+</div>
+<div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileNav()"></div>
 
 <div class="app-shell">
 
@@ -4638,6 +4826,24 @@ init();
         <label>Valor (R$)</label>
         <input type="text" id="edit-desp-valor" placeholder="0,00" data-money>
       </div>
+
+      <!-- MODALIDADE DE PAGAMENTO — Rec.5 (edição) -->
+      <div class="field">
+        <label style="color:var(--accent)">Modalidade de Pagamento <span style="font-size:10px;color:var(--text-dim);font-weight:400">(Art. 13, Dec. 1.134/2024)</span></label>
+        <select id="edit-desp-modalidade-pgto" onchange="validarModalidadePgtoEdit()">
+          <option value="">— Selecione —</option>
+          <option value="TED">TED — Transferência Eletrônica Disponível</option>
+          <option value="DOC">DOC — Documento de Ordem de Crédito</option>
+          <option value="PIX">PIX / Transferência Digital</option>
+          <option value="BOLETO">Boleto Bancário</option>
+          <option value="DEBITO_CONTA">Débito em Conta</option>
+          <option value="ESPECIE">⛔ Dinheiro em Espécie (VEDADO)</option>
+        </select>
+        <div id="aviso-pgto-especie-edit" class="modal-pgto-aviso" style="display:none">
+          ⛔ Pagamento em espécie é VEDADO pelo Art. 13 do Decreto nº 1.134/2024.
+        </div>
+      </div>
+
       <div class="field form-full">
         <label>Descrição / Objeto</label>
         <input type="text" id="edit-desp-descricao" placeholder="Ex.: Material de papelaria...">
@@ -4841,6 +5047,24 @@ init();
         <label>Valor (R$)</label>
         <input type="text" id="d-valor" placeholder="0,00" data-money>
       </div>
+
+      <!-- MODALIDADE DE PAGAMENTO — Rec.5 -->
+      <div class="field">
+        <label style="color:var(--accent)">⑤ Modalidade de Pagamento <span style="color:var(--accent-red)">*</span> <span style="font-size:10px;color:var(--text-dim);font-weight:400">(Art. 13, Decreto 1.134/2024)</span></label>
+        <select id="d-modalidade-pgto" onchange="validarModalidadePgto()">
+          <option value="">— Selecione a forma de pagamento —</option>
+          <option value="TED">TED — Transferência Eletrônica Disponível</option>
+          <option value="DOC">DOC — Documento de Ordem de Crédito</option>
+          <option value="PIX">PIX / Transferência Digital</option>
+          <option value="BOLETO">Boleto Bancário</option>
+          <option value="DEBITO_CONTA">Débito em Conta</option>
+          <option value="ESPECIE">⛔ Dinheiro em Espécie (VEDADO)</option>
+        </select>
+        <div id="aviso-pgto-especie" class="modal-pgto-aviso" style="display:none">
+          ⛔ Pagamento em espécie é VEDADO pelo Art. 13 do Decreto nº 1.134/2024. Selecione outra modalidade.
+        </div>
+      </div>
+
       <div class="field form-full">
         <label>Descrição / Objeto</label>
         <input type="text" id="d-descricao" placeholder="Ex.: Material de papelaria, serviços de manutenção...">
@@ -5363,10 +5587,15 @@ async function salvarDespesa() {
     justificativa: document.getElementById('d-justificativa').value,
     justificativaPend: document.getElementById('d-justificativa-pend') ? document.getElementById('d-justificativa-pend').value : '',
     confirmacaoPatrimonio: document.getElementById('d-confirmacao-patrimonio') ? document.getElementById('d-confirmacao-patrimonio').value : null,
+    modalidadePgto: document.getElementById('d-modalidade-pgto') ? document.getElementById('d-modalidade-pgto').value : '',
     id: Date.now()
   };
   if (!d.credor || !d.valor) { alert('Preencha ao menos o credor e o valor.'); return; }
   if (!d.tcVinculo) { alert('Selecione o TC ou Aditivo vinculado.'); return; }
+  // Rec.5 — bloquear pagamento em espécie
+  if (d.modalidadePgto === 'ESPECIE') {
+    alert('⛔ Pagamento em espécie é VEDADO pelo Art. 13 do Decreto nº 1.134/2024.\n\nSelecione outra modalidade de pagamento (TED, PIX, DOC, Boleto ou Débito em Conta).'); return;
+  }
   // Validar período permitido: data_credito ≤ nfData ≤ data_limite
   if (d.nfData) {
     const pvPeriodo = (state.parcelaValores||[]).find(r => String(r.tcId)===String(d.tcVinculo) && r.parcela===d.parcela);
@@ -5524,7 +5753,8 @@ function despesaToRow(d) {
     contrato_nf_pend: d.contratoNfPend || null,
     justificativa: d.justificativa || null,
     justificativa_pend: d.justificativaPend || null,
-    confirmacao_patrimonio: d.confirmacaoPatrimonio || null
+    confirmacao_patrimonio: d.confirmacaoPatrimonio || null,
+    modalidade_pgto: d.modalidadePgto || null
   };
 }
 
@@ -5554,7 +5784,8 @@ function rowToDespesa(r) {
     contratoNfPend: r.contrato_nf_pend,
     justificativa: r.justificativa,
     justificativaPend: r.justificativa_pend,
-    confirmacaoPatrimonio: r.confirmacao_patrimonio || null
+    confirmacaoPatrimonio: r.confirmacao_patrimonio || null,
+    modalidadePgto: r.modalidade_pgto || ''
   };
 }
 
@@ -5629,8 +5860,7 @@ async function carregarDados() {
     id: r.id,
     tcId: r.tc_id,
     parcela: r.parcela,
-    situacao: r.situacao || '',
-    comprobatorioUrl: r.comprobatorio_url || ''
+    situacao: r.situacao || ''
   }));
 }
 
@@ -6324,6 +6554,9 @@ function editarDespesa(id) {
   setEditInp('edit-d-contrato-nf-pend',d.contratoNfPend);
   setEditSel('edit-d-justificativa',   d.justificativa   || 'sim');
   setEditInp('edit-d-justificativa-pend',d.justificativaPend);
+  // Preencher modalidade de pagamento
+  const modalEl = document.getElementById('edit-desp-modalidade-pgto');
+  if (modalEl) modalEl.value = d.modalidadePgto || '';
   // Mostra/esconde campos de pendência conforme valor atual
   ['orcamentos','certidoes','cartao-cnpj','comprovante-pgto','contrato-nf','justificativa'].forEach(k => toggleEditPendenciaField(k));
   openModal('modal-edit-despesa');
@@ -6362,7 +6595,12 @@ async function salvarEdicaoDespesa() {
   d.justificativa       = getEditSel('edit-d-justificativa');
   d.justificativaPend   = getEditInp('edit-d-justificativa-pend');
   d.confirmacaoPatrimonio = getEditSel('edit-d-confirmacao-patrimonio') || null;
+  d.modalidadePgto = getEditSel('edit-desp-modalidade-pgto') || '';
   if (!d.credor || !d.valor) { alert('Preencha ao menos o credor e o valor.'); return; }
+  // Rec.5 — bloquear pagamento em espécie na edição
+  if (d.modalidadePgto === 'ESPECIE') {
+    alert('⛔ Pagamento em espécie é VEDADO pelo Art. 13 do Decreto nº 1.134/2024.\n\nSelecione outra modalidade.'); return;
+  }
   setSyncStatus('syncing');
   const { error } = await supa.from('despesas').update(despesaToRow(d)).eq('id', id);
   if (error) { setSyncStatus('error'); alert('Erro ao atualizar: ' + error.message); return; }
@@ -7797,21 +8035,6 @@ function imprimirAba(nomeAba, filtros) {
       ? `<span class="badge" style="background:${sitBg[situacao]||'#eee'};color:${sitColors[situacao]||'#555'}">${sitLabels[situacao]||situacao}</span>`
       : '';
 
-    // Composição do previsto total para o card
-    const composicaoPrevisto = pvRow ? (() => {
-      let baseTotal = 0, rendTotal = 0, saldoAntTotal = 0;
-      tiposParaExibir.forEach(t2 => {
-        const cr = getCreditoReal(filtroTcId, filtroParcela, t2);
-        if (cr) { baseTotal += cr.base; rendTotal += cr.rendimentos; saldoAntTotal += cr.saldoAnterior; }
-      });
-      const extras = [];
-      if (rendTotal > 0)    extras.push(`<span style="color:#1a9e6e">+ ${_fmt(rendTotal)} rendimentos</span>`);
-      if (saldoAntTotal > 0) extras.push(`<span style="color:#2980b9">+ ${_fmt(saldoAntTotal)} saldo anterior</span>`);
-      return extras.length
-        ? `<div style="font-size:11px;color:#888;margin-top:4px;line-height:1.6">${_fmt(baseTotal)} base&nbsp;${extras.join('&nbsp;')}</div>`
-        : '';
-    })() : '';
-
     // ── Cards de totais ──
     const saldoCardHtml = naoCreditada
       ? `<span class="badge badge-red" style="font-size:13px;padding:4px 12px">Indisponível</span>`
@@ -7822,7 +8045,6 @@ function imprimirAba(nomeAba, filtros) {
         <div class="info-box">
           <div class="lbl">Previsto (Parcela)</div>
           <div class="val mono">${totalPrevisto>0?_fmt(totalPrevisto):'Não configurado'}</div>
-          ${composicaoPrevisto}
         </div>
         <div class="info-box">
           <div class="lbl">Lançado (${despesas.length} desp.)</div>
@@ -7846,8 +8068,7 @@ function imprimirAba(nomeAba, filtros) {
 
     // ── Tabela de rubricas ──
     const rubricas = tiposParaExibir.filter(t2 => {
-      const cr   = pvRow ? getCreditoReal(filtroTcId, filtroParcela, t2) : null;
-      const prev = cr ? cr.credito : (pvRow ? _pm(pvRow[tipoKey[t2]]||'0') : 0);
+      const prev  = pvRow ? _pm(pvRow[tipoKey[t2]]||'0') : 0;
       const gasto = despesas.filter(d=>d.tipo===t2).reduce((s,d)=>s+_pm(d.valor),0);
       return prev > 0 || gasto > 0;
     });
@@ -7857,29 +8078,19 @@ function imprimirAba(nomeAba, filtros) {
       <table>
         <thead><tr>
           <th>Rubrica</th>
-          <th class="right">Base</th>
-          <th class="right" style="color:#1a9e6e">+ Rendimentos</th>
-          <th class="right" style="color:#2980b9">+ Saldo Anterior</th>
-          <th class="right">= Previsto Real</th>
+          <th class="right">Previsto</th>
           <th class="right">Lançado</th>
           <th class="right">Saldo</th>
         </tr></thead>
         <tbody>
           ${rubricas.map(t2 => {
-            const cr        = pvRow ? getCreditoReal(filtroTcId, filtroParcela, t2) : null;
-            const base      = pvRow ? _pm(pvRow[tipoKey[t2]]||'0') : 0;
-            const rendimentos   = cr ? cr.rendimentos   : 0;
-            const saldoAnterior = cr ? cr.saldoAnterior : 0;
-            const prev      = cr ? cr.credito : base;
-            const gasto     = despesas.filter(d=>d.tipo===t2).reduce((s,d)=>s+_pm(d.valor),0);
-            const sld       = prev - gasto;
-            const naoCred   = naoCreditada;
+            const prev  = pvRow ? _pm(pvRow[tipoKey[t2]]||'0') : 0;
+            const gasto = despesas.filter(d=>d.tipo===t2).reduce((s,d)=>s+_pm(d.valor),0);
+            const sld   = prev - gasto;
+            const naoCred = naoCreditada;
             return `<tr>
               <td><span style="font-weight:600;color:${tipoColor[t2]||'#333'}">${_tl(t2)}</span></td>
-              <td class="right mono muted">${base>0?_fmt(base):'—'}</td>
-              <td class="right mono" style="color:#1a9e6e">${rendimentos>0?'+'+_fmt(rendimentos):'—'}</td>
-              <td class="right mono" style="color:#2980b9">${saldoAnterior>0?'+'+_fmt(saldoAnterior):'—'}</td>
-              <td class="right mono bold">${prev>0?_fmt(prev):'—'}</td>
+              <td class="right mono muted">${prev>0?_fmt(prev):'—'}</td>
               <td class="right mono" style="color:#c0392b">${gasto>0?_fmt(gasto):'—'}</td>
               <td class="right">${naoCred
                 ? '<span class="badge badge-red">Indisponível</span>'
@@ -8000,27 +8211,20 @@ function imprimirAba(nomeAba, filtros) {
             <th>Parcela</th>
             <th class="right">Custeio</th><th class="right">Capital</th>
             <th class="right">Além dos Muros</th><th class="right">Obras</th><th class="right">Capina</th>
-            <th class="right" style="color:#1a9e6e">+ Rendimentos</th>
-            <th class="right" style="color:#2980b9">+ Saldo Anterior</th>
-            <th class="right">= Total Previsto</th><th class="right">Total Gasto</th><th class="right">Saldo</th>
+            <th class="right" style="color:#1a9e6e">Rendimentos</th>
+            <th class="right">Total Previsto</th><th class="right">Total Gasto</th><th class="right">Saldo</th>
             <th>Situação</th>
           </tr></thead>
           <tbody>
             ${parcelas.map(p => {
               const pv = pvRows.find(r=>r.parcela===p)||{};
               const sit = (sitRows.find(r=>r.parcela===p)||{}).situacao||'';
-              const cu=_pm(pv.custeio),ca=_pm(pv.capital),al=_pm(pv.alem),ob=_pm(pv.obras),ci=_pm(pv.capina);
+              const cu=_pm(pv.custeio),ca=_pm(pv.capital),al=_pm(pv.alem),ob=_pm(pv.obras),ci=_pm(pv.capina),re=_pm(pv.rendimentos||'0,00');
+              // prevTot via getCreditoReal: inclui rendimentos + saldo anterior de cada tipo
               const _tcIdImp = String(pvRows.find(r=>r.parcela===p)?.tcId || tc.id);
-              // Agrega rendimentos e saldo anterior de todos os tipos
-              let totalRendimentos = 0, totalSaldoAnterior = 0;
+              // prevTot via getCreditoReal (rendimentos só em CUSTEIO, sem fallback com re)
               const prevTot = ['CUSTEIO','CAPITAL','ALEM_MUROS','OBRAS','CAPINA'].reduce((s,tipo) => {
-                const cr = getCreditoReal(_tcIdImp, p, tipo);
-                if (cr) {
-                  totalRendimentos   += cr.rendimentos   || 0;
-                  totalSaldoAnterior += cr.saldoAnterior || 0;
-                  return s + cr.credito;
-                }
-                return s;
+                const cr = getCreditoReal(_tcIdImp, p, tipo); return s + (cr ? cr.credito : 0);
               }, 0) || (cu+ca+al+ob+ci);
               const gastoParc = despTc.filter(d=>d.parcela===p).reduce((s,d)=>s+_pm(d.valor),0);
               const saldoParc = prevTot - gastoParc;
@@ -8035,8 +8239,7 @@ function imprimirAba(nomeAba, filtros) {
                 <td class="right mono">${al?_fmt(al):'—'}</td>
                 <td class="right mono">${ob?_fmt(ob):'—'}</td>
                 <td class="right mono">${ci?_fmt(ci):'—'}</td>
-                <td class="right mono" style="color:#1a9e6e">${totalRendimentos>0?'+'+_fmt(totalRendimentos):'—'}</td>
-                <td class="right mono" style="color:#2980b9">${totalSaldoAnterior>0?'+'+_fmt(totalSaldoAnterior):'—'}</td>
+                <td class="right mono" style="color:#1a9e6e">${re?_fmt(re):'—'}</td>
                 <td class="right mono bold">${_fmt(prevTot)}</td>
                 <td class="right mono" style="color:#c0392b">${_fmt(gastoParc)}</td>
                 <td class="right">${saldoHtml}</td>
@@ -9931,138 +10134,303 @@ async function atualizarAlertas() {
   if (btn) { btn.disabled = false; btn.textContent = '↺ Atualizar'; }
 }
 
+// ══════════════════════════════════════════════════════════════
+//  REC.1 — ALERTAS AUTOMÁTICOS APRIMORADOS (cards + countdown)
+// ══════════════════════════════════════════════════════════════
 function renderAlertas() {
   const el = document.getElementById('alertas-automaticos');
   if (!el) return;
-  const alertas = [];
+
   const hoje = new Date(); hoje.setHours(0,0,0,0);
   const tcs = state.tcs || [];
-
-  // ── ALERTAS DE PRAZO DE PRESTAÇÃO DE CONTAS ──
-  // Regra:
-  //   data_limite         = último dia para gastar (lançar despesas)
-  //   data_limite + 30d   = prazo final para ENTREGAR a prestação à SEDUC/FUNEC
-  // Situações que indicam prestação já entregue (sem alerta de prazo):
-  //   aprovada | analise | ajuste | ressalvas
   const parcelaNomesAlerta = { '01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única','UI':'Única(i)','UII':'Única(ii)','ALI':'Alimentação','SVC':'Serviços','MAT':'Materialidade' };
   const SIT_ENTREGUE = ['aprovada', 'analise', 'ajuste', 'ressalvas'];
-  const tipoNomesAlerta = { custeio: 'Custeio', capital: 'Capital', alem: 'Além dos Muros', obras: 'Obras', capina: 'Capina' };
-  const tipoChaves = ['custeio', 'capital', 'alem', 'obras', 'capina'];
+  const tipoNomesAlerta = { custeio:'Custeio', capital:'Capital', alem:'Além dos Muros', obras:'Obras', capina:'Capina' };
+  const tipoChaves = ['custeio','capital','alem','obras','capina'];
 
+  // Estrutura de alerta: { nivel:'critico'|'urgente'|'atencao'|'info', titulo, desc, countdown, ref }
+  const alertas = [];
+
+  // ── 1. PRAZOS DE PRESTAÇÃO DE CONTAS POR PARCELA ──────────────────
   (state.parcelaValores||[]).forEach(pv => {
-    const tcItem = (state.tcs||[]).find(t => String(t.id) === String(pv.tcId));
+    const tcItem = tcs.find(t => String(t.id) === String(pv.tcId));
     if (!tcItem) return;
-
-    // Verificar situação — se já foi entregue à SEDUC/FUNEC, não alertar sobre prazo
-    const sitRec = (state.parcelaSituacoes||[]).find(s =>
-      String(s.tcId) === String(pv.tcId) && s.parcela === pv.parcela
-    );
+    const sitRec = (state.parcelaSituacoes||[]).find(s => String(s.tcId)===String(pv.tcId) && s.parcela===pv.parcela);
     const situacao = sitRec ? sitRec.situacao : '';
-    if (SIT_ENTREGUE.includes(situacao)) return; // prestação já enviada, sem alerta
+    if (SIT_ENTREGUE.includes(situacao)) return;
 
-    // Usar dataLimite da parcela; se ausente, usar data de fim do TC como fallback
     const dataLimiteSrc = pv.dataLimite || tcItem.fim || null;
     if (!dataLimiteSrc) return;
-
-    // Identificar quais tipos têm valor > 0 nesta parcela
-    const tiposAtivos = tipoChaves.filter(t => parseMoney(pv[t] || '0') > 0);
-
+    const tiposAtivos = tipoChaves.filter(t => parseMoney(pv[t]||'0') > 0);
     try {
-      const dataLimite  = new Date(dataLimiteSrc + 'T00:00:00');
-      // Prazo de entrega = data_limite + 30 dias
-      const prazoEntrega = new Date(dataLimite);
-      prazoEntrega.setDate(prazoEntrega.getDate() + 30);
-
-      const diffGasto    = Math.round((dataLimite  - hoje) / (1000*60*60*24)); // dias até limite de gastos
-      const diffEntrega  = Math.round((prazoEntrega - hoje) / (1000*60*60*24)); // dias até prazo de entrega
-
-      const nomeParc    = parcelaNomesAlerta[pv.parcela] || `Parcela ${pv.parcela}`;
-      const ehAditivo   = !!tcItem.tcPaiId;
-      // Encontrar TC pai para nome completo
-      const tcPai       = ehAditivo ? (state.tcs||[]).find(t => String(t.id) === String(tcItem.tcPaiId)) : null;
-      const numTC       = ehAditivo
-        ? `TC ${tcPai ? tcPai.numero : '?'} — Aditivo ${tcItem.numero}`
-        : `TC ${tcItem.numero}`;
-      const limiteFmt   = dataLimite.toLocaleDateString('pt-BR');
-      const prazoFmt    = prazoEntrega.toLocaleDateString('pt-BR');
-      const semDataLimite = !pv.dataLimite; // aviso de que está usando data fim do TC
-
-      // Rótulo de tipos para exibição no alerta
-      const tiposLabel  = tiposAtivos.length > 0
-        ? ` [${tiposAtivos.map(t => tipoNomesAlerta[t]).join(' · ')}]`
-        : '';
-      const semLimiteSufixo = semDataLimite ? ' ⚠ Data limite não definida — usando fim do TC.' : '';
+      const dataLimite = new Date(dataLimiteSrc + 'T00:00:00');
+      const prazoEntrega = new Date(dataLimite); prazoEntrega.setDate(prazoEntrega.getDate() + 30);
+      const diffGasto   = Math.round((dataLimite  - hoje)/(1000*60*60*24));
+      const diffEntrega = Math.round((prazoEntrega - hoje)/(1000*60*60*24));
+      const nomeParc = parcelaNomesAlerta[pv.parcela] || `Parcela ${pv.parcela}`;
+      const tcPai    = tcItem.tcPaiId ? tcs.find(t => String(t.id)===String(tcItem.tcPaiId)) : null;
+      const numTC    = tcItem.tcPaiId ? `TC ${tcPai?.numero||'?'} — Adit. ${tcItem.numero}` : `TC ${tcItem.numero}`;
+      const limiteFmt  = dataLimite.toLocaleDateString('pt-BR');
+      const prazoFmt   = prazoEntrega.toLocaleDateString('pt-BR');
+      const tiposStr   = tiposAtivos.length ? tiposAtivos.map(t=>tipoNomesAlerta[t]).join(' · ') : '';
+      const semLimObs  = !pv.dataLimite ? ' (usando data de fim do TC como referência)' : '';
 
       if (diffEntrega < 0) {
-        alertas.push({ tipo: 'red', msg: `📋 ${numTC} — ${nomeParc}${tiposLabel}: PRAZO DE ENTREGA VENCIDO há ${Math.abs(diffEntrega)} dia(s) (prazo: ${prazoFmt}). Entregue a prestação à SEDUC/FUNEC imediatamente!${semLimiteSufixo}` });
+        alertas.push({ nivel:'critico', icon:'🚨',
+          titulo: `Prazo VENCIDO — ${numTC} · ${nomeParc}`,
+          desc: `O prazo para entrega da prestação de contas à SEDUC/FUNEC venceu há <strong>${Math.abs(diffEntrega)} dia(s)</strong> (prazo era ${prazoFmt}). Providencie a regularização imediatamente para evitar Tomada de Contas Especial.${semLimObs}`,
+          countdown: `Vencido há ${Math.abs(diffEntrega)} dia(s)`,
+          ref: 'Art. 28, §2º · Decreto nº 1.134/2024' });
       } else if (diffGasto < 0 && diffEntrega >= 0) {
-        alertas.push({ tipo: 'red', msg: `📋 ${numTC} — ${nomeParc}${tiposLabel}: Período de gastos encerrado (limite: ${limiteFmt}). Entregue a prestação até ${prazoFmt} (${diffEntrega} dia(s) restantes).${semLimiteSufixo}` });
+        alertas.push({ nivel:'critico', icon:'📋',
+          titulo: `Período de gastos encerrado — ${numTC} · ${nomeParc}`,
+          desc: `O prazo para lançar despesas terminou em ${limiteFmt}${tiposStr?' ['+tiposStr+']':''}. Você tem <strong>${diffEntrega} dia(s)</strong> para entregar a prestação de contas à SEDUC/FUNEC (até ${prazoFmt}).${semLimObs}`,
+          countdown: `${diffEntrega} dia(s) para entrega`,
+          ref: 'Art. 28, §1º · Decreto nº 1.134/2024' });
+      } else if (diffGasto <= 7) {
+        alertas.push({ nivel:'critico', icon:'⏰',
+          titulo: `Últimos ${diffGasto} dia(s) para gastar — ${numTC} · ${nomeParc}`,
+          desc: `O prazo para lançar despesas ${tiposStr?'['+tiposStr+'] ':' '}encerra em <strong>${limiteFmt}</strong>. Após isso, você tem até ${prazoFmt} para entregar a prestação. Finalize os lançamentos pendentes.${semLimObs}`,
+          countdown: `${diffGasto} dia(s) para o limite de gastos`,
+          ref: 'Art. 7º, III · Decreto nº 1.134/2024' });
       } else if (diffGasto <= 15) {
-        alertas.push({ tipo: 'red', msg: `📋 ${numTC} — ${nomeParc}${tiposLabel}: Último prazo para gastar em ${diffGasto} dia(s) — ${limiteFmt}. Organize os documentos. Entrega da prestação até ${prazoFmt}.${semLimiteSufixo}` });
+        alertas.push({ nivel:'urgente', icon:'⚠️',
+          titulo: `Atenção: ${diffGasto} dias para encerrar gastos — ${numTC} · ${nomeParc}`,
+          desc: `Prazo de gastos encerra em <strong>${limiteFmt}</strong>${tiposStr?' ['+tiposStr+']':''}. Entrega da prestação até ${prazoFmt}.${semLimObs}`,
+          countdown: `${diffGasto} dias restantes`,
+          ref: 'Art. 28, §1º · Decreto nº 1.134/2024' });
       } else if (diffGasto <= 30) {
-        alertas.push({ tipo: 'orange', msg: `📋 ${numTC} — ${nomeParc}${tiposLabel}: Prazo de gastos vence em ${diffGasto} dia(s) — ${limiteFmt}. Entrega da prestação até ${prazoFmt}.${semLimiteSufixo}` });
+        alertas.push({ nivel:'atencao', icon:'📅',
+          titulo: `Prazo de gastos vence em ${diffGasto} dias — ${numTC} · ${nomeParc}`,
+          desc: `Limite de gastos: <strong>${limiteFmt}</strong>${tiposStr?' ['+tiposStr+']':''}. Prazo de entrega da prestação: ${prazoFmt}.${semLimObs}`,
+          countdown: `${diffGasto} dias`,
+          ref: 'Art. 28, §1º · Decreto nº 1.134/2024' });
       } else if (diffGasto <= 60) {
-        alertas.push({ tipo: 'blue', msg: `📋 ${numTC} — ${nomeParc}${tiposLabel}: Prazo de gastos vence em ${diffGasto} dia(s) — ${limiteFmt}. Entrega da prestação até ${prazoFmt}.${semLimiteSufixo}` });
+        alertas.push({ nivel:'info', icon:'ℹ️',
+          titulo: `Lembrete: ${numTC} · ${nomeParc} ${tiposStr?'['+tiposStr+'] ':''}— vence em ${diffGasto} dias`,
+          desc: `Limite para lançar despesas: <strong>${limiteFmt}</strong>. Entrega da prestação até ${prazoFmt}.${semLimObs}`,
+          countdown: `${diffGasto} dias`,
+          ref: 'Art. 28 · Decreto nº 1.134/2024' });
       }
     } catch(e) {}
   });
 
-  // Verificar gastos acima de 50k por fornecedor em cada TC/Aditivo
+  // ── 2. PRAZO DE DEVOLUÇÃO DE SALDO (encerramento do TC) ──────────────
+  tcs.filter(tc => !tc.tcPaiId && tc.fim && tc.status !== 'suspenso').forEach(tc => {
+    try {
+      const fimTC = new Date(tc.fim + 'T00:00:00');
+      const prazoDevol = new Date(fimTC); prazoDevol.setDate(prazoDevol.getDate() + 30);
+      const diffFim   = Math.round((fimTC    - hoje)/(1000*60*60*24));
+      const diffDevol = Math.round((prazoDevol - hoje)/(1000*60*60*24));
+      // Calcular saldo total deste TC
+      const aditivos = tcs.filter(a => a.tcPaiId === tc.id);
+      const allIds   = [tc.id, ...aditivos.map(a=>a.id)];
+      const gastoTotal = (state.despesas||[]).filter(d=>allIds.some(id=>String(id)===String(d.tcVinculo))).reduce((s,d)=>s+parseMoney(d.valor),0);
+      const valorTotal = parseMoney(tc.valor) + aditivos.reduce((s,a)=>s+parseMoney(a.valor),0);
+      const saldo = valorTotal - gastoTotal;
+
+      if (diffFim < 0 && diffDevol >= 0 && saldo > 100) {
+        alertas.push({ nivel:'critico', icon:'💰',
+          titulo: `Devolver saldo ao Município — TC ${tc.numero}`,
+          desc: `O TC encerrou em ${fimTC.toLocaleDateString('pt-BR')}. Saldo estimado: <strong>R$ ${fmtMoneyStr(saldo)}</strong> (mais eventuais rendimentos). Devolva via GEA ao Município até <strong>${prazoDevol.toLocaleDateString('pt-BR')}</strong> — restam ${diffDevol} dia(s).`,
+          countdown: `${diffDevol} dia(s) para devolução`,
+          ref: 'Art. 14, §único · Decreto nº 1.134/2024' });
+      } else if (diffFim >= 0 && diffFim <= 30) {
+        alertas.push({ nivel:'atencao', icon:'📆',
+          titulo: `TC ${tc.numero} vence em ${diffFim} dia(s) — organize o encerramento`,
+          desc: `Vigência encerra em ${fimTC.toLocaleDateString('pt-BR')}. Após o encerramento: (1) entregue a prestação de contas final em até 30 dias, e (2) devolva o saldo remanescente ao Município.`,
+          countdown: `${diffFim} dia(s) para encerramento`,
+          ref: 'Arts. 14 e 28 · Decreto nº 1.134/2024' });
+      }
+    } catch(e) {}
+  });
+
+  // ── 3. FRACIONAMENTO DE DESPESAS (Rec.3 integrada) ───────────────────
   tcs.forEach(tc => {
-    const fornMap = {};
-    state.despesas.filter(d => String(d.tcVinculo) === String(tc.id)).forEach(d => {
+    const tcPaiRef = tc.tcPaiId ? tcs.find(t=>String(t.id)===String(tc.tcPaiId)) : null;
+    const tcLabel  = tc.tcPaiId ? `TC ${tcPaiRef?.numero||'?'} — Adit. ${tc.numero}` : `TC ${tc.numero}`;
+    const desp     = (state.despesas||[]).filter(d=>String(d.tcVinculo)===String(tc.id));
+
+    // Agrupa por fornecedor E tipo para detectar fracionamento
+    const mapForn = {};
+    desp.forEach(d => {
       const key = d.cnpj || d.credor;
-      if (!fornMap[key]) fornMap[key] = { nome: d.credor, total: 0 };
-      fornMap[key].total += parseMoney(d.valor);
+      if (!mapForn[key]) mapForn[key] = { nome:d.credor, totalServico:0, totalObra:0, todos:[] };
+      const val = parseMoney(d.valor);
+      if (d.tipo === 'OBRAS') mapForn[key].totalObra += val;
+      else mapForn[key].totalServico += val;
+      mapForn[key].todos.push(val);
     });
-    const tcPaiRef = tc.tcPaiId ? tcs.find(t => String(t.id) === String(tc.tcPaiId)) : null;
-    const tcLabel = tc.tcPaiId
-      ? `TC ${tcPaiRef ? tcPaiRef.numero : '?'} — Aditivo ${tc.numero}`
-      : `TC ${tc.numero}`;
-    Object.values(fornMap).forEach(f => {
-      if (f.total > 50000) {
-        alertas.push({ tipo: 'orange', msg: `⚠ ${tcLabel} — Fornecedor "${f.nome}": total acumulado R$ ${fmtMoneyStr(f.total)} ultrapassa R$ 50.000. Verifique se foi realizado procedimento competitivo conforme Art. 16 do Decreto 1134/2024.` });
+
+    Object.values(mapForn).forEach(f => {
+      if (f.totalObra > 100000) {
+        alertas.push({ nivel:'urgente', icon:'🔍',
+          titulo: `Possível fracionamento — ${tcLabel} · ${f.nome}`,
+          desc: `Total de Obras/Reforma para este fornecedor: <strong>R$ ${fmtMoneyStr(f.totalObra)}</strong>, acima de R$ 100.000. Verifique se foi realizado o procedimento competitivo obrigatório (Art. 17, §2º). O fracionamento para burlar esse limite é expressamente vedado.`,
+          countdown: `R$ ${fmtMoneyStr(f.totalObra)} acumulados`,
+          ref: 'Art. 17, §2º · Decreto nº 1.134/2024' });
+      } else if (f.totalServico > 50000) {
+        alertas.push({ nivel:'urgente', icon:'🔍',
+          titulo: `Possível fracionamento — ${tcLabel} · ${f.nome}`,
+          desc: `Total de fornecimento/serviços para este fornecedor: <strong>R$ ${fmtMoneyStr(f.totalServico)}</strong>, acima de R$ 50.000. Confirme que o procedimento competitivo foi realizado. Fracionamento do valor para evitar esse limite é vedado.`,
+          countdown: `R$ ${fmtMoneyStr(f.totalServico)} acumulados`,
+          ref: 'Art. 17, §2º · Decreto nº 1.134/2024' });
+      } else if (f.totalServico > 40000) {
+        alertas.push({ nivel:'atencao', icon:'⚠️',
+          titulo: `Atenção ao limite de dispensa — ${tcLabel} · ${f.nome}`,
+          desc: `Total acumulado de serviços/fornecimento para este fornecedor: <strong>R$ ${fmtMoneyStr(f.totalServico)}</strong> (limite de dispensa: R$ 50.000). Novos lançamentos podem exigir procedimento competitivo.`,
+          countdown: `R$ ${fmtMoneyStr(50000 - f.totalServico)} de margem`,
+          ref: 'Art. 17, I · Decreto nº 1.134/2024' });
       }
     });
   });
 
-  // Verificar bens de Capital sem Anexo VI marcado
-  const capitals = state.despesas.filter(d => d.tipo === 'CAPITAL');
+  // ── 4. CAPITAL SEM TERMO DE DOAÇÃO ────────────────────────────────────
+  const capitals = (state.despesas||[]).filter(d => d.tipo === 'CAPITAL');
   if (capitals.length > 0) {
-    alertas.push({ tipo: 'blue', msg: `📦 Há ${capitals.length} despesa(s) de Capital registrada(s). Lembre-se: gere o Anexo VI (Termo de Doação) e incorpore os bens ao patrimônio municipal imediatamente.` });
+    alertas.push({ nivel:'info', icon:'📦',
+      titulo: `${capitals.length} despesa(s) de Capital — incorporar ao patrimônio`,
+      desc: `Bens permanentes adquiridos com recursos da Caixa Escolar devem ser imediatamente incorporados ao patrimônio da Unidade Escolar/Município. Gere o Anexo VI (Termo de Doação) e registre o Inventário Anual.`,
+      countdown: `${capitals.length} bem(ns) a registrar`,
+      ref: 'Manual SEDUC/FUNEC · Módulo III, item 3' });
   }
 
-  // Verificar obras sem Anexo VIII
-  const obras = state.despesas.filter(d => d.tipo === 'OBRAS');
+  // ── 5. OBRAS SEM ART/RRT ──────────────────────────────────────────────
+  const obras = (state.despesas||[]).filter(d => d.tipo === 'OBRAS');
   if (obras.length > 0) {
-    alertas.push({ tipo: 'blue', msg: `🏗️ Há ${obras.length} despesa(s) de Obras/Reforma registrada(s). Certifique-se de gerar o Anexo VIII (Termo de Recebimento Definitivo) e obter ART/RRT do responsável técnico.` });
+    alertas.push({ nivel:'info', icon:'🏗️',
+      titulo: `${obras.length} despesa(s) de Obras/Reforma — verifique ART/RRT`,
+      desc: `Contratos de reforma, manutenção, reparo e requalificação exigem Anotação de Responsabilidade Técnica (ART) ou Registro de Responsabilidade Técnica (RRT) do responsável técnico, além do Anexo VIII (Termo de Recebimento Definitivo).`,
+      countdown: `${obras.length} obra(s) registrada(s)`,
+      ref: 'Manual SEDUC/FUNEC · Módulo IV, item 1.3.2' });
   }
 
-  // Janeiro reminder
-  const mesAtual = hoje.getMonth(); // 0=jan
+  // ── 6. HABILITAÇÃO ANUAL (janeiro) ────────────────────────────────────
+  const mesAtual = hoje.getMonth();
   if (mesAtual === 0) {
-    alertas.push({ tipo: 'orange', msg: `📅 Janeiro: Entregue os documentos de habilitação anual da Caixa Escolar à SEDUC até o último dia útil deste mês.` });
+    const diaUtil = hoje.getDate() <= 20 ? 'urgente' : 'critico';
+    alertas.push({ nivel:diaUtil, icon:'📅',
+      titulo: `Janeiro: entregue a documentação de habilitação anual`,
+      desc: `A Caixa Escolar deve entregar até o <strong>último dia útil de janeiro</strong> os documentos anuais de habilitação à SEDUC: Estatuto, CNPJ, Ata de eleição, ECF, RAIS negativa, DCTF, certidões fiscais e Demonstrativo Financeiro do ano anterior. Sem isso, novos repasses ficam bloqueados.`,
+      countdown: `Prazo: último dia útil de janeiro`,
+      ref: 'Manual SEDUC/FUNEC · Módulo I, item 2.1' });
   }
 
-  // Update badge
+  // ── RENDERIZAÇÃO DOS CARDS ────────────────────────────────────────────
+  const nivelConfig = {
+    critico: { cls:'alerta-red',    label:'CRÍTICO',  labelCls:'background:rgba(240,80,96,0.2);color:var(--accent-red);' },
+    urgente: { cls:'alerta-orange', label:'URGENTE',  labelCls:'background:rgba(246,166,35,0.2);color:var(--accent3);' },
+    atencao: { cls:'alerta-orange', label:'ATENÇÃO',  labelCls:'background:rgba(246,166,35,0.15);color:var(--accent3);' },
+    info:    { cls:'alerta-blue',   label:'INFO',     labelCls:'background:rgba(79,142,247,0.15);color:var(--accent);' }
+  };
+  const ordem = ['critico','urgente','atencao','info'];
+  const alertasOrdenados = [...alertas].sort((a,b) => ordem.indexOf(a.nivel) - ordem.indexOf(b.nivel));
+
+  // Atualizar badge
   const badge = document.getElementById('alertas-badge');
-  const urgentes = alertas.filter(a => a.tipo === 'red' || a.tipo === 'orange').length;
+  const urgentes = alertas.filter(a => a.nivel==='critico'||a.nivel==='urgente').length;
   if (badge) {
     if (urgentes > 0) { badge.textContent = urgentes; badge.style.display = 'flex'; }
     else { badge.style.display = 'none'; }
   }
 
-  if (!alertas.length) {
-    el.innerHTML = `<div class="alert alert-success"><span>✅</span><span>Nenhum alerta automático no momento. Continue acompanhando os prazos regularmente.</span></div>`;
+  if (!alertasOrdenados.length) {
+    el.innerHTML = `
+      <div class="alerta-card alerta-green">
+        <div class="alerta-icon">✅</div>
+        <div class="alerta-body">
+          <div class="alerta-titulo" style="color:var(--accent2)">Tudo em ordem!</div>
+          <div class="alerta-desc">Nenhum alerta automático neste momento. Continue acompanhando os prazos regularmente.</div>
+        </div>
+      </div>`;
     return;
   }
-  const colorMap = { red: 'alert-warn', orange: 'alert-warn', blue: 'alert-info' };
-  const iconMap = { red: '🚨', orange: '⚠', blue: 'ℹ' };
-  el.innerHTML = `<div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.8px">Alertas Automáticos (${alertas.length})</div>` +
-    alertas.map(a => `<div class="alert ${colorMap[a.tipo]}" style="margin-bottom:8px"><span>${iconMap[a.tipo]}</span><span>${a.msg}</span></div>`).join('');
+
+  const header = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Alertas Automáticos</div>
+    <div style="font-size:11px;padding:2px 9px;border-radius:10px;background:rgba(240,80,96,0.12);color:var(--accent-red);border:1px solid rgba(240,80,96,0.25);font-weight:700">${alertasOrdenados.length} ativo(s)</div>
+    ${urgentes>0?`<div style="font-size:11px;padding:2px 9px;border-radius:10px;background:rgba(240,80,96,0.08);color:var(--accent-red);border:1px solid rgba(240,80,96,0.2)">${urgentes} crítico(s)/urgente(s)</div>`:''}
+  </div>`;
+
+  el.innerHTML = header + alertasOrdenados.map(a => {
+    const cfg = nivelConfig[a.nivel] || nivelConfig.info;
+    return `
+    <div class="alerta-card ${cfg.cls}">
+      <div class="alerta-icon">${a.icon}</div>
+      <div class="alerta-body">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+          <div class="alerta-titulo">${a.titulo}</div>
+          <span style="font-size:9px;font-weight:700;padding:1px 7px;border-radius:8px;letter-spacing:1px;text-transform:uppercase;${cfg.labelCls}">${cfg.label}</span>
+        </div>
+        <div class="alerta-desc">${a.desc}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
+          ${a.countdown ? `<div class="alerta-countdown">⏱ ${a.countdown}</div>` : ''}
+          ${a.ref ? `<div class="alerta-ref">📖 ${a.ref}</div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ==================== TOGGLE RECOMENDAÇÃO ====================
+// ══════════════════════════════════════════════════════════
+//  REC.5 — VALIDAÇÃO DE MODALIDADE DE PAGAMENTO
+// ══════════════════════════════════════════════════════════
+function validarModalidadePgto() {
+  const sel = document.getElementById('d-modalidade-pgto');
+  const aviso = document.getElementById('aviso-pgto-especie');
+  if (!sel || !aviso) return;
+  aviso.style.display = sel.value === 'ESPECIE' ? 'flex' : 'none';
+}
+
+function validarModalidadePgtoEdit() {
+  const sel = document.getElementById('edit-desp-modalidade-pgto');
+  const aviso = document.getElementById('aviso-pgto-especie-edit');
+  if (!sel || !aviso) return;
+  aviso.style.display = sel.value === 'ESPECIE' ? 'flex' : 'none';
+}
+
+// ══════════════════════════════════════════════════════════
+//  REC.7 — MOBILE NAV
+// ══════════════════════════════════════════════════════════
+function toggleMobileNav() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('mobile-nav-overlay');
+  if (!sidebar) return;
+  const isOpen = sidebar.classList.contains('mobile-open');
+  if (isOpen) {
+    sidebar.classList.remove('mobile-open');
+    if (overlay) overlay.classList.remove('visible');
+  } else {
+    sidebar.classList.add('mobile-open');
+    if (overlay) overlay.classList.add('visible');
+  }
+}
+
+function closeMobileNav() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('mobile-nav-overlay');
+  if (sidebar) sidebar.classList.remove('mobile-open');
+  if (overlay) overlay.classList.remove('visible');
+}
+
+// Atualiza título da topbar mobile ao trocar de seção
+(function patchShowSectionForMobile() {
+  const _orig = window.showSection;
+  if (typeof _orig !== 'function') return;
+  const titles = {
+    dashboard: 'Dashboard', tc: 'Termos de Compromisso', despesas: 'Despesas',
+    alertas: 'Alertas e Prazos', checklist: 'Checklist', gerador: 'Gerador de Documentos',
+    links: 'Links Rápidos', fornecedores: 'Fornecedores', anexos: 'Gerar Anexos'
+  };
+  window.showSection = function(id) {
+    _orig(id);
+    closeMobileNav();
+    const titleEl = document.getElementById('mobile-topbar-title');
+    if (titleEl && titles[id]) titleEl.textContent = titles[id];
+  };
+})();
+
 function toggleRec(headerEl) {
   const detail = headerEl.nextElementSibling;
   const arrow = headerEl.querySelector('.rec-arrow');
@@ -10532,19 +10900,11 @@ async function salvarParcelaValores() {
     data_limite:    r.dataLimite   || null,
     data_termino:   r.dataTermino  || null
   }));
-  const psInserts = _pvRows.filter(r => r.situacao || r.comprobatorioUrl).map(r => {
-    // Preserva comprobatorio_url que já existia antes (não gerenciado por este modal)
-    const sitExistente = state.parcelaSituacoes.find(
-      s => String(s.tcId) === String(r.tcItemId) && s.parcela === r.parcela
-    );
-    const urlExistente = (sitExistente && sitExistente.comprobatorioUrl) ? sitExistente.comprobatorioUrl : null;
-    return {
-      tc_id:              Number(r.tcItemId),
-      parcela:            r.parcela,
-      situacao:           r.situacao || '',
-      comprobatorio_url:  urlExistente
-    };
-  });
+  const psInserts = _pvRows.filter(r => r.situacao).map(r => ({
+    tc_id:    Number(r.tcItemId),
+    parcela:  r.parcela,
+    situacao: r.situacao
+  }));
 
   const ops = [];
   if (pvInserts.length) ops.push(supa.from('parcela_valores').insert(pvInserts));
@@ -10561,13 +10921,7 @@ async function salvarParcelaValores() {
       rendimentos: r.rendimentos || '0,00',
       mesAnoInicio: r.mesAnoInicio, dataCredito: r.dataCredito, dataLimite: r.dataLimite, dataTermino: r.dataTermino
     });
-    if (r.situacao || r.comprobatorioUrl) {
-      const sitExistente = state.parcelaSituacoes.find(
-        s => String(s.tcId) === String(r.tcItemId) && s.parcela === r.parcela
-      );
-      const urlExistente = (sitExistente && sitExistente.comprobatorioUrl) ? sitExistente.comprobatorioUrl : '';
-      state.parcelaSituacoes.push({ tcId: Number(r.tcItemId), parcela: r.parcela, situacao: r.situacao || '', comprobatorioUrl: urlExistente });
-    }
+    if (r.situacao) state.parcelaSituacoes.push({ tcId: Number(r.tcItemId), parcela: r.parcela, situacao: r.situacao });
   });
 
   setSyncStatus('ok');
@@ -10801,14 +11155,15 @@ function aplicarPerfil() {
 }
 
 // ==================== COMPROBATÓRIO ====================
-// Persiste comprobatorio_url na tabela parcela_situacoes do Supabase
-// (coluna adicionada via migration: ALTER TABLE parcela_situacoes ADD COLUMN IF NOT EXISTS comprobatorio_url TEXT)
+// Armazena links comprobatórios em memória e no localStorage (chave por tcId+parcela)
+// Chave: "comprobatorio__{tcId}__{parcela}"
+
+function _comprobatorioKey(tcId, parcela) {
+  return `comprobatorio__${tcId}__${parcela}`;
+}
 
 function getComprobatorio(tcId, parcela) {
-  const row = (state.parcelaSituacoes||[]).find(
-    r => String(r.tcId) === String(tcId) && r.parcela === parcela
-  );
-  return (row && row.comprobatorioUrl) ? row.comprobatorioUrl : '';
+  try { return localStorage.getItem(_comprobatorioKey(tcId, parcela)) || ''; } catch(e) { return ''; }
 }
 
 function abrirModalComprobatorio(tcId, parcela) {
@@ -10829,57 +11184,21 @@ function abrirModalComprobatorio(tcId, parcela) {
   document.getElementById('modal-comprobatorio-input').classList.add('open');
 }
 
-async function salvarComprobatorio() {
+function salvarComprobatorio() {
   const tcId   = document.getElementById('comprobatorio-tc-id').value;
   const parcela = document.getElementById('comprobatorio-parcela').value;
   const url    = document.getElementById('comprobatorio-url').value.trim();
-
-  setSyncStatus('syncing');
-
-  // Verifica se já existe linha em parcela_situacoes para este tc_id + parcela
-  const existente = (state.parcelaSituacoes||[]).find(
-    r => String(r.tcId) === String(tcId) && r.parcela === parcela
-  );
-
-  if (existente) {
-    // Atualiza linha existente
-    const { error } = await supa.from('parcela_situacoes')
-      .update({ comprobatorio_url: url || null })
-      .eq('id', existente.id);
-    if (error) { setSyncStatus('error'); alert('Erro ao salvar comprobatório: ' + error.message); return; }
-    existente.comprobatorioUrl = url;
-  } else {
-    // Insere nova linha com situação vazia e o url
-    const { data, error } = await supa.from('parcela_situacoes')
-      .insert({ tc_id: Number(tcId), parcela, situacao: '', comprobatorio_url: url || null })
-      .select().single();
-    if (error) { setSyncStatus('error'); alert('Erro ao salvar comprobatório: ' + error.message); return; }
-    if (data) state.parcelaSituacoes.push({ id: data.id, tcId: data.tc_id, parcela: data.parcela, situacao: data.situacao || '', comprobatorioUrl: url });
-  }
-
-  setSyncStatus('ok');
+  try { localStorage.setItem(_comprobatorioKey(tcId, parcela), url); } catch(e) {}
   document.getElementById('modal-comprobatorio-input').classList.remove('open');
+  // Re-render para atualizar os botões
   renderTCs();
   renderDashVisaoTermos();
 }
 
-async function removerComprobatorio() {
+function removerComprobatorio() {
   const tcId   = document.getElementById('comprobatorio-tc-id').value;
   const parcela = document.getElementById('comprobatorio-parcela').value;
-
-  setSyncStatus('syncing');
-  const existente = (state.parcelaSituacoes||[]).find(
-    r => String(r.tcId) === String(tcId) && r.parcela === parcela
-  );
-  if (existente) {
-    const { error } = await supa.from('parcela_situacoes')
-      .update({ comprobatorio_url: null })
-      .eq('id', existente.id);
-    if (error) { setSyncStatus('error'); alert('Erro ao remover comprobatório: ' + error.message); return; }
-    existente.comprobatorioUrl = '';
-  }
-
-  setSyncStatus('ok');
+  try { localStorage.removeItem(_comprobatorioKey(tcId, parcela)); } catch(e) {}
   document.getElementById('modal-comprobatorio-input').classList.remove('open');
   renderTCs();
   renderDashVisaoTermos();
