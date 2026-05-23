@@ -10820,7 +10820,7 @@ function verComprobatorio(tcId, parcela, event) {
 // Helper: renderiza o botão de comprobatório para uma célula de parcela
 // Só aparece para situações "aprovada" e "analise"
 function renderBtnComprobatorio(tcId, parcela, sit, stopProp) {
-  const SITS_COM_COMPROBATORIO = ['aprovada', 'analise'];
+  const SITS_COM_COMPROBATORIO = ['aprovada', 'ajuste'];
   if (!SITS_COM_COMPROBATORIO.includes(sit)) return '<span style="font-size:11px;color:var(--text-dim)">—</span>';
   const url = getComprobatorio(tcId, parcela);
   const sp  = stopProp ? 'event.stopPropagation();' : '';
