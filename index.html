@@ -7240,9 +7240,7 @@ function imprimirPendencias() {
   const anxPend  = allPendLines.filter(p => p.categoria === 'anexo');
   const fornPend = allPendLines.filter(p => p.categoria === 'fornecedor');
 
-
-  // Seção de Anexos (lista simples)
-  const secaoAnexos = (titulo, cor, itens) => {
+  const secao = (titulo, cor, itens) => {
     if (!itens.length) return '';
     const rows = itens.map((p, i) =>
       `<tr>
@@ -7266,84 +7264,17 @@ function imprimirPendencias() {
           <span style="background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:20px;font-size:11px">${itens.length} item${itens.length!==1?'s':''}</span>
         </div>
         <table style="width:100%;border-collapse:collapse">
-          <thead><tr style="background:#f5f5f5">
-            <th style="width:28px"></th>
-            <th style="text-align:left;font-size:10.5px;padding:7px 4px;color:#555;font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Documento / Observação</th>
-            <th style="width:90px;font-size:10.5px;padding:7px 4px;color:#555;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;text-align:center">Situação</th>
-            <th style="width:100px;font-size:10.5px;padding:7px 6px;color:#555;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;text-align:center">✔ Recebido</th>
-          </tr></thead>
+          <thead>
+            <tr style="background:#f5f5f5">
+              <th style="width:28px"></th>
+              <th style="text-align:left;font-size:10.5px;padding:7px 4px;color:#555;font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Documento / Observação</th>
+              <th style="width:90px;font-size:10.5px;padding:7px 4px;color:#555;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;text-align:center">Situação</th>
+              <th style="width:100px;font-size:10.5px;padding:7px 6px;color:#555;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;text-align:center">✔ Recebido</th>
+            </tr>
+          </thead>
           <tbody>${rows}</tbody>
         </table>
       </div>`;
-  };
-
-  // Seção de Fornecedores — agrupa por empresa, nome aparece só uma vez
-  const secaoFornecedores = (titulo, cor, itens) => {
-    if (!itens.length) return '';
-
-    // Extrai nome da empresa do label ("Tipo Doc — NOME EMPRESA")
-    const getNome = label => { const idx = label.indexOf(' — '); return idx >= 0 ? label.slice(idx + 3) : label; };
-    const getDoc  = label => { const idx = label.indexOf(' — '); return idx >= 0 ? label.slice(0, idx) : label; };
-
-    // Agrupa mantendo ordem de aparição
-    const grupos = {};
-    const ordemEmpresas = [];
-    itens.forEach(p => {
-      const nome = getNome(p.label);
-      if (!grupos[nome]) { grupos[nome] = []; ordemEmpresas.push(nome); }
-      grupos[nome].push({ doc: getDoc(p.label), pend: p.pend, tipo: p.tipo });
-    });
-
-    let numEmpresa = 0;
-    const blocos = ordemEmpresas.map(nome => {
-      numEmpresa++;
-      const docs = grupos[nome];
-      const temPendente = docs.some(d => d.tipo === 'pendente');
-      const borderColor = temPendente ? '#c0392b' : '#856404';
-      const bgColor     = temPendente ? '#fdecea' : '#fff3cd';
-
-      const docRows = docs.map(d =>
-        `<tr>
-          <td style="padding:6px 0 6px 16px;border-bottom:1px solid #f0f0f0;vertical-align:top;width:36px">
-            <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:${d.tipo==='pendente'?'#fdecea':'#fff3cd'};color:${d.tipo==='pendente'?'#c0392b':'#856404'};border:1px solid ${d.tipo==='pendente'?'#f5c6cb':'#ffc107'};font-weight:700;white-space:nowrap">${d.tipo==='pendente'?'PEND.':'N.VER.'}</span>
-          </td>
-          <td style="padding:6px 4px 6px 8px;border-bottom:1px solid #f0f0f0;vertical-align:top">
-            <div style="font-weight:600;font-size:12.5px;color:#1a1a2e">${d.doc}</div>
-            ${d.pend ? `<div style="font-size:11.5px;color:${d.tipo==='pendente'?'#c0392b':'#856404'};margin-top:3px;line-height:1.5">⚠ ${d.pend}</div>` : ''}
-          </td>
-          <td style="width:100px;text-align:center;padding:6px 6px;border-bottom:1px solid #f0f0f0;vertical-align:middle">
-            <div style="border:1.5px solid #ccc;border-radius:4px;height:22px;width:70px;margin:0 auto"></div>
-          </td>
-        </tr>`
-      ).join('');
-
-      return `
-        <div style="margin-bottom:10px;border:1px solid ${borderColor};border-left:4px solid ${borderColor};border-radius:6px;overflow:hidden">
-          <div style="background:${bgColor};padding:8px 12px;display:flex;align-items:center;justify-content:space-between">
-            <div style="font-weight:700;font-size:13px;color:#1a1a2e">${numEmpresa}. ${nome}</div>
-            <span style="font-size:10.5px;color:${borderColor};font-weight:600">${docs.length} item${docs.length!==1?'s':''} pendente${docs.length!==1?'s':''}</span>
-          </div>
-          <table style="width:100%;border-collapse:collapse;background:#fff">
-            <thead><tr style="background:#fafafa">
-              <th style="width:70px;font-size:10px;padding:5px 4px 5px 16px;color:#888;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;text-align:left">Situação</th>
-              <th style="text-align:left;font-size:10px;padding:5px 4px;color:#888;font-weight:600;letter-spacing:0.4px;text-transform:uppercase">Documento / Observação</th>
-              <th style="width:100px;font-size:10px;padding:5px 6px;color:#888;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;text-align:center">✔ Recebido</th>
-            </tr></thead>
-            <tbody>${docRows}</tbody>
-          </table>
-        </div>`;
-    }).join('');
-
-    return `
-      <div style="margin-bottom:24px">
-        <div style="background:${cor};color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-          <span>${titulo}</span>
-          <span style="background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:20px;font-size:11px">${ordemEmpresas.length} fornecedor${ordemEmpresas.length!==1?'es':''} · ${itens.length} item${itens.length!==1?'s':''}</span>
-        </div>
-        ${blocos}
-      </div>`;
-  };
-
   };
 
   const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
@@ -7407,8 +7338,8 @@ function imprimirPendencias() {
   ${allPendLines.length===0
     ? '<div style="background:#d4edda;border:1px solid #c3e6cb;border-radius:8px;padding:20px;text-align:center;font-size:14px;color:#155724;font-weight:600">✅ Nenhuma pendência! A documentação está completa para envio à SEDUC/FUNEC.</div>'
     : `<div class="alerta">⚠ Este documento lista os itens que precisam ser providenciados antes do envio à SEDUC/FUNEC. A coluna <strong>"✔ Recebido"</strong> deve ser preenchida pelo Presidente da Caixa Escolar à medida que os documentos forem entregues.</div>
-       ${secaoAnexos('📑 ANEXOS OBRIGATÓRIOS — CAIXA ESCOLAR / SEDUC/FUNEC', '#2c3e6b', anxPend)}
-       ${secaoFornecedores('🏢 DOCUMENTOS POR FORNECEDOR', '#1a6b4a', fornPend)}`
+       ${secao('📑 ANEXOS OBRIGATÓRIOS — CAIXA ESCOLAR / SEDUC/FUNEC', '#2c3e6b', anxPend)}
+       ${secao('🏢 DOCUMENTOS POR FORNECEDOR', '#1a6b4a', fornPend)}`
   }
 
   <div class="assinaturas">
