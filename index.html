@@ -5629,7 +5629,8 @@ async function carregarDados() {
     id: r.id,
     tcId: r.tc_id,
     parcela: r.parcela,
-    situacao: r.situacao || ''
+    situacao: r.situacao || '',
+    comprobatorioUrl: r.comprobatorio_url || ''
   }));
 }
 
@@ -10531,11 +10532,19 @@ async function salvarParcelaValores() {
     data_limite:    r.dataLimite   || null,
     data_termino:   r.dataTermino  || null
   }));
-  const psInserts = _pvRows.filter(r => r.situacao).map(r => ({
-    tc_id:    Number(r.tcItemId),
-    parcela:  r.parcela,
-    situacao: r.situacao
-  }));
+  const psInserts = _pvRows.filter(r => r.situacao || r.comprobatorioUrl).map(r => {
+    // Preserva comprobatorio_url que já existia antes (não gerenciado por este modal)
+    const sitExistente = state.parcelaSituacoes.find(
+      s => String(s.tcId) === String(r.tcItemId) && s.parcela === r.parcela
+    );
+    const urlExistente = (sitExistente && sitExistente.comprobatorioUrl) ? sitExistente.comprobatorioUrl : null;
+    return {
+      tc_id:              Number(r.tcItemId),
+      parcela:            r.parcela,
+      situacao:           r.situacao || '',
+      comprobatorio_url:  urlExistente
+    };
+  });
 
   const ops = [];
   if (pvInserts.length) ops.push(supa.from('parcela_valores').insert(pvInserts));
@@ -10552,7 +10561,13 @@ async function salvarParcelaValores() {
       rendimentos: r.rendimentos || '0,00',
       mesAnoInicio: r.mesAnoInicio, dataCredito: r.dataCredito, dataLimite: r.dataLimite, dataTermino: r.dataTermino
     });
-    if (r.situacao) state.parcelaSituacoes.push({ tcId: Number(r.tcItemId), parcela: r.parcela, situacao: r.situacao });
+    if (r.situacao || r.comprobatorioUrl) {
+      const sitExistente = state.parcelaSituacoes.find(
+        s => String(s.tcId) === String(r.tcItemId) && s.parcela === r.parcela
+      );
+      const urlExistente = (sitExistente && sitExistente.comprobatorioUrl) ? sitExistente.comprobatorioUrl : '';
+      state.parcelaSituacoes.push({ tcId: Number(r.tcItemId), parcela: r.parcela, situacao: r.situacao || '', comprobatorioUrl: urlExistente });
+    }
   });
 
   setSyncStatus('ok');
@@ -10786,15 +10801,14 @@ function aplicarPerfil() {
 }
 
 // ==================== COMPROBATÓRIO ====================
-// Armazena links comprobatórios em memória e no localStorage (chave por tcId+parcela)
-// Chave: "comprobatorio__{tcId}__{parcela}"
-
-function _comprobatorioKey(tcId, parcela) {
-  return `comprobatorio__${tcId}__${parcela}`;
-}
+// Persiste comprobatorio_url na tabela parcela_situacoes do Supabase
+// (coluna adicionada via migration: ALTER TABLE parcela_situacoes ADD COLUMN IF NOT EXISTS comprobatorio_url TEXT)
 
 function getComprobatorio(tcId, parcela) {
-  try { return localStorage.getItem(_comprobatorioKey(tcId, parcela)) || ''; } catch(e) { return ''; }
+  const row = (state.parcelaSituacoes||[]).find(
+    r => String(r.tcId) === String(tcId) && r.parcela === parcela
+  );
+  return (row && row.comprobatorioUrl) ? row.comprobatorioUrl : '';
 }
 
 function abrirModalComprobatorio(tcId, parcela) {
@@ -10815,21 +10829,57 @@ function abrirModalComprobatorio(tcId, parcela) {
   document.getElementById('modal-comprobatorio-input').classList.add('open');
 }
 
-function salvarComprobatorio() {
+async function salvarComprobatorio() {
   const tcId   = document.getElementById('comprobatorio-tc-id').value;
   const parcela = document.getElementById('comprobatorio-parcela').value;
   const url    = document.getElementById('comprobatorio-url').value.trim();
-  try { localStorage.setItem(_comprobatorioKey(tcId, parcela), url); } catch(e) {}
+
+  setSyncStatus('syncing');
+
+  // Verifica se já existe linha em parcela_situacoes para este tc_id + parcela
+  const existente = (state.parcelaSituacoes||[]).find(
+    r => String(r.tcId) === String(tcId) && r.parcela === parcela
+  );
+
+  if (existente) {
+    // Atualiza linha existente
+    const { error } = await supa.from('parcela_situacoes')
+      .update({ comprobatorio_url: url || null })
+      .eq('id', existente.id);
+    if (error) { setSyncStatus('error'); alert('Erro ao salvar comprobatório: ' + error.message); return; }
+    existente.comprobatorioUrl = url;
+  } else {
+    // Insere nova linha com situação vazia e o url
+    const { data, error } = await supa.from('parcela_situacoes')
+      .insert({ tc_id: Number(tcId), parcela, situacao: '', comprobatorio_url: url || null })
+      .select().single();
+    if (error) { setSyncStatus('error'); alert('Erro ao salvar comprobatório: ' + error.message); return; }
+    if (data) state.parcelaSituacoes.push({ id: data.id, tcId: data.tc_id, parcela: data.parcela, situacao: data.situacao || '', comprobatorioUrl: url });
+  }
+
+  setSyncStatus('ok');
   document.getElementById('modal-comprobatorio-input').classList.remove('open');
-  // Re-render para atualizar os botões
   renderTCs();
   renderDashVisaoTermos();
 }
 
-function removerComprobatorio() {
+async function removerComprobatorio() {
   const tcId   = document.getElementById('comprobatorio-tc-id').value;
   const parcela = document.getElementById('comprobatorio-parcela').value;
-  try { localStorage.removeItem(_comprobatorioKey(tcId, parcela)); } catch(e) {}
+
+  setSyncStatus('syncing');
+  const existente = (state.parcelaSituacoes||[]).find(
+    r => String(r.tcId) === String(tcId) && r.parcela === parcela
+  );
+  if (existente) {
+    const { error } = await supa.from('parcela_situacoes')
+      .update({ comprobatorio_url: null })
+      .eq('id', existente.id);
+    if (error) { setSyncStatus('error'); alert('Erro ao remover comprobatório: ' + error.message); return; }
+    existente.comprobatorioUrl = '';
+  }
+
+  setSyncStatus('ok');
   document.getElementById('modal-comprobatorio-input').classList.remove('open');
   renderTCs();
   renderDashVisaoTermos();
