@@ -5190,8 +5190,12 @@ function mostrarSaldoParcela(tcId, parcela) {
   const tipoMap = { CUSTEIO:'custeio', CAPITAL:'capital', ALEM_MUROS:'alem', OBRAS:'obras', CAPINA:'capina' };
   const campo = tipoMap[tipo];
 
-  // Valor distribuído para esta parcela/tipo
-  const valorDistrib = campo ? parseMoney(pvRow[campo]||'0,00') : 0;
+  // Rendimentos: suplemento geral da parcela — somados ao crédito da categoria selecionada
+  const rendimentosParc = parseMoney(pvRow.rendimentos||'0,00');
+
+  // Valor distribuído para esta parcela/tipo + rendimentos (fazem parte do crédito)
+  const valorDistribBase = campo ? parseMoney(pvRow[campo]||'0,00') : 0;
+  const valorDistrib = valorDistribBase + rendimentosParc;
 
   // Já gasto nesta parcela+tipo+tcId
   const gastoParc = (state.despesas||[])
@@ -5214,7 +5218,9 @@ function mostrarSaldoParcela(tcId, parcela) {
   ].filter(c => parseMoney(pvRow[c.campo]||'0,00') > 0);
 
   const resumoCats = cats.map(c => {
-    const vDist = parseMoney(pvRow[c.campo]||'0,00');
+    const vDistBase = parseMoney(pvRow[c.campo]||'0,00');
+    // Rendimentos são somados ao crédito da categoria ativa
+    const vDist = (c.key === tipo) ? vDistBase + rendimentosParc : vDistBase;
     const vGasto = (state.despesas||[])
       .filter(d => String(d.tcVinculo)===String(tcId) && d.parcela===parcela && d.tipo===c.key)
       .reduce((s,d)=>s+parseMoney(d.valor),0);
@@ -5222,14 +5228,11 @@ function mostrarSaldoParcela(tcId, parcela) {
     const ativo = c.key === tipo;
     return `<div style="display:flex;flex-direction:column;gap:2px;min-width:80px;padding:6px 9px;border-radius:7px;background:${ativo?'rgba(79,142,247,0.12)':'transparent'};border:1px solid ${ativo?'rgba(79,142,247,0.3)':'transparent'}">
       <span style="font-size:9px;text-transform:uppercase;letter-spacing:0.5px;color:${c.color};font-weight:700">${c.label}</span>
-      <span style="font-size:10px;color:var(--text-dim)">Dist: <span style="font-family:'DM Mono',monospace;color:var(--text)">${fmtMoney(vDist)}</span></span>
+      <span style="font-size:10px;color:var(--text-dim)">Dist: <span style="font-family:'DM Mono',monospace;color:var(--text)">${fmtMoney(vDistBase)}</span>${ativo && rendimentosParc > 0 ? `<span style="color:var(--accent2);margin-left:3px">+${fmtMoney(rendimentosParc)}</span>` : ''}</span>
       <span style="font-size:10px;color:var(--text-dim)">Gasto: <span style="font-family:'DM Mono',monospace;color:var(--accent-red)">${fmtMoney(vGasto)}</span></span>
       <span style="font-size:10px;color:var(--text-dim)">Saldo: <span style="font-family:'DM Mono',monospace;color:${vSaldo<0?'var(--accent-red)':'var(--accent2)'};font-weight:600">${fmtMoney(vSaldo)}</span></span>
     </div>`;
   }).join('');
-
-  // Rendimentos: suplemento geral da parcela
-  const rendimentosParc = parseMoney(pvRow.rendimentos||'0,00');
 
   el.innerHTML = `
     <div style="background:var(--surface3);border:1px solid var(--border-light);border-radius:9px;padding:11px 14px">
@@ -5241,13 +5244,13 @@ function mostrarSaldoParcela(tcId, parcela) {
       ${rendimentosParc > 0 ? `
       <div style="margin-top:8px;display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;background:rgba(56,217,169,0.07);border:1px solid rgba(56,217,169,0.25);font-size:12px;color:var(--text-muted)">
         <span style="font-size:13px">📈</span>
-        <span>Rendimentos Financeiros acrescidos ao crédito desta parcela: <strong style="font-family:'DM Mono',monospace;color:var(--accent2)">${fmtMoney(rendimentosParc)}</strong></span>
+        <span>Rendimentos Financeiros de <strong style="font-family:'DM Mono',monospace;color:var(--accent2)">${fmtMoney(rendimentosParc)}</strong> incorporados ao crédito de <strong>${tipoLabels[tipo]||'—'}</strong> desta parcela.</span>
       </div>` : ''}
-      ${campo && valorDistrib > 0 ? `
+      ${campo && valorDistribBase > 0 ? `
       <div style="margin-top:10px;padding:8px 10px;border-radius:7px;background:${saldoParc<0?'rgba(240,80,96,0.1)':'rgba(56,217,169,0.08)'};border:1px solid ${saldoParc<0?'rgba(240,80,96,0.3)':'rgba(56,217,169,0.2)'};font-size:12px">
         ${saldoParc < 0
-          ? `⛔ <strong style="color:var(--accent-red)">Saldo insuficiente!</strong> Já foram gastos <span style="font-family:'DM Mono',monospace">${fmtMoney(gastoParc)}</span> de <span style="font-family:'DM Mono',monospace">${fmtMoney(valorDistrib)}</span> em <strong>${tipoLabels[tipo]||tipo}</strong> nesta parcela. Saldo: <span style="font-family:'DM Mono',monospace;color:var(--accent-red)">${fmtMoney(saldoParc)}</span>`
-          : `✅ Saldo disponível para <strong>${tipoLabels[tipo]||tipo}</strong>: <span style="font-family:'DM Mono',monospace;color:var(--accent2);font-size:13px">${fmtMoney(saldoParc)}</span>`
+          ? `⛔ <strong style="color:var(--accent-red)">Saldo insuficiente!</strong> Já foram gastos <span style="font-family:'DM Mono',monospace">${fmtMoney(gastoParc)}</span> de <span style="font-family:'DM Mono',monospace">${fmtMoney(valorDistrib)}</span> em <strong>${tipoLabels[tipo]||tipo}</strong> nesta parcela${rendimentosParc>0?` (inclui R$ ${fmtMoney(rendimentosParc)} de rendimentos)`:``}. Saldo: <span style="font-family:'DM Mono',monospace;color:var(--accent-red)">${fmtMoney(saldoParc)}</span>`
+          : `✅ Saldo disponível para <strong>${tipoLabels[tipo]||tipo}</strong>: <span style="font-family:'DM Mono',monospace;color:var(--accent2);font-size:13px">${fmtMoney(saldoParc)}</span>${rendimentosParc>0?` <span style="font-size:11px;color:var(--text-muted)">(inclui ${fmtMoney(rendimentosParc)} de rendimentos)</span>`:``}`
         }
       </div>` : ''}
     </div>`;
