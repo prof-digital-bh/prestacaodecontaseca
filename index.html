@@ -7009,11 +7009,12 @@ function renderChecklist() {
     };
     const stOrc       = resolveManual(itemStatus(f.orcamentos),      _doiKey('forn_orc',  safeKey));
     const stCert      = resolveManual(itemStatus(f.certidoes),       _doiKey('forn_cert', safeKey));
+    const stCartaCnpj = resolveManual(itemStatus(f.cartaoCnpj),     _doiKey('forn_cnpj', safeKey));
     const stComp      = resolveManual(itemStatus(f.comprovantePgto), _doiKey('forn_comp', safeKey));
     const stContrato  = resolveManual(itemStatus(f.contratoNf),      _doiKey('forn_cont', safeKey));
     const stJust      = resolveManual(itemStatus(f.justificativa),   _doiKey('forn_just', safeKey));
 
-    const allItems    = [stNf, stOrc, stCert, stComp, stContrato, stJust];
+    const allItems    = [stNf, stOrc, stCert, stCartaCnpj, stComp, stContrato, stJust];
     const totalItems  = allItems.filter(s => s !== 'sem').length;
     const okItems     = allItems.filter(s => s === 'ok').length;
     const pendItems   = allItems.filter(s => s === 'pend').length;
@@ -7066,12 +7067,13 @@ function renderChecklist() {
       return row;
     };
 
-    html += docRow(stNf,       'Nota Fiscal' + (nfNums !== '?' ? ' — ' + nfNums : ''), '');
-    html += docRow(stOrc,      'Orçamentos (3 cotações)',  f.orcamentosPend || '');
-    html += docRow(stCert,     'CNDs — Certidões de Regularidade Fiscal', f.certidoesPend || '');
-    html += docRow(stComp,     'Comprovante de Pagamento', f.comprovantePgtoPend || '');
-    html += docRow(stContrato, 'Contrato / NF de Contrato', f.contratoNfPend || '');
-    html += docRow(stJust,     'Justificativa', f.justificativaPend || '');
+    html += docRow(stNf,        'Nota Fiscal' + (nfNums !== '?' ? ' — ' + nfNums : ''), '');
+    html += docRow(stOrc,       'Orçamentos (3 cotações)',  f.orcamentosPend || '');
+    html += docRow(stCert,      'CNDs — Certidões de Regularidade Fiscal', f.certidoesPend || '');
+    html += docRow(stCartaCnpj, 'Cartão CNPJ', f.cartaoCnpjPend || '');
+    html += docRow(stComp,      'Comprovante de Pagamento', f.comprovantePgtoPend || '');
+    html += docRow(stContrato,  'Contrato / NF de Contrato', f.contratoNfPend || '');
+    html += docRow(stJust,      'Justificativa', f.justificativaPend || '');
 
     html += '</div></div></div>';
   });
@@ -7476,6 +7478,7 @@ function _calcProgressData(despesasFiltradas) {
       credor: d.credor, cnpj: d.cnpj,
       orcamentos: d.orcamentos, orcamentosPend: d.orcamentosPend,
       certidoes: d.certidoes, certidoesPend: d.certidoesPend,
+      cartaoCnpj: d.cartaoCnpj, cartaoCnpjPend: d.cartaoCnpjPend,
       comprovantePgto: d.comprovantePgto, comprovantePgtoPend: d.comprovantePgtoPend,
       contratoNf: d.contratoNf, contratoNfPend: d.contratoNfPend,
       justificativa: d.justificativa, justificativaPend: d.justificativaPend,
@@ -7494,6 +7497,7 @@ function _calcProgressData(despesasFiltradas) {
     // Lê estado manual dos botões ✔/⚠ (sobrepõe o campo da despesa)
     const manualOrc  = ((_docsObrigState[_doiKey('forn_orc',  safeKey)]||{}).estado || '');
     const manualCert = ((_docsObrigState[_doiKey('forn_cert', safeKey)]||{}).estado || '');
+    const manualCnpj = ((_docsObrigState[_doiKey('forn_cnpj', safeKey)]||{}).estado || '');
     const manualComp = ((_docsObrigState[_doiKey('forn_comp', safeKey)]||{}).estado || '');
     const manualCont = ((_docsObrigState[_doiKey('forn_cont', safeKey)]||{}).estado || '');
     const manualJust = ((_docsObrigState[_doiKey('forn_just', safeKey)]||{}).estado || '');
@@ -7505,6 +7509,7 @@ function _calcProgressData(despesasFiltradas) {
     const stNf    = f.nfs.some(n => n.num && n.num.trim() !== '') ? 'ok' : 'pend';
     const stOrc   = resolveManual(itemStatus(f.orcamentos),      manualOrc);
     const stCert  = resolveManual(itemStatus(f.certidoes),       manualCert);
+    const stCnpj  = resolveManual(itemStatus(f.cartaoCnpj),     manualCnpj);
     const stComp  = resolveManual(itemStatus(f.comprovantePgto), manualComp);
     const stCont  = resolveManual(itemStatus(f.contratoNf),      manualCont);
     const stJust  = resolveManual(itemStatus(f.justificativa),   manualJust);
@@ -7513,9 +7518,9 @@ function _calcProgressData(despesasFiltradas) {
     const nfInfo  = f.nfs[0]?.num ? ' — NF ' + f.nfs[0].num : '';
     const parcInfo = f.parcelaLabel ? ' — ' + f.parcelaLabel : '';
     const empresa  = nome + nfInfo + parcInfo;
-    const docNomes  = ['Nota Fiscal','Orçamentos (3 cotações)','Certidões de Regularidade','Comprovante de Pagamento','Contrato / NF de Contrato','Justificativa'];
-    const pendTexts = ['', f.orcamentosPend||'', f.certidoesPend||'', f.comprovantePgtoPend||'', f.contratoNfPend||'', f.justificativaPend||''];
-    const statuses  = [stNf, stOrc, stCert, stComp, stCont, stJust];
+    const docNomes  = ['Nota Fiscal','Orçamentos (3 cotações)','Certidões de Regularidade','Cartão CNPJ','Comprovante de Pagamento','Contrato / NF de Contrato','Justificativa'];
+    const pendTexts = ['', f.orcamentosPend||'', f.certidoesPend||'', f.cartaoCnpjPend||'', f.comprovantePgtoPend||'', f.contratoNfPend||'', f.justificativaPend||''];
+    const statuses  = [stNf, stOrc, stCert, stCnpj, stComp, stCont, stJust];
 
     statuses.forEach((st, i) => {
       if (st === 'ok') {
