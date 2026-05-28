@@ -3735,6 +3735,7 @@ const AGENCIA      = &#x27;3797&#x27;;
 const CONTA        = &#x27;000577240784-4&#x27;;
 const CONTA_ANT    = &#x27;03000092-0&#x27;;
 const ENDERECO_SEDUC = &#x27;Rua Coimbra, nº 100 — Bairro Santa Cruz Industrial — Contagem/MG — CEP 32.340-010&#x27;;
+const ENDERECO_ESCOLA = &#x27;Rua Cinco A, Nº 20; Bairro Oitis; Contagem-MG; CEP 32.141-066&#x27;;
 const PREFEITURA   = &#x27;PREFEITURA MUNICIPAL DE CONTAGEM\nSecretaria Municipal de Educação&#x27;;
 
 // ==================== SUPABASE ====================
@@ -4227,16 +4228,18 @@ function gerarAnx1() {
     : &#x27;( ) DESPESAS COM A MANUTENÇÃO DO FUNCIONAMENTO ESCOLAR\n(X) DESPESAS COM AQUISIÇÃO DE BENS MÓVEIS DE CAPITAL OU REFORMA, MANUTENÇÃO, REPARO E REQUALIFICAÇÃO.&#x27;;
 
   const html = docHtml(`ANEXO I — CERTIDÃO DE EXECUÇÃO DO OBJETO`,
-    `&lt;p&gt;&lt;strong&gt;SECRETARIA MUNICIPAL DE EDUCAÇÃO E CULTURA DE CONTAGEM&lt;/strong&gt;&lt;/p&gt;
-     &lt;p&gt;GERÊNCIA DAS CAIXAS ESCOLARES — DIRETORIA DE GESTÃO DE PARCERIAS, TERMOS DE COMPROMISSO E CONVÊNIOS — SUPERINTENDÊNCIA DE PLANEJAMENTO, ORÇAMENTO E FINANÇAS&lt;/p&gt;
-     &lt;p&gt;&lt;strong&gt;${ENDERECO_SEDUC}&lt;/strong&gt;&lt;/p&gt;
+    `&lt;div style=&quot;text-align:center;margin-bottom:8px&quot;&gt;
+       &lt;p&gt;&lt;strong&gt;SECRETARIA MUNICIPAL DE EDUCAÇÃO E CULTURA DE CONTAGEM&lt;/strong&gt;&lt;/p&gt;
+       &lt;p style=&quot;font-size:9pt&quot;&gt;GERÊNCIA DAS CAIXAS ESCOLARES — DIRETORIA DE GESTÃO DE PARCERIAS, TERMOS DE COMPROMISSO E CONVÊNIOS — SUPERINTENDÊNCIA DE PLANEJAMENTO, ORÇAMENTO E FINANÇAS&lt;/p&gt;
+       &lt;p style=&quot;font-size:9pt&quot;&gt;&lt;strong&gt;${ENDERECO_SEDUC}&lt;/strong&gt;&lt;/p&gt;
+     &lt;/div&gt;
      &lt;br&gt;
      &lt;h2 style=&quot;text-align:center&quot;&gt;ANEXO I&lt;/h2&gt;
      &lt;h3 style=&quot;text-align:center&quot;&gt;CERTIDÃO DE EXECUÇÃO DO OBJETO&lt;/h3&gt;
      &lt;br&gt;
      &lt;table style=&quot;width:100%;border-collapse:collapse;font-size:11pt&quot;&gt;
        &lt;tr&gt;&lt;td style=&quot;width:160px;font-weight:bold;padding:4px 0&quot;&gt;Caixa Escolar:&lt;/td&gt;&lt;td&gt;${CAIXA_ESCOLAR}&lt;/td&gt;&lt;/tr&gt;
-       &lt;tr&gt;&lt;td style=&quot;font-weight:bold;padding:4px 0&quot;&gt;Endereço:&lt;/td&gt;&lt;td&gt;${ESCOLA} — Contagem/MG&lt;/td&gt;&lt;/tr&gt;
+       &lt;tr&gt;&lt;td style=&quot;font-weight:bold;padding:4px 0&quot;&gt;Endereço:&lt;/td&gt;&lt;td&gt;${ENDERECO_ESCOLA}&lt;/td&gt;&lt;/tr&gt;
        &lt;tr&gt;&lt;td style=&quot;font-weight:bold;padding:4px 0&quot;&gt;N.º do TC:&lt;/td&gt;&lt;td&gt;${tcNum}&lt;/td&gt;&lt;/tr&gt;
        &lt;tr&gt;&lt;td style=&quot;font-weight:bold;padding:4px 0&quot;&gt;N.º da Parcela:&lt;/td&gt;&lt;td&gt;${numParcelaOrd(parcela)} Parcela&lt;/td&gt;&lt;/tr&gt;
        &lt;tr&gt;&lt;td style=&quot;font-weight:bold;padding:4px 0&quot;&gt;Categoria:&lt;/td&gt;&lt;td&gt;${cat === &#x27;CUSTEIO&#x27; ? &#x27;(X) CUSTEIO &amp;nbsp;&amp;nbsp; ( ) CAPITAL&#x27; : &#x27;( ) CUSTEIO &amp;nbsp;&amp;nbsp; (X) CAPITAL&#x27;}&lt;/td&gt;&lt;/tr&gt;
@@ -8411,7 +8414,7 @@ function imprimirPendencias() {
     .progress-fill { height: 100%; background: ${pct===100?'#27ae60':pct>50?'#f39c12':'#e74c3c'}; border-radius: 10px; width: ${pct}%; }
     .footer { margin-top: 32px; padding-top: 14px; border-top: 1px solid #dee2e6; font-size: 11px; color: #888; display: flex; justify-content: space-between; }
     .assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 36px; }
-    .ass-box { border-top: 1.5px solid #333; padding-top: 6px; text-align: center; font-size: 11.5px; color: #333; }
+    .ass-box { border-top: 1.5px solid #333; padding-top: 6px; text-align: center; font-size: 11.5px; color: #333; min-width: 220px; padding-left: 8px; padding-right: 8px; }
     .alerta { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #856404; margin-bottom: 20px; }
   </style></head><body>
 
@@ -10410,6 +10413,7 @@ const CF2 = 'DOMINGOS AILTON SANTOS';
 const CF3 = 'VANESSA MARIA AUGUSTO DO NASCIMENTO';
 const PREFEITURA = 'PREFEITURA MUNICIPAL DE CONTAGEM\nSecretaria Municipal de Educação';
 const ENDERECO_SEDUC = 'Rua Coimbra, nº 100 — Bairro Santa Cruz Industrial — Contagem/MG — CEP 32.340-010';
+const ENDERECO_ESCOLA = 'Rua Cinco A, Nº 20; Bairro Oitis; Contagem-MG; CEP 32.141-066';
 
 function getTCAtivo() {
   return (state.tcs||[]).find(t => t.id === state.tcAtivo);
@@ -10498,7 +10502,7 @@ function gerarAnexo1() {
                     CERTIDÃO DE EXECUÇÃO DO OBJETO
 
 Caixa Escolar: ${CAIXA_ESCOLAR}
-Endereço: ${ESCOLA} — Contagem/MG
+Endereço: ${ENDERECO_ESCOLA}
 N.º do Termo de Compromisso: ${tcNum}
 N.º da Parcela: ( ) ____ª Parcela   (X) ${parcela}   ( ) Parcela Única
 Categoria: ${cat === 'CUSTEIO' ? '(X) CUSTEIO   ( ) CAPITAL' : '( ) CUSTEIO   (X) CAPITAL'}
@@ -10513,11 +10517,11 @@ FORAM ALCANÇADOS.
 Contagem, ${dia} de ${mes} de ${ano}.
 
 
-_____________________________________________
+_______________________________________________________
 Presidente da Caixa Escolar
 
 Nome: ${PRESIDENTE}
-CPF: ___________________________`;
+CPF: _______________________________`;
   document.getElementById('prev-anx1').textContent = txt;
 }
 
@@ -10572,8 +10576,8 @@ Total de despesas: R$ ${fmtMoneyStr(total)}
 Contagem, ${dia} de ${mes} de ${ano}.
 
 
-_________________________________          _________________________________
-Presidente da Caixa Escolar                  Responsável pelo preenchimento
+_____________________________________________          _____________________________________________
+Presidente da Caixa Escolar                             Responsável pelo preenchimento
 ${PRESIDENTE}                    (Nome, matrícula e assinatura)`;
   document.getElementById('prev-anx4').textContent = txt;
 }
@@ -10606,22 +10610,22 @@ no Estatuto registrado em cartório na cidade de Contagem:
 
 Contagem, ${dia} de ${mes} de ${ano}.
 
-_________________________________          _________________________________
+_____________________________________________          _____________________________________________
 ${PRESIDENTE}                                   ${TESOUREIRO}
 Presidente                                         Tesoureiro
 
 
 MEMBROS DO CONSELHO FISCAL:
 
-_________________________________          ________________________________
+_____________________________________________          _____________________________________________
 ${CF1}
 Assinatura                                         Segmento: ________________
 
-_________________________________          ________________________________
+_____________________________________________          _____________________________________________
 ${CF2}
 Assinatura                                         Segmento: ________________
 
-_________________________________          ________________________________
+_____________________________________________          _____________________________________________
 ${CF3}
 Assinatura                                         Segmento: ________________`;
   document.getElementById('prev-anx5').textContent = txt;
