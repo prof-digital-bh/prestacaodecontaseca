@@ -8456,6 +8456,12 @@ function imprimirPendencias() {
        ${secaoFornecedores('🏢 DOCUMENTOS POR FORNECEDOR', '#1a6b4a', fornPend)}`
   }
 
+  ${secaoAssinaturas ? `
+    <div style="margin-top:32px">
+      <div style="font-size:14px;font-weight:800;color:#1a1a2e;border-bottom:2px solid #b57bee;padding-bottom:8px;margin-bottom:16px;letter-spacing:-0.2px">🖊 Checklist de Assinaturas por Parcela</div>
+      ${secaoAssinaturas}
+    </div>` : ''}
+
   <div class="assinaturas">
     <div class="ass-box">
       Prestador de Serviços / Responsável pelo levantamento<br>
