@@ -7623,6 +7623,7 @@ async function salvarAssObs(tcId, parcela) {
   await supa.from('checklist_states').upsert({
     chave: k,
     marcado: false,
+    obs_texto: el.value.trim(),
     atualizado_em: new Date().toISOString()
   });
   // Flash
@@ -7699,11 +7700,11 @@ function renderCardAssinaturas(tcId, parcela, parcelaLabel) {
 // Carrega estado das assinaturas do Supabase ao iniciar
 async function carregarAssState() {
   try {
-    const { data, error } = await supa.from('checklist_states').select('chave,marcado').like('chave', 'ass_%');
+    const { data, error } = await supa.from('checklist_states').select('chave,marcado,obs_texto').like('chave', 'ass_%');
     if (error || !data) return;
     data.forEach(row => {
       if (row.chave.startsWith('ass_obs_')) {
-        // obs são salvos apenas como texto local; marcado não importa aqui
+        window._assState['__obs__' + row.chave] = row.obs_texto || '';
       } else {
         window._assState[row.chave] = !!row.marcado;
       }
