@@ -3285,8 +3285,8 @@ textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
           &lt;input type=&quot;text&quot; id=&quot;anx2-mes&quot; placeholder=&quot;FEVEREIRO&quot; value=&quot;FEVEREIRO&quot;&gt;
         &lt;/div&gt;
         &lt;div class=&quot;field&quot;&gt;
-          &lt;label&gt;Ano&lt;/label&gt;
-          &lt;input type=&quot;text&quot; id=&quot;anx2-ano&quot; placeholder=&quot;2026&quot; value=&quot;2026&quot;&gt;
+          &lt;label&gt;Ano (por extenso)&lt;/label&gt;
+          &lt;input type=&quot;text&quot; id=&quot;anx2-ano&quot; placeholder=&quot;dois mil e vinte e seis&quot; value=&quot;dois mil e vinte e seis&quot;&gt;
         &lt;/div&gt;
         &lt;div class=&quot;field&quot;&gt;
           &lt;label&gt;Data de Crédito&lt;/label&gt;
@@ -4252,11 +4252,12 @@ function gerarAnx1() {
      &lt;br&gt;
      &lt;p&gt;Contagem, ${dia} de ${mes} de ${ano}.&lt;/p&gt;
      &lt;br&gt;&lt;br&gt;
-     &lt;assinaturas&gt;
+     &lt;assinaturas style=&quot;display:flex;justify-content:center&quot;&gt;
        &lt;div style=&quot;width:300px;border-top:1px solid #000;padding-top:5px;text-align:center&quot;&gt;
          &lt;p&gt;Presidente da Caixa Escolar&lt;/p&gt;
          &lt;p&gt;&lt;strong&gt;${PRESIDENTE}&lt;/strong&gt;&lt;/p&gt;
-         &lt;p&gt;CPF: ___________________________&lt;/p&gt;
+         &lt;p&gt;CPF: 033.414.386-10&lt;/p&gt;
+         &lt;p&gt;CI: 7.163.273&lt;/p&gt;
        &lt;/div&gt;
      &lt;/assinaturas&gt;`
   );
@@ -4305,7 +4306,7 @@ function gerarAnx2() {
      &lt;/div&gt;
 
      &lt;p style=&quot;text-align:justify;margin-bottom:10px&quot;&gt;
-       Aos &lt;strong&gt;${dia}&lt;/strong&gt; dias do mês de &lt;strong&gt;${mes}&lt;/strong&gt; do ano de dois mil e vinte e seis, reuniram-se os membros do
+       Aos &lt;strong&gt;${dia}&lt;/strong&gt; dias do mês de &lt;strong&gt;${mes}&lt;/strong&gt; do ano de &lt;strong&gt;${ano}&lt;/strong&gt;, reuniram-se os membros do
        &lt;strong&gt;Conselho Fiscal da Caixa Escolar da Escola Municipal Albertina Alves do Nascimento.&lt;/strong&gt;
      &lt;/p&gt;
 
@@ -4319,7 +4320,7 @@ function gerarAnx2() {
 
      &lt;p style=&quot;text-align:justify;margin-bottom:10px&quot;&gt;
        No primeiro momento da reunião, o (a) Presidente da Caixa Escolar apresentou o valor de &lt;strong&gt;R$
-       ${valorCred} (${valorExtenso})&lt;/strong&gt;, referente
+       ${fmtMoneyStr(parseMoney(valorCred))} (${valorExtenso})&lt;/strong&gt;, referente
        ao repasse da &lt;strong&gt;${nomeParc}&lt;/strong&gt; parcela, creditado em &lt;strong&gt;${dataCredito}&lt;/strong&gt;, no Banco
        &lt;strong&gt;${BANCO}&lt;/strong&gt;/Agência &lt;strong&gt;${AGENCIA}&lt;/strong&gt; conta bancária
        &lt;strong&gt;${CONTA}&lt;/strong&gt; (ANTIGA ${CONTA_ANT}). No segundo
@@ -4346,7 +4347,7 @@ function gerarAnx2() {
 
      &lt;p style=&quot;margin-bottom:18px&quot;&gt;Nada mais a tratar a reunião foi encerrada, ata lavrada e assinada pelos presentes.&lt;/p&gt;
 
-     &lt;table style=&quot;width:100%;border-collapse:collapse;font-size:9.5pt&quot;&gt;
+     &lt;table style=&quot;width:100%;border-collapse:collapse;font-size:9.5pt;table-layout:fixed&quot;&gt;
        &lt;tr&gt;
          &lt;td colspan=&quot;3&quot; style=&quot;border:1px solid #000;padding:6px 8px;background:#e8e8e8;font-weight:bold&quot;&gt;
            MESA DIRETORA DA CAIXA ESCOLAR ALBERTINA ALVES NASCIMENTO&lt;br&gt;
@@ -4354,17 +4355,17 @@ function gerarAnx2() {
          &lt;/td&gt;
        &lt;/tr&gt;
        &lt;tr style=&quot;background:#f5f5f5&quot;&gt;
-         &lt;th style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;Segmento&lt;/th&gt;
-         &lt;th style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;Nome&lt;/th&gt;
+         &lt;th style=&quot;border:1px solid #000;padding:5px 8px;width:120px;white-space:nowrap&quot;&gt;Segmento&lt;/th&gt;
+         &lt;th style=&quot;border:1px solid #000;padding:5px 8px;width:220px;white-space:nowrap&quot;&gt;Nome&lt;/th&gt;
          &lt;th style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;Assinatura&lt;/th&gt;
        &lt;/tr&gt;
-       &lt;tr&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;Presidente&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;${PRESIDENTE}&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;
-       &lt;tr&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;Tesoureiro&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;${TESOUREIRO}&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;
-       &lt;tr&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;Secretário&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;${SECRETARIO}&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;
+       &lt;tr&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px;width:120px;white-space:nowrap&quot;&gt;Presidente&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px;width:220px;white-space:nowrap&quot;&gt;${PRESIDENTE}&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;
+       &lt;tr&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px;width:120px;white-space:nowrap&quot;&gt;Tesoureiro&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px;width:220px;white-space:nowrap&quot;&gt;${TESOUREIRO}&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;
+       &lt;tr&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px;width:120px;white-space:nowrap&quot;&gt;Secretário&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px;width:220px;white-space:nowrap&quot;&gt;${SECRETARIO}&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;
        &lt;tr&gt;&lt;td colspan=&quot;3&quot; style=&quot;border:1px solid #000;padding:5px 8px;font-weight:bold;background:#f5f5f5&quot;&gt;CONSELHO FISCAL&lt;/td&gt;&lt;/tr&gt;
-       &lt;tr&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;Representante (1)&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;${CF1}&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;
-       &lt;tr&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;Representante (2)&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;${CF2}&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;
-       &lt;tr&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;Representante (3)&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;${CF3}&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;
+       &lt;tr&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px;width:120px;white-space:nowrap&quot;&gt;Representante (1)&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px;width:220px;white-space:nowrap&quot;&gt;${CF1}&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;
+       &lt;tr&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px;width:120px;white-space:nowrap&quot;&gt;Representante (2)&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px;width:220px;white-space:nowrap&quot;&gt;${CF2}&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;
+       &lt;tr&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px;width:120px;white-space:nowrap&quot;&gt;Representante (3)&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px;width:220px;white-space:nowrap&quot;&gt;${CF3}&lt;/td&gt;&lt;td style=&quot;border:1px solid #000;padding:12px 8px&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;
      &lt;/table&gt;
 
      &lt;p style=&quot;margin-top:12px;font-size:8.5pt&quot;&gt;Este documento consta de _____ páginas numeradas e rubricadas pelo (a) da Presidente da Caixa Escolar&lt;/p&gt;`
@@ -4422,31 +4423,31 @@ function gerarAnx3() {
        &lt;/tr&gt;
      &lt;/table&gt;
 
-     &lt;table style=&quot;width:100%;border-collapse:collapse;font-size:9pt;margin-top:2px&quot;&gt;
+     &lt;table style=&quot;width:100%;border-collapse:collapse;font-size:8pt;margin-top:2px;table-layout:fixed&quot;&gt;
        &lt;thead&gt;
          &lt;tr style=&quot;background:#e8e8e8&quot;&gt;
-           &lt;th colspan=&quot;4&quot; style=&quot;border:1px solid #000;padding:5px;text-align:center&quot;&gt;Receita&lt;/th&gt;
-           &lt;th colspan=&quot;2&quot; style=&quot;border:1px solid #000;padding:5px;text-align:center&quot;&gt;Despesas / Saldo&lt;/th&gt;
+           &lt;th colspan=&quot;4&quot; style=&quot;border:1px solid #000;padding:4px;text-align:center&quot;&gt;Receita&lt;/th&gt;
+           &lt;th colspan=&quot;3&quot; style=&quot;border:1px solid #000;padding:4px;text-align:center&quot;&gt;Despesas / Saldo&lt;/th&gt;
          &lt;/tr&gt;
          &lt;tr style=&quot;background:#f5f5f5&quot;&gt;
-           &lt;th style=&quot;border:1px solid #000;padding:5px 6px;text-align:center&quot;&gt;Saldo anterior&lt;/th&gt;
-           &lt;th style=&quot;border:1px solid #000;padding:5px 6px;text-align:center&quot;&gt;Valor Creditado&lt;/th&gt;
-           &lt;th style=&quot;border:1px solid #000;padding:5px 6px;text-align:center&quot;&gt;Recursos Próprios&lt;/th&gt;
-           &lt;th style=&quot;border:1px solid #000;padding:5px 6px;text-align:center&quot;&gt;Rendimento de Aplic. Fin.&lt;/th&gt;
-           &lt;th style=&quot;border:1px solid #000;padding:5px 6px;text-align:center&quot;&gt;Total De receita&lt;/th&gt;
-           &lt;th style=&quot;border:1px solid #000;padding:5px 6px;text-align:center&quot;&gt;Total De despesas&lt;/th&gt;
-           &lt;th style=&quot;border:1px solid #000;padding:5px 6px;text-align:center&quot;&gt;Saldo&lt;/th&gt;
+           &lt;th style=&quot;border:1px solid #000;padding:4px 5px;text-align:center;white-space:nowrap;overflow:hidden;font-size:7.5pt&quot;&gt;Saldo anterior&lt;/th&gt;
+           &lt;th style=&quot;border:1px solid #000;padding:4px 5px;text-align:center;white-space:nowrap;overflow:hidden;font-size:7.5pt&quot;&gt;Valor Creditado&lt;/th&gt;
+           &lt;th style=&quot;border:1px solid #000;padding:4px 5px;text-align:center;white-space:nowrap;overflow:hidden;font-size:7.5pt&quot;&gt;Recursos Próprios&lt;/th&gt;
+           &lt;th style=&quot;border:1px solid #000;padding:4px 5px;text-align:center;white-space:nowrap;overflow:hidden;font-size:7.5pt&quot;&gt;Rend. Aplic. Fin.&lt;/th&gt;
+           &lt;th style=&quot;border:1px solid #000;padding:4px 5px;text-align:center;white-space:nowrap;overflow:hidden;font-size:7.5pt&quot;&gt;Total Receita&lt;/th&gt;
+           &lt;th style=&quot;border:1px solid #000;padding:4px 5px;text-align:center;white-space:nowrap;overflow:hidden;font-size:7.5pt&quot;&gt;Total Despesas&lt;/th&gt;
+           &lt;th style=&quot;border:1px solid #000;padding:4px 5px;text-align:center;white-space:nowrap;overflow:hidden;font-size:7.5pt&quot;&gt;Saldo&lt;/th&gt;
          &lt;/tr&gt;
        &lt;/thead&gt;
        &lt;tbody&gt;
-         &lt;tr style=&quot;text-align:right;font-family:monospace&quot;&gt;
-           &lt;td style=&quot;border:1px solid #000;padding:6px 8px&quot;&gt;&lt;strong&gt;R$ ${saldoAnt}&lt;/strong&gt;&lt;/td&gt;
-           &lt;td style=&quot;border:1px solid #000;padding:6px 8px&quot;&gt;&lt;strong&gt;R$ ${creditado}&lt;/strong&gt;&lt;/td&gt;
-           &lt;td style=&quot;border:1px solid #000;padding:6px 8px&quot;&gt;&lt;strong&gt;R$ 0,00&lt;/strong&gt;&lt;/td&gt;
-           &lt;td style=&quot;border:1px solid #000;padding:6px 8px&quot;&gt;&lt;strong&gt;R$ ${rendimento}&lt;/strong&gt;&lt;/td&gt;
-           &lt;td style=&quot;border:1px solid #000;padding:6px 8px&quot;&gt;&lt;strong&gt;R$ ${fmtMoneyStr(totalReceita)}&lt;/strong&gt;&lt;/td&gt;
-           &lt;td style=&quot;border:1px solid #000;padding:6px 8px&quot;&gt;&lt;strong&gt;R$ ${fmtMoneyStr(totalGasto)}&lt;/strong&gt;&lt;/td&gt;
-           &lt;td style=&quot;border:1px solid #000;padding:6px 8px;color:${saldo &lt; 0 ? &#x27;red&#x27; : &#x27;black&#x27;}&quot;&gt;&lt;strong&gt;${saldo &lt; 0 ? &#x27;-&#x27; : &#x27;&#x27;}R$ ${fmtMoneyStr(Math.abs(saldo))}&lt;/strong&gt;&lt;/td&gt;
+         &lt;tr style=&quot;text-align:right;font-family:monospace;white-space:nowrap&quot;&gt;
+           &lt;td style=&quot;border:1px solid #000;padding:5px 6px;font-size:8pt&quot;&gt;&lt;strong&gt;R$ ${fmtMoneyStr(parseMoney(saldoAnt))}&lt;/strong&gt;&lt;/td&gt;
+           &lt;td style=&quot;border:1px solid #000;padding:5px 6px;font-size:8pt&quot;&gt;&lt;strong&gt;R$ ${fmtMoneyStr(parseMoney(creditado))}&lt;/strong&gt;&lt;/td&gt;
+           &lt;td style=&quot;border:1px solid #000;padding:5px 6px;font-size:8pt&quot;&gt;&lt;strong&gt;R$ 0,00&lt;/strong&gt;&lt;/td&gt;
+           &lt;td style=&quot;border:1px solid #000;padding:5px 6px;font-size:8pt&quot;&gt;&lt;strong&gt;R$ ${fmtMoneyStr(parseMoney(rendimento))}&lt;/strong&gt;&lt;/td&gt;
+           &lt;td style=&quot;border:1px solid #000;padding:5px 6px;font-size:8pt&quot;&gt;&lt;strong&gt;R$ ${fmtMoneyStr(totalReceita)}&lt;/strong&gt;&lt;/td&gt;
+           &lt;td style=&quot;border:1px solid #000;padding:5px 6px;font-size:8pt&quot;&gt;&lt;strong&gt;R$ ${fmtMoneyStr(totalGasto)}&lt;/strong&gt;&lt;/td&gt;
+           &lt;td style=&quot;border:1px solid #000;padding:5px 6px;font-size:8pt;color:${saldo &lt; 0 ? &#x27;red&#x27; : &#x27;black&#x27;}&quot;&gt;&lt;strong&gt;${saldo &lt; 0 ? &#x27;-&#x27; : &#x27;&#x27;}R$ ${fmtMoneyStr(Math.abs(saldo))}&lt;/strong&gt;&lt;/td&gt;
          &lt;/tr&gt;
        &lt;/tbody&gt;
      &lt;/table&gt;
@@ -4566,6 +4567,8 @@ function gerarAnx5() {
   const ressalva = document.getElementById(&#x27;anx5-ressalva&#x27;).value;
   const dataDoc = document.getElementById(&#x27;anx5-data&#x27;).value;
   const tcNum = getTCNumero();
+  const parcela = state.parcelaSelecionada;
+  const nomeParc = parcelaNome(parcela);
 
   const resultText = resultado === &#x27;aprovada&#x27;
     ? &#x27;APROVA, por unanimidade&#x27;
@@ -4588,7 +4591,7 @@ function gerarAnx5() {
        &lt;tr&gt;
          &lt;td style=&quot;border:1px solid #000;padding:10px 14px;text-align:justify&quot;&gt;
            &lt;p&gt;Os membros do Conselho Fiscal da Caixa Escolar: &lt;strong&gt;${CAIXA_ESCOLAR}&lt;/strong&gt;&lt;/p&gt;
-           &lt;p style=&quot;margin-top:8px&quot;&gt;Após, análise detalhada da prestação de contas dos recursos financeiros recebidos na Caixa Escolar &lt;strong&gt;${CAIXA_ESCOLAR}&lt;/strong&gt;, em &lt;strong&gt;${datacred}&lt;/strong&gt; (Data do Crédito em Conta) — &lt;strong&gt;Origem:&lt;/strong&gt; Prefeitura de Contagem / (&lt;strong&gt;${cat}&lt;/strong&gt;), ${resultText} a Prestação de Contas, em virtude da aplicação dos recursos financeiros estar em consonância com a proposta pedagógica da Unidade Escolar &lt;strong&gt;${ESCOLA}&lt;/strong&gt;.${ressalva ? &#x27;&lt;br&gt;&lt;br&gt;&lt;strong&gt;Ressalvas/Observações:&lt;/strong&gt; &#x27; + ressalva : &#x27;&#x27;}&lt;/p&gt;
+           &lt;p style=&quot;margin-top:8px&quot;&gt;Após, análise detalhada da prestação de contas dos recursos financeiros recebidos na Caixa Escolar &lt;strong&gt;${CAIXA_ESCOLAR}&lt;/strong&gt;, em &lt;strong&gt;${datacred}&lt;/strong&gt; (Data do Crédito em Conta) — &lt;strong&gt;Origem:&lt;/strong&gt; Prefeitura de Contagem / &lt;strong&gt;TC ${tcNum}&lt;/strong&gt; — &lt;strong&gt;${nomeParc} PARCELA&lt;/strong&gt; / (&lt;strong&gt;${cat}&lt;/strong&gt;), ${resultText} a Prestação de Contas, em virtude da aplicação dos recursos financeiros estar em consonância com a proposta pedagógica da Unidade Escolar &lt;strong&gt;${ESCOLA}&lt;/strong&gt;.${ressalva ? &#x27;&lt;br&gt;&lt;br&gt;&lt;strong&gt;Ressalvas/Observações:&lt;/strong&gt; &#x27; + ressalva : &#x27;&#x27;}&lt;/p&gt;
            &lt;p style=&quot;margin-top:8px&quot;&gt;Segue abaixo as assinaturas pertinentes, conforme Estatuto registrado em Cartório da cidade de Contagem:&lt;/p&gt;
            &lt;p style=&quot;margin-top:12px&quot;&gt;&lt;strong&gt;Contagem, ${dataDoc}&lt;/strong&gt;&lt;/p&gt;
            &lt;br&gt;
@@ -10521,7 +10524,8 @@ _______________________________________________________
 Presidente da Caixa Escolar
 
 Nome: ${PRESIDENTE}
-CPF: _______________________________`;
+CPF: 033.414.386-10
+CI: 7.163.273`;
   document.getElementById('prev-anx1').textContent = txt;
 }
 
