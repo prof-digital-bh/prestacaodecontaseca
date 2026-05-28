@@ -3116,6 +3116,9 @@ textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
     &lt;div class=&quot;nav-item&quot; onclick=&quot;showPage(&#x27;anx6&#x27;)&quot;&gt;
       &lt;span class=&quot;nav-icon&quot;&gt;🎁&lt;/span&gt; Anexo VI — Doação
     &lt;/div&gt;
+    &lt;div class=&quot;nav-item&quot; id=&quot;nav-anx7&quot; onclick=&quot;showPage(&#x27;anx7&#x27;)&quot; style=&quot;display:none&quot;&gt;
+      &lt;span class=&quot;nav-icon&quot;&gt;🚌&lt;/span&gt; Anexo VII — Trab. Campo
+    &lt;/div&gt;
   &lt;/nav&gt;
 
   &lt;div class=&quot;sidebar-foot&quot;&gt;
@@ -3162,6 +3165,7 @@ textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
         &lt;button class=&quot;btn btn-primary&quot; onclick=&quot;showPage(&#x27;anx2&#x27;)&quot;&gt;📄 Gerar Deliberação (Anx II)&lt;/button&gt;
         &lt;button class=&quot;btn btn-secondary&quot; onclick=&quot;showPage(&#x27;anx3&#x27;)&quot;&gt;📊 Gerar Relatório (Anx III)&lt;/button&gt;
         &lt;button class=&quot;btn btn-secondary&quot; onclick=&quot;showPage(&#x27;anx5&#x27;)&quot;&gt;🔎 Gerar Parecer CF (Anx V)&lt;/button&gt;
+        &lt;button id=&quot;dash-btn-anx7&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;showPage(&#x27;anx7&#x27;)&quot; style=&quot;display:none;background:rgba(181,123,238,0.15);border-color:rgba(181,123,238,0.4);color:#9b5fdb&quot;&gt;🚌 Trab. de Campo (Anx VII)&lt;/button&gt;
       &lt;/div&gt;
     &lt;/div&gt;
 
@@ -3536,6 +3540,92 @@ textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
     &lt;/div&gt;
   &lt;/section&gt;
 
+  &lt;!-- ===================== ANEXO VII — TRABALHO DE CAMPO ===================== --&gt;
+  &lt;section class=&quot;section&quot; id=&quot;page-anx7&quot;&gt;
+    &lt;div class=&quot;page-header&quot;&gt;
+      &lt;div&gt;
+        &lt;div class=&quot;page-title&quot;&gt;Anexo VII — Formulário Trabalho de Campo&lt;/div&gt;
+        &lt;div class=&quot;page-sub&quot;&gt;Obrigatório para despesas de &quot;Além dos Muros&quot; — roteiros educativos/culturais&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;button class=&quot;btn btn-accent btn-sm&quot; onclick=&quot;imprimirDoc(&#x27;anx7&#x27;)&quot;&gt;🖨 Imprimir / PDF&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;div class=&quot;alert alert-info&quot; style=&quot;margin-bottom:16px;padding:10px 14px;background:rgba(43,90,140,0.1);border:1px solid rgba(43,90,140,0.25);border-radius:6px;font-size:12px;color:var(--accent)&quot;&gt;
+      ℹ️ &lt;strong&gt;Atenção:&lt;/strong&gt; Este formulário é exigido para cada despesa do tipo &lt;strong&gt;Além dos Muros&lt;/strong&gt; (roteiros educativos/culturais). Preencha com os dados da atividade realizada.
+    &lt;/div&gt;
+
+    &lt;div class=&quot;form-section&quot;&gt;
+      &lt;div class=&quot;form-section-title&quot;&gt;1 — Identificação&lt;/div&gt;
+      &lt;div class=&quot;form-grid&quot;&gt;
+        &lt;div class=&quot;field&quot;&gt;
+          &lt;label&gt;Nível de Ensino&lt;/label&gt;
+          &lt;select id=&quot;anx7-nivel&quot;&gt;
+            &lt;option value=&quot;ENSINO FUNDAMENTAL&quot;&gt;Ensino Fundamental&lt;/option&gt;
+            &lt;option value=&quot;EDUCAÇÃO INFANTIL&quot;&gt;Educação Infantil&lt;/option&gt;
+            &lt;option value=&quot;EDUCAÇÃO DE JOVENS E ADULTOS (EJA)&quot;&gt;Educação de Jovens e Adultos (EJA)&lt;/option&gt;
+          &lt;/select&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;field&quot;&gt;
+          &lt;label&gt;Nº de Estudantes / Crianças&lt;/label&gt;
+          &lt;input type=&quot;number&quot; id=&quot;anx7-alunos&quot; placeholder=&quot;Ex.: 120&quot; min=&quot;1&quot;&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;field&quot;&gt;
+          &lt;label&gt;Data da Atividade&lt;/label&gt;
+          &lt;input type=&quot;text&quot; id=&quot;anx7-data&quot; placeholder=&quot;dd/mm/aaaa&quot; class=&quot;mono&quot;&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;field form-full&quot;&gt;
+          &lt;label&gt;Destino&lt;/label&gt;
+          &lt;input type=&quot;text&quot; id=&quot;anx7-destino&quot; placeholder=&quot;Ex.: Museu de Ciências Naturais BH&quot;&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;field&quot;&gt;
+          &lt;label&gt;Horário de Saída&lt;/label&gt;
+          &lt;input type=&quot;text&quot; id=&quot;anx7-saida&quot; placeholder=&quot;Ex.: 07:30&quot; class=&quot;mono&quot;&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;field&quot;&gt;
+          &lt;label&gt;Horário de Chegada&lt;/label&gt;
+          &lt;input type=&quot;text&quot; id=&quot;anx7-chegada&quot; placeholder=&quot;Ex.: 17:00&quot; class=&quot;mono&quot;&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;field&quot;&gt;
+          &lt;label&gt;Custo Total (R$)&lt;/label&gt;
+          &lt;input type=&quot;text&quot; id=&quot;anx7-custo&quot; placeholder=&quot;0,00&quot; class=&quot;mono&quot;&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class=&quot;form-section&quot;&gt;
+      &lt;div class=&quot;form-section-title&quot;&gt;2 — Detalhamento do Projeto&lt;/div&gt;
+      &lt;div class=&quot;form-grid&quot;&gt;
+        &lt;div class=&quot;field form-full&quot;&gt;
+          &lt;label&gt;Tema&lt;/label&gt;
+          &lt;input type=&quot;text&quot; id=&quot;anx7-tema&quot; placeholder=&quot;Ex.: Biodiversidade e Sustentabilidade&quot;&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;field form-full&quot;&gt;
+          &lt;label&gt;Objetivos&lt;/label&gt;
+          &lt;textarea id=&quot;anx7-obj&quot; rows=&quot;3&quot; placeholder=&quot;Descreva os objetivos pedagógicos da atividade...&quot;&gt;&lt;/textarea&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;field form-full&quot;&gt;
+          &lt;label&gt;Ações Desenvolvidas&lt;/label&gt;
+          &lt;textarea id=&quot;anx7-acoes&quot; rows=&quot;4&quot; placeholder=&quot;Descreva as atividades realizadas durante o trabalho de campo...&quot;&gt;&lt;/textarea&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;field form-full&quot;&gt;
+          &lt;label&gt;Áreas de Conhecimento Envolvidas&lt;/label&gt;
+          &lt;input type=&quot;text&quot; id=&quot;anx7-areas&quot; placeholder=&quot;Ex.: Ciências, Geografia, Artes&quot;&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class=&quot;doc-preview-wrap&quot;&gt;
+      &lt;div class=&quot;doc-preview-bar&quot;&gt;
+        &lt;span class=&quot;doc-name&quot;&gt;🚌 Anexo VII — Pré-visualização&lt;/span&gt;
+        &lt;div class=&quot;row gap-8&quot;&gt;
+          &lt;button class=&quot;btn btn-green btn-sm&quot; onclick=&quot;gerarAnx7()&quot;&gt;↺ Gerar&lt;/button&gt;
+          &lt;button class=&quot;btn btn-accent btn-sm&quot; onclick=&quot;imprimirDoc(&#x27;anx7&#x27;)&quot;&gt;🖨 Imprimir&lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div id=&quot;prev-anx7&quot;&gt;&lt;div class=&quot;doc-empty&quot;&gt;&lt;div class=&quot;doc-empty-icon&quot;&gt;🚌&lt;/div&gt;Clique em &quot;Gerar&quot;&lt;/div&gt;&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+
 &lt;/main&gt;
 &lt;/div&gt;
 
@@ -3663,6 +3753,12 @@ function onParcelaChange() {
   state.parcelaSelecionada = document.getElementById(&#x27;sel-parcela&#x27;).value;
   atualizarDashboard();
   preencherCamposAutomaticos();
+  // Mostra Anexo VII apenas se houver despesas ALEM_MUROS na parcela
+  const temAlemMuros = getDespesasDaParcela(&#x27;ALEM_MUROS&#x27;).length &gt; 0;
+  const navAnx7 = document.getElementById(&#x27;nav-anx7&#x27;);
+  if (navAnx7) navAnx7.style.display = temAlemMuros ? &#x27;&#x27; : &#x27;none&#x27;;
+  // Se a página atual é anx7 e não há mais ALEM_MUROS, volta ao dash
+  if (!temAlemMuros &amp;&amp; currentPage === &#x27;anx7&#x27;) showPage(&#x27;dash&#x27;);
 }
 
 // ==================== FORMATAÇÃO ====================
@@ -3826,6 +3922,11 @@ function atualizarDashboard() {
 
   // Atualiza preview anx3
   renderAnx3Despesas();
+
+  // Botão condicional Anexo VII (Além dos Muros)
+  const temAlemMuros = getDespesasDaParcela(&#x27;ALEM_MUROS&#x27;).length &gt; 0;
+  const btnAnx7 = document.getElementById(&#x27;dash-btn-anx7&#x27;);
+  if (btnAnx7) btnAnx7.style.display = temAlemMuros ? &#x27;&#x27; : &#x27;none&#x27;;
 }
 
 function fmtDate(d) {
@@ -4456,7 +4557,92 @@ function gerarAnx6() {
   renderDoc(&#x27;anx6&#x27;, html);
 }
 
-// ==================== RENDER DOC ====================
+// ==================== ANEXO VII — TRABALHO DE CAMPO ====================
+function gerarAnx7() {
+  const escola   = ESCOLA;
+  const nivel    = document.getElementById(&#x27;anx7-nivel&#x27;).value || &#x27;ENSINO FUNDAMENTAL&#x27;;
+  const alunos   = document.getElementById(&#x27;anx7-alunos&#x27;).value || &#x27;____&#x27;;
+  const data     = document.getElementById(&#x27;anx7-data&#x27;).value || &#x27;___/___/______&#x27;;
+  const destino  = document.getElementById(&#x27;anx7-destino&#x27;).value || &#x27;___________________________&#x27;;
+  const saida    = document.getElementById(&#x27;anx7-saida&#x27;).value || &#x27;___:___&#x27;;
+  const chegada  = document.getElementById(&#x27;anx7-chegada&#x27;).value || &#x27;___:___&#x27;;
+  const custo    = document.getElementById(&#x27;anx7-custo&#x27;).value || &#x27;0,00&#x27;;
+  const tema     = document.getElementById(&#x27;anx7-tema&#x27;).value || &#x27;___________________________&#x27;;
+  const obj      = document.getElementById(&#x27;anx7-obj&#x27;).value || &#x27;___________________________&#x27;;
+  const acoes    = document.getElementById(&#x27;anx7-acoes&#x27;).value || &#x27;___________________________&#x27;;
+  const areas    = document.getElementById(&#x27;anx7-areas&#x27;).value || &#x27;___________________________&#x27;;
+
+  const nivelChecks = [
+    &#x27;EDUCAÇÃO INFANTIL&#x27;,
+    &#x27;ENSINO FUNDAMENTAL&#x27;,
+    &#x27;EDUCAÇÃO DE JOVENS E ADULTOS (EJA)&#x27;
+  ].map(n =&gt; `&lt;span style=&quot;margin-right:14px&quot;&gt;&lt;span style=&quot;border:1px solid #000;display:inline-block;width:12px;height:12px;vertical-align:middle;background:${nivel===n?&#x27;#000&#x27;:&#x27;transparent&#x27;}&quot;&gt;&lt;/span&gt; ${n}&lt;/span&gt;`).join(&#x27;&#x27;);
+
+  const html = docHtml(&#x27;ANEXO VII — FORMULÁRIO TRABALHO DE CAMPO&#x27;,
+    `&lt;div style=&quot;text-align:center;margin-bottom:8px&quot;&gt;
+       &lt;p&gt;&lt;strong&gt;SECRETARIA MUNICIPAL DE EDUCAÇÃO E CULTURA DE CONTAGEM&lt;/strong&gt;&lt;/p&gt;
+       &lt;p style=&quot;font-size:9pt&quot;&gt;&lt;strong&gt;GERÊNCIA DAS CAIXAS ESCOLARES — DIRETORIA DE GESTÃO DE PARCERIAS, TERMOS DE COMPROMISSO E CONVÊNIOS — SUPERINTENDÊNCIA DE PLANEJAMENTO, ORÇAMENTO E FINANÇAS&lt;/strong&gt;&lt;/p&gt;
+       &lt;p style=&quot;font-size:9pt&quot;&gt;&lt;strong&gt;RUA COIMBRA, Nº 100 — BAIRRO SANTA CRUZ INDUSTRIAL — CONTAGEM/MG — CEP 32.340-010&lt;/strong&gt;&lt;/p&gt;
+     &lt;/div&gt;
+
+     &lt;h2 style=&quot;text-align:center;border:1px solid #000;padding:6px;background:#e8e8e8&quot;&gt;ANEXO VII&lt;br&gt;FORMULÁRIO TRABALHO DE CAMPO&lt;/h2&gt;
+     &lt;br&gt;
+     &lt;table style=&quot;width:100%;border-collapse:collapse;font-size:10pt&quot;&gt;
+       &lt;tbody&gt;
+         &lt;tr&gt;&lt;td colspan=&quot;4&quot; style=&quot;border:1px solid #000;padding:6px 8px;background:#e8e8e8&quot;&gt;&lt;strong&gt;1 — IDENTIFICAÇÃO&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;
+         &lt;tr&gt;
+           &lt;td colspan=&quot;2&quot; style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;&lt;strong&gt;ESCOLA:&lt;/strong&gt; ${escola}&lt;/td&gt;
+           &lt;td colspan=&quot;2&quot; style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;&amp;nbsp;&lt;/td&gt;
+         &lt;/tr&gt;
+         &lt;tr&gt;
+           &lt;td colspan=&quot;4&quot; style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;
+             &lt;strong&gt;NÍVEL E MODALIDADE DE ENSINO:&lt;/strong&gt;&amp;nbsp;&amp;nbsp;${nivelChecks}
+           &lt;/td&gt;
+         &lt;/tr&gt;
+         &lt;tr&gt;
+           &lt;td style=&quot;border:1px solid #000;padding:5px 8px;width:25%&quot;&gt;&lt;strong&gt;Nº DE ESTUDANTES/CRIANÇAS:&lt;/strong&gt; ${alunos}&lt;/td&gt;
+           &lt;td colspan=&quot;3&quot; style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;&lt;strong&gt;DATA:&lt;/strong&gt; ${data}&lt;/td&gt;
+         &lt;/tr&gt;
+         &lt;tr&gt;&lt;td colspan=&quot;4&quot; style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;&lt;strong&gt;DESTINO:&lt;/strong&gt; ${destino}&lt;/td&gt;&lt;/tr&gt;
+         &lt;tr&gt;
+           &lt;td colspan=&quot;2&quot; style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;&lt;strong&gt;HORÁRIO DE SAÍDA:&lt;/strong&gt; ${saida}&lt;/td&gt;
+           &lt;td colspan=&quot;2&quot; style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;&lt;strong&gt;HORÁRIO DE CHEGADA:&lt;/strong&gt; ${chegada}&lt;/td&gt;
+         &lt;/tr&gt;
+         &lt;tr&gt;&lt;td colspan=&quot;4&quot; style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;&lt;strong&gt;CUSTO (VALOR EM REAL):&lt;/strong&gt; R$ ${custo}&lt;/td&gt;&lt;/tr&gt;
+
+         &lt;tr&gt;&lt;td colspan=&quot;4&quot; style=&quot;border:1px solid #000;padding:6px 8px;background:#e8e8e8;margin-top:8px&quot;&gt;&lt;strong&gt;2 — DETALHAMENTO DO PROJETO&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;
+         &lt;tr&gt;&lt;td colspan=&quot;4&quot; style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;&lt;strong&gt;TEMA:&lt;/strong&gt; ${tema}&lt;/td&gt;&lt;/tr&gt;
+         &lt;tr&gt;
+           &lt;td colspan=&quot;4&quot; style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;
+             &lt;strong&gt;OBJETIVOS:&lt;/strong&gt;&lt;br&gt;
+             &lt;div style=&quot;min-height:50px;white-space:pre-wrap&quot;&gt;${obj}&lt;/div&gt;
+           &lt;/td&gt;
+         &lt;/tr&gt;
+         &lt;tr&gt;
+           &lt;td colspan=&quot;4&quot; style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;
+             &lt;strong&gt;AÇÕES DESENVOLVIDAS:&lt;/strong&gt;&lt;br&gt;
+             &lt;div style=&quot;min-height:60px;white-space:pre-wrap&quot;&gt;${acoes}&lt;/div&gt;
+           &lt;/td&gt;
+         &lt;/tr&gt;
+         &lt;tr&gt;
+           &lt;td colspan=&quot;4&quot; style=&quot;border:1px solid #000;padding:5px 8px&quot;&gt;
+             &lt;strong&gt;ÁREAS DE CONHECIMENTO ENVOLVIDAS:&lt;/strong&gt;&lt;br&gt;
+             &lt;div style=&quot;min-height:40px;white-space:pre-wrap&quot;&gt;${areas}&lt;/div&gt;
+           &lt;/td&gt;
+         &lt;/tr&gt;
+         &lt;tr&gt;
+           &lt;td colspan=&quot;4&quot; style=&quot;border:1px solid #000;padding:12px 8px;text-align:right&quot;&gt;
+             &lt;div style=&quot;display:inline-block;text-align:center;width:60%&quot;&gt;
+               &lt;div style=&quot;border-bottom:1px solid #000;margin-bottom:4px&quot;&gt;&amp;nbsp;&lt;/div&gt;
+               &lt;span style=&quot;font-size:9pt&quot;&gt;CARIMBO E ASSINATURA DO PEDAGOGO DA ESCOLA&lt;/span&gt;
+             &lt;/div&gt;
+           &lt;/td&gt;
+         &lt;/tr&gt;
+       &lt;/tbody&gt;
+     &lt;/table&gt;`
+  );
+  renderDoc(&#x27;anx7&#x27;, html);
+}
 function docHtml(titulo, corpo) {
   return `&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;UTF-8&quot;&gt;
   &lt;title&gt;${titulo}&lt;/title&gt;
