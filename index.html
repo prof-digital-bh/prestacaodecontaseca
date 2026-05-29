@@ -303,6 +303,7 @@
   .main {
     padding: 32px 36px;
     overflow-y: auto;
+    height: 100vh;
   }
 
   /* PAGE HEADER */
@@ -2789,7 +2790,7 @@
           <div class="page-subtitle">Geração de Anexos I–VI para prestação de contas — Prefeitura de Contagem</div>
         </div>
       </div>
-      <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)">
+      <div style="border:1px solid var(--border);border-radius:12px;overflow:visible;background:var(--surface);min-height:900px">
         <iframe
           id="gerador-frame"
           srcdoc="&lt;!DOCTYPE html&gt;
@@ -2830,6 +2831,7 @@ body {
   display: grid;
   grid-template-columns: 280px 1fr;
   min-height: 100vh;
+  height: 100%;
 }
 
 /* SIDEBAR */
@@ -3944,6 +3946,107 @@ function getPVRow() {
   ) || null;
 }
 
+// ==================== PREENCHER CAMPOS DA PRESTAÇÃO DE CONTAS ====================
+// Chamada ao clicar "Gerar" em qualquer anexo da aba Prestação de Contas.
+// Força o preenchimento dos campos com os dados do TC e parcela selecionados.
+function preencherCamposPrestacao() {
+  const tc  = state.tcSelecionado;
+  const pv  = getPVRow();
+  if (!tc) return;
+
+  const parcela = state.parcelaSelecionada;
+
+  // ── Helpers ───────────────────────────────────────────────────────────
+  function setV(id, val) {
+    const el = document.getElementById(id);
+    if (!el || val === null || val === undefined || val === '') return;
+    el.value = val;
+  }
+
+  // ── Datas e período ───────────────────────────────────────────────────
+  let dataCredito = '', mesNome = '', mesNomeExt = '', anoStr = '';
+  if (pv && pv.mesAnoInicio) {
+    const [ano, mes] = pv.mesAnoInicio.split('-');
+    const idx = parseInt(mes) - 1;
+    const nomesMin = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const nomesExt = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+    dataCredito = `30/${mes}/${ano}`;
+    mesNome    = nomesMin[idx] || '';
+    mesNomeExt = nomesExt[idx] || '';
+    anoStr     = ano;
+  }
+
+  // Período de execução
+  let periodo = '';
+  if (pv && pv.mesAnoInicio) {
+    const [ano, mes] = pv.mesAnoInicio.split('-');
+    const abr = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'][parseInt(mes)-1];
+    let fimStr = `${abr}//${ano}`;
+    if (pv.dataTermino) {
+      const [af, mf] = pv.dataTermino.split('-');
+      const abrF = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'][parseInt(mf)-1];
+      fimStr = `${abrF}//${af}`;
+    }
+    periodo = `${abr}//${ano} A ${fimStr}`;
+  }
+
+  // Ano por extenso (para Anexo II)
+  const anosExtenso = {
+    '2024':'dois mil e vinte e quatro',
+    '2025':'dois mil e vinte e cinco',
+    '2026':'dois mil e vinte e seis',
+    '2027':'dois mil e vinte e sete',
+    '2028':'dois mil e vinte e oito',
+  };
+  const anoExtenso = anoStr ? (anosExtenso[anoStr] || anoStr) : '';
+
+  // Valores
+  const vCusteio = pv ? parseMoney(pv.custeio) : 0;
+  const vCapital = pv ? parseMoney(pv.capital) : 0;
+  const vAlem    = pv ? parseMoney(pv.alem)    : 0;
+  const vObras   = pv ? parseMoney(pv.obras)   : 0;
+  const vCapina  = pv ? parseMoney(pv.capina  || '0') : 0;
+  const vRend    = pv ? parseMoney(pv.rendimentos || '0') : 0;
+  const vTotal   = vCusteio + vCapital + vAlem + vObras + vCapina;
+  const catPred  = vCapital > vCusteio ? 'CAPITAL' : 'CUSTEIO';
+
+  // Data formatada por extenso: "30 de MARÇO de 2026"
+  const dataExtenso = dataCredito
+    ? (() => {
+        const [d, m, a] = dataCredito.split('/');
+        const ext = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'][parseInt(m)-1];
+        return `${parseInt(d)} de ${ext} de ${a}`;
+      })()
+    : '';
+
+  // ── ANX1 (Certidão) ───────────────────────────────────────────────────
+  if (mesNomeExt) setV('anx1-mes', mesNomeExt);
+  if (anoStr)     setV('anx1-ano', anoStr);
+  setV('anx1-cat', catPred);
+
+  // ── ANX2 (Deliberação) ────────────────────────────────────────────────
+  setV('anx2-datacredito', dataCredito);
+  setV('anx2-periodo',     periodo);
+  if (vTotal > 0) setV('anx2-valor', fmtMoneyStr(vTotal));
+  if (mesNomeExt) setV('anx2-mes', mesNomeExt);
+  if (anoExtenso) setV('anx2-ano', anoExtenso);
+
+  // ── ANX3 (Rel. Financeiro) ────────────────────────────────────────────
+  setV('anx3-datacredito', dataCredito);
+  setV('anx3-numparcela',  parcela);
+  if (vTotal > 0) setV('anx3-creditado', fmtMoneyStr(vTotal));
+  if (vRend  > 0) setV('anx3-rendimento', fmtMoneyStr(vRend));
+  setV('anx3-tipo', catPred);
+
+  // ── ANX4 (Guias) ──────────────────────────────────────────────────────
+  if (dataExtenso) setV('anx4-data', dataExtenso);
+
+  // ── ANX5 (Parecer CF) ─────────────────────────────────────────────────
+  setV('anx5-datacred', dataCredito);
+  setV('anx5-cat',      catPred.toLowerCase());
+  if (dataExtenso) setV('anx5-data', dataExtenso);
+}
+
 // ==================== PREENCHER AUTOMÁTICO ====================
 function preencherCamposAutomaticos() {
   const pv = getPVRow();
@@ -4214,6 +4317,7 @@ function popularBemsDeCapital() {
 // ==================== GERADORES DE DOCUMENTO ====================
 
 function gerarAnx1() {
+  preencherCamposPrestacao();
   const tc = state.tcSelecionado;
   const dia = document.getElementById(&#x27;anx1-dia&#x27;).value;
   const mes = document.getElementById(&#x27;anx1-mes&#x27;).value;
@@ -4265,6 +4369,7 @@ function gerarAnx1() {
 }
 
 function gerarAnx2() {
+  preencherCamposPrestacao();
   const tc = state.tcSelecionado;
   if (!tc) { alert(&#x27;Selecione um TC na barra lateral.&#x27;); return; }
   const dia = document.getElementById(&#x27;anx2-dia&#x27;).value;
@@ -4374,6 +4479,7 @@ function gerarAnx2() {
 }
 
 function gerarAnx3() {
+  preencherCamposPrestacao();
   const tc = state.tcSelecionado;
   if (!tc) { alert(&#x27;Selecione um TC.&#x27;); return; }
   const saldoAnt = document.getElementById(&#x27;anx3-saldo-ant&#x27;).value || &#x27;0,05&#x27;;
@@ -4488,6 +4594,7 @@ function gerarAnx3() {
 }
 
 function gerarAnx4() {
+  preencherCamposPrestacao();
   const tcNum = getTCNumero();
   const parcela = state.parcelaSelecionada;
   const dataDoc = document.getElementById(&#x27;anx4-data&#x27;).value;
@@ -4561,6 +4668,7 @@ function gerarAnx4() {
 }
 
 function gerarAnx5() {
+  preencherCamposPrestacao();
   const datacred = document.getElementById(&#x27;anx5-datacred&#x27;).value;
   const cat = document.getElementById(&#x27;anx5-cat&#x27;).value;
   const resultado = document.getElementById(&#x27;anx5-resultado&#x27;).value;
@@ -4795,14 +4903,23 @@ function docHtml(titulo, corpo) {
 
 function renderDoc(docId, html) {
   const el = document.getElementById(&#x27;prev-&#x27; + docId);
-  el.innerHTML = `&lt;iframe srcdoc=&quot;${escAttr(html)}&quot; style=&quot;width:100%;height:580px;border:none;background:#fff&quot;&gt;&lt;/iframe&gt;`;
+  el.innerHTML = `&lt;iframe srcdoc=&quot;${escAttr(html)}&quot; style=&quot;width:100%;height:720px;border:none;background:#fff&quot; onload=&quot;try{var h=this.contentDocument.body.scrollHeight;if(h&gt;720)this.style.height=(h+40)+&#x27;px&#x27;}catch(e){}&quot;&gt;&lt;/iframe&gt;`;
 }
 
 function imprimirDoc(docId) {
   const iframe = document.querySelector(&#x27;#prev-&#x27; + docId + &#x27; iframe&#x27;);
-  if (!iframe) { alert(&#x27;Gere o documento primeiro clicando em &quot;Gerar Documento&quot;.&#x27;); return; }
-  iframe.contentWindow.focus();
-  iframe.contentWindow.print();
+  if (!iframe) { alert(&#x27;Gere o documento primeiro clicando em ↺ Gerar.&#x27;); return; }
+  // Navegadores bloqueiam print() em iframes aninhados com srcdoc.
+  // Solução: abre nova aba com o mesmo HTML e imprime dela.
+  const html = iframe.getAttribute(&#x27;srcdoc&#x27;);
+  if (!html) { alert(&#x27;Conteúdo do documento não encontrado. Gere novamente.&#x27;); return; }
+  const win = window.open(&#x27;&#x27;, &#x27;_blank&#x27;);
+  if (!win) { alert(&#x27;Popup bloqueado! Permita pop-ups para este site e tente novamente.&#x27;); return; }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() =&gt; { win.print(); }, 600);
 }
 
 // ==================== VALOR POR EXTENSO ====================
@@ -4861,7 +4978,7 @@ init();
 &lt;/body&gt;
 &lt;/html&gt;
 "
-          style="width:100%;height:calc(100vh - 180px);min-height:700px;border:none;display:block"
+          style="width:100%;height:calc(100vh - 100px);min-height:900px;border:none;display:block"
           title="Gerador de Documentos"
         ></iframe>
       </div>
@@ -10270,6 +10387,7 @@ const gerarAnexoIII = gerarAnexo3;
 
 // ==================== GERAR DOCUMENTO ====================
 function gerarDocumento() {
+  preencherDadosAnexo('anx2-tc');
   const dia = document.getElementById('doc-dia').value;
   const mes = document.getElementById('doc-mes').value;
   const ano = document.getElementById('doc-ano').value;
@@ -10489,8 +10607,133 @@ function imprimirAnexo(previewId) {
   setTimeout(() => w.print(), 300);
 }
 
+// ==================== PREENCHIMENTO AUTOMÁTICO DOS ANEXOS ====================
+function preencherDadosAnexo(tcSelId) {
+  const tc = getTCDoAnexo(tcSelId);
+  if (!tc) return;
+
+  // Descobrir a parcela mais recente com dados para esse TC
+  const pvList = (state.parcelaValores || [])
+    .filter(pv => String(pv.tcId) === String(tc.id))
+    .sort((a, b) => (b.parcela || '').localeCompare(a.parcela || ''));
+  const pv = pvList[0] || null;
+
+  // Parcela selecionada
+  const parcela = pv ? pv.parcela : null;
+
+  // Data de crédito (dd/mm/aaaa)
+  let dataCredito = '';
+  let mesAno = { mes: '', ano: '', mesNum: '', mesNome: '' };
+  if (pv && pv.mesAnoInicio) {
+    const [ano, mes] = pv.mesAnoInicio.split('-');
+    dataCredito = `30/${mes}/${ano}`;
+    const nomes = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const nomesExt = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+    const idx = parseInt(mes) - 1;
+    mesAno = { mes: nomes[idx] || '', ano, mesNum: mes, mesNome: nomesExt[idx] || '' };
+  }
+
+  // Valor creditado por tipo
+  const vCusteio  = pv ? parseMoney(pv.custeio)  : 0;
+  const vCapital  = pv ? parseMoney(pv.capital)  : 0;
+  const vAlem     = pv ? parseMoney(pv.alem)     : 0;
+  const vObras    = pv ? parseMoney(pv.obras)     : 0;
+  const vCapina   = pv ? parseMoney(pv.capina  || '0') : 0;
+  const vRend     = pv ? parseMoney(pv.rendimentos || '0') : 0;
+  const vTotal    = vCusteio + vCapital + vAlem + vObras + vCapina;
+
+  // Número do TC (com aditivo se for o caso)
+  let tcNumStr = tc.numero || '___/____';
+  if (tc.tcPaiId) {
+    const pai = (state.tcs || []).find(t => String(t.id) === String(tc.tcPaiId));
+    tcNumStr = `${pai ? pai.numero : '___'} (ADITIVO ${tc.numero || '01'})`;
+  }
+
+  // Categoria predominante
+  const catPredominante = vCapital > vCusteio ? 'CAPITAL' : 'CUSTEIO';
+
+  // Parcela por extenso e ordinal
+  const parcelaOrd = { '01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única' }[parcela] || parcela || '';
+  const parcelaNomeExt = { '01':'PRIMEIRA','02':'SEGUNDA','03':'TERCEIRA','04':'QUARTA','05':'QUINTA','U':'ÚNICA' }[parcela] || parcela || '';
+
+  // Período de execução
+  let periodo = '';
+  if (pv && pv.mesAnoInicio) {
+    const [ano, mes] = pv.mesAnoInicio.split('-');
+    const abr = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'][parseInt(mes)-1];
+    const fimStr = pv.dataTermino ? (() => {
+      const [af, mf] = pv.dataTermino.split('-');
+      const abrF = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'][parseInt(mf)-1];
+      return `${abrF}//${af}`;
+    })() : `${abr}//${ano}`;
+    periodo = `${abr}//${ano} A ${fimStr}`;
+  }
+
+  function setVal(id, val) {
+    const el = document.getElementById(id);
+    if (!el || val === '' || val === null || val === undefined) return;
+    if (el.tagName === 'SELECT') {
+      // Try exact match first, then case-insensitive
+      const opts = [...el.options];
+      const exact = opts.find(o => o.value === val);
+      const ci    = opts.find(o => o.value.toLowerCase() === String(val).toLowerCase());
+      const match = exact || ci;
+      if (match) el.value = match.value;
+    } else {
+      el.value = val;
+    }
+  }
+
+  // ── ANX1 ──────────────────────────────────────────────────────────────────
+  if (tcSelId === 'anx1-tc') {
+    setVal('anx1-parcela', parcelaOrd ? parcelaOrd + 'ª'.replace('ªª','ª') : '');
+    // parcela select usa valores "1ª","2ª" etc — mapa direto
+    const parMap = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única'};
+    setVal('anx1-parcela', parMap[parcela] || '');
+    setVal('anx1-cat', catPredominante);
+    setVal('anx1-mes', mesAno.mes);
+    if (mesAno.ano) setVal('anx1-ano', mesAno.ano);
+  }
+
+  // ── ANX2 (gerarDocumento / sidebar) ──────────────────────────────────────
+  if (tcSelId === 'anx2-tc') {
+    setVal('doc-parcela', parcelaNomeExt || parcelaOrd);
+    setVal('doc-periodo', periodo);
+    setVal('doc-tc', tcNumStr);
+    setVal('rel-creditado', vTotal > 0 ? fmtMoneyStr(vTotal) : '');
+    setVal('rel-data-credito', dataCredito);
+    setVal('doc-mes', mesAno.mes);
+    if (mesAno.ano) setVal('doc-ano', mesAno.ano);
+  }
+
+  // ── ANX4 ──────────────────────────────────────────────────────────────────
+  if (tcSelId === 'anx4-tc') {
+    setVal('anx4-mes', mesAno.mes);
+    if (mesAno.ano) setVal('anx4-ano', mesAno.ano);
+  }
+
+  // ── ANX5 ──────────────────────────────────────────────────────────────────
+  if (tcSelId === 'anx5-tc') {
+    setVal('anx5-datacred', dataCredito);
+    setVal('anx5-cat', catPredominante.toLowerCase());
+    setVal('anx5-mes', mesAno.mes);
+    if (mesAno.ano) setVal('anx5-ano', mesAno.ano);
+  }
+
+  // ── ANX6 ──────────────────────────────────────────────────────────────────
+  if (tcSelId === 'anx6-tc') {
+    setVal('anx6-mes', mesAno.mes);
+    if (mesAno.ano) setVal('anx6-ano', mesAno.ano);
+  }
+
+  // Retorna os dados calculados para uso nas funções geradoras
+  return { tc, pv, parcela, parcelaOrd, parcelaNomeExt, dataCredito, mesAno,
+           vTotal, vCusteio, vCapital, vRend, catPredominante, periodo, tcNumStr };
+}
+
 // ==================== ANEXO I — CERTIDÃO DE EXECUÇÃO ====================
 function gerarAnexo1() {
+  preencherDadosAnexo('anx1-tc');
   const parcela = document.getElementById('anx1-parcela').value;
   const cat = document.getElementById('anx1-cat').value;
   const acao = document.getElementById('anx1-acao').value;
@@ -10548,6 +10791,7 @@ function addAnx4Row() {
 }
 
 function gerarAnexo4() {
+  preencherDadosAnexo('anx4-tc');
   const rows = [...document.querySelectorAll('#anx4-rows > div')];
   const dia = document.getElementById('anx4-dia').value;
   const mes = document.getElementById('anx4-mes').value;
@@ -10588,6 +10832,7 @@ ${PRESIDENTE}                    (Nome, matrícula e assinatura)`;
 
 // ==================== ANEXO V — PARECER DO CONSELHO FISCAL ====================
 function gerarAnexo5() {
+  preencherDadosAnexo('anx5-tc');
   const datacred = document.getElementById('anx5-datacred').value;
   const cat = document.getElementById('anx5-cat').value;
   const resultado = document.getElementById('anx5-resultado').value;
@@ -10655,6 +10900,7 @@ function addAnx6Row(data, qtd, unid, disc, ndoc, vUnit, vTot) {
 }
 
 function gerarAnexo6() {
+  preencherDadosAnexo('anx6-tc');
   const rows = [...document.querySelectorAll('#anx6-rows > div')];
   const dia = document.getElementById('anx6-dia').value;
   const mes = document.getElementById('anx6-mes').value;
