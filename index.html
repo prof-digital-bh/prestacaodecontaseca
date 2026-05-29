@@ -10503,6 +10503,18 @@ function mostrarAnexo(id, el) {
   document.querySelectorAll('#anexo-tabs .parcela-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   popularTodosAnexosTCSelects();
+
+  // Sincronizar select de parcela com state.parcelaSelecionada ao abrir o tab
+  if (id === 'anx2' && state.parcelaSelecionada) {
+    const selPar = document.getElementById('anx2-parcela');
+    if (selPar && !selPar.value) { selPar.value = String(state.parcelaSelecionada); }
+    preencherDadosParcela('anx2');
+  }
+  if (id === 'anx3' && state.parcelaSelecionada) {
+    const selPar = document.getElementById('rel-parcela');
+    if (selPar && !selPar.value) { selPar.value = String(state.parcelaSelecionada); }
+    preencherDadosParcela('anx3');
+  }
 }
 
 // ==================== IMPRIMIR ANEXO ====================
@@ -12404,19 +12416,21 @@ function preencherDadosParcelaForcado(anexo) {
   if (anexo === 'anx2') {
     const selTc  = document.getElementById('anx2-tc');
     const selPar = document.getElementById('anx2-parcela');
-    tcId   = selTc  ? selTc.value  : '';
-    parcela = selPar ? selPar.value : '';
-    if (!tcId && state.tcAtivo) tcId = String(state.tcAtivo);
+    tcId    = (selTc  && selTc.value)  ? selTc.value  : (state.tcAtivo ? String(state.tcAtivo) : '');
+    parcela = (selPar && selPar.value) ? selPar.value : (state.parcelaSelecionada ? String(state.parcelaSelecionada) : '');
   } else if (anexo === 'anx3') {
     const selTc  = document.getElementById('anx3-tc');
     const selPar = document.getElementById('rel-parcela');
-    tcId   = selTc  ? selTc.value  : '';
-    parcela = selPar ? selPar.value : '';
-    if (!tcId && state.tcAtivo) tcId = String(state.tcAtivo);
+    tcId    = (selTc  && selTc.value)  ? selTc.value  : (state.tcAtivo ? String(state.tcAtivo) : '');
+    parcela = (selPar && selPar.value) ? selPar.value : (state.parcelaSelecionada ? String(state.parcelaSelecionada) : '');
   }
 
-  if (!tcId || !parcela) {
-    alert('Selecione o TC e a Parcela antes de atualizar.');
+  if (!tcId) {
+    alert('Nenhum TC ativo encontrado. Ative um TC na aba Termos de Compromisso.');
+    return;
+  }
+  if (!parcela) {
+    alert('Selecione a Parcela antes de atualizar.');
     return;
   }
 
@@ -12466,8 +12480,7 @@ function preencherDadosParcelaForcado(anexo) {
   if (total > 0) valorCreditado = fmtMoneyStr(total);
   if (parseMoney(pv.rendimentos||'0') > 0) rendimentos = fmtMoneyStr(parseMoney(pv.rendimentos));
 
-  const parNomesOrdLocal = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única'};
-  const parOrd = parNomesOrdLocal[parcela] ? parNomesOrdLocal[parcela] + ' Parcela' : 'Parcela ' + parcela;
+  const parOrd = parNomesOrd[parcela] ? parNomesOrd[parcela] + ' Parcela' : 'Parcela ' + parcela;
 
   const forceSet = (id, val, iconId) => {
     const el = document.getElementById(id);
@@ -12483,7 +12496,7 @@ function preencherDadosParcelaForcado(anexo) {
     forceSet('doc-periodo',           periodoExec,    'anx2-periodo-auto-icon');
     forceSet('anx2-datacredito-form', dataCredito,    'anx2-datacred-auto-icon');
     forceSet('anx2-valor-form',       valorCreditado, 'anx2-valor-auto-icon');
-    forceSet('doc-tc',    tcNumero);
+    forceSet('doc-tc',      tcNumero);
     forceSet('doc-parcela', parOrd);
     const badge = document.getElementById('anx2-autofill-badge');
     const info  = document.getElementById('anx2-autofill-info');
@@ -12497,11 +12510,11 @@ function preencherDadosParcelaForcado(anexo) {
     if (rendimentos) forceSet('rel-rendimento', rendimentos, 'anx3-rend-auto-icon');
   }
 
-  // Feedback visual no botão
-  const btn = document.querySelector(`#${anexo === 'anx2' ? 'anx2' : 'anx3'} .btn-secondary[onclick*="Atualizar"], #${anexo} .btn-secondary[onclick*="Forcado"]`);
-  // Pulsar todos os campos atualizados
-  ['doc-periodo','anx2-datacredito-form','anx2-valor-form','doc-tc','doc-parcela',
-   'rel-data-credito','rel-creditado','rel-rendimento'].forEach(id => {
+  // Pulsar campos atualizados com feedback visual
+  const camposAnx2 = ['doc-periodo','anx2-datacredito-form','anx2-valor-form','doc-tc','doc-parcela'];
+  const camposAnx3 = ['rel-data-credito','rel-creditado','rel-rendimento'];
+  const camposPulsar = anexo === 'anx2' ? camposAnx2 : camposAnx3;
+  camposPulsar.forEach(id => {
     const el = document.getElementById(id);
     if (el && el.value) {
       el.style.transition = 'background 0.3s';
