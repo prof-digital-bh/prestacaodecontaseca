@@ -2229,8 +2229,28 @@
           </div>
           <div class="alert alert-info"><span>ℹ</span><span>A Deliberação do Conselho Fiscal deve ser elaborada após o crédito do recurso na conta da Caixa Escolar e antes do início das despesas, registrando o planejamento e a aplicação dos valores recebidos.</span></div>
           <div class="form-grid form-grid-3">
-            <div class="field form-full" style="grid-column:1/-1"><label style="color:var(--accent3)">TC / Aditivo</label>
-              <select id="anx2-tc"><option value="">— Usar TC Ativo —</option></select></div>
+            <div class="field" style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="field">
+                <label style="color:var(--accent3)">TC / Aditivo</label>
+                <select id="anx2-tc" onchange="onAnx2TCChange()"><option value="">— Usar TC Ativo —</option></select>
+              </div>
+              <div class="field">
+                <label style="color:var(--accent3)">Parcela <span style="font-size:10px;color:var(--text-dim);font-weight:400">(preenche campos automaticamente)</span></label>
+                <select id="anx2-parcela" onchange="onAnx2ParcelaChange()">
+                  <option value="">— Selecione a Parcela —</option>
+                  <option value="01">1ª Parcela</option>
+                  <option value="02">2ª Parcela</option>
+                  <option value="03">3ª Parcela</option>
+                  <option value="04">4ª Parcela</option>
+                  <option value="05">5ª Parcela</option>
+                  <option value="U">Parcela Única</option>
+                </select>
+              </div>
+            </div>
+            <!-- Aviso de preenchimento automático -->
+            <div id="anx2-autofill-badge" style="display:none;grid-column:1/-1;padding:8px 12px;background:rgba(56,217,169,0.08);border:1px solid rgba(56,217,169,0.25);border-radius:7px;font-size:12px;color:var(--accent2);display:none;align-items:center;gap:8px">
+              <span>✓</span><span>Campos preenchidos automaticamente com dados da parcela selecionada — você pode editar conforme necessário.</span>
+            </div>
             <div class="field">
               <label>Dia da Reunião</label>
               <input type="number" id="doc-dia" value="" min="1" max="31">
@@ -2258,19 +2278,28 @@
             </div>
             <div class="field">
               <label>Nº Parcela</label>
-              <input type="text" id="doc-parcela" value="">
+              <input type="text" id="doc-parcela" value="" placeholder="Ex: 3ª">
             </div>
             <div class="field">
-              <label>Período de Execução</label>
-              <input type="text" id="doc-periodo" value="">
+              <label>Período de Execução <span id="anx2-periodo-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
+              <input type="text" id="doc-periodo" value="" placeholder="JAN//2026 A MAR//2026">
             </div>
             <div class="field">
               <label>Nº TC</label>
               <input type="text" id="doc-tc" value="">
             </div>
+            <div class="field">
+              <label>Data de Crédito <span id="anx2-datacred-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
+              <input type="text" id="anx2-datacredito-form" value="" placeholder="30/01/2026">
+            </div>
+            <div class="field field-money">
+              <label>Valor Creditado (R$) <span id="anx2-valor-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
+              <input type="text" id="anx2-valor-form" value="" placeholder="0,00" data-money>
+            </div>
           </div>
-          <div style="margin-top:12px">
+          <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <button class="btn btn-success" onclick="gerarDocumento()">↺ Gerar Documento</button>
+            <span id="anx2-autofill-info" style="display:none;font-size:12px;color:var(--accent2);opacity:0.85">✦ Campos marcados foram preenchidos automaticamente — edite se necessário</span>
           </div>
         </div>
         <div class="card">
