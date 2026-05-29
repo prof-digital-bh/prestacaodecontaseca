@@ -2224,6 +2224,7 @@
             <div class="gap-8">
               <button class="btn btn-secondary" onclick="imprimirAnexo('prev-anx2')">🖨 Imprimir</button>
               <button class="btn btn-secondary" onclick="baixarTXT()">⬇ Baixar .txt</button>
+              <button class="btn btn-secondary" onclick="preencherDadosParcelaForcado('anx2')" title="Buscar dados da parcela (Período, Data de Crédito, Valor) nos Termos e Despesas">↺ Atualizar</button>
               <button class="btn btn-primary" onclick="gerarDocumento()">↺ Gerar</button>
             </div>
           </div>
@@ -2315,16 +2316,17 @@
         <div class="card mb-16">
           <div class="card-header"><div class="card-title">📋 Anexo III — Relatório de Execução Físico-Financeiro</div>
             <div class="gap-8">
+              <button class="btn btn-secondary" onclick="preencherDadosParcelaForcado('anx3')" title="Buscar dados da parcela (Valor Creditado, Data de Crédito) nos Termos e Despesas">↺ Atualizar</button>
               <button class="btn btn-primary" onclick="gerarAnexoIII()">⬇ Gerar Anexo III</button>
             </div>
           </div>
           <div class="alert alert-info"><span>ℹ</span><span>O Relatório de Execução Físico-Financeiro resume todos os recebimentos e despesas da Caixa Escolar no período. Deve ser apresentado em todas as prestações de contas.</span></div>
           <div class="form-grid">
             <div class="field form-full"><label style="color:var(--accent3)">TC / Aditivo</label>
-              <select id="anx3-tc" onchange="renderAnexo3()"><option value="">— Usar TC Ativo —</option></select></div>
+              <select id="anx3-tc" onchange="renderAnexo3(); preencherDadosParcela('anx3')"><option value="">— Usar TC Ativo —</option></select></div>
             <div class="field">
               <label>Parcela</label>
-              <select id="rel-parcela">
+              <select id="rel-parcela" onchange="renderAnexo3(); preencherDadosParcela('anx3')">
                 <option value="01">Parcela 01</option>
                 <option value="02">Parcela 02</option>
                 <option value="03" selected>Parcela 03</option>
@@ -2333,7 +2335,7 @@
             </div>
             <div class="field">
               <label>Tipo</label>
-              <select id="rel-tipo">
+              <select id="rel-tipo" onchange="renderAnexo3()">
                 <option value="CUSTEIO">Custeio</option>
                 <option value="CAPITAL">Capital</option>
                 <option value="ALEM_MUROS">Além dos Muros</option>
@@ -2344,15 +2346,15 @@
               <input type="text" id="rel-saldo-ant" value="0,05" data-money placeholder="0,00">
             </div>
             <div class="field field-money">
-              <label>Valor Creditado (R$)</label>
+              <label>Valor Creditado (R$) <span id="anx3-valor-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
               <input type="text" id="rel-creditado" value="" placeholder="0,00" data-money>
             </div>
             <div class="field field-money">
-              <label>Rendimento Financeiro (R$)</label>
+              <label>Rendimento Financeiro (R$) <span id="anx3-rend-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
               <input type="text" id="rel-rendimento" value="" placeholder="0,00" data-money>
             </div>
             <div class="field">
-              <label>Data do Crédito</label>
+              <label>Data do Crédito <span id="anx3-datacred-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
               <input type="text" id="rel-data-credito" value="">
             </div>
           </div>
@@ -12245,6 +12247,268 @@ function confirmarFiltroImpressao() {
   const tipo    = document.getElementById('fi-tipo').value;
   document.getElementById('modal-filtro-impressao').classList.remove('open');
   imprimirAba(_filtroImpressaoAba, { tcId, parcela, tipo });
+}
+
+// ==================== ANX2/ANX3: BUSCA AUTOMÁTICA DE DADOS DA PARCELA ====================
+// Chamadas pelos selects de TC e Parcela do Anexo II
+
+function onAnx2TCChange() {
+  preencherDadosParcela('anx2');
+}
+
+function onAnx2ParcelaChange() {
+  preencherDadosParcela('anx2');
+}
+
+/**
+ * Busca os dados da parcela selecionada (de parcelaValores, cadastrados na aba Termos)
+ * e pré-preenche os campos do Anexo indicado. Mantém valores já editados manualmente.
+ * @param {string} anexo - 'anx2' ou 'anx3'
+ */
+function preencherDadosParcela(anexo) {
+  const mesAbrs = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const parNomesOrd = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única'};
+
+  // --- Determinar TC e Parcela selecionados ---
+  let tcId = '', parcela = '';
+  if (anexo === 'anx2') {
+    const selTc  = document.getElementById('anx2-tc');
+    const selPar = document.getElementById('anx2-parcela');
+    tcId   = selTc  ? selTc.value  : '';
+    parcela = selPar ? selPar.value : '';
+    // Fallback para TC ativo se nenhum selecionado
+    if (!tcId && state.tcAtivo) tcId = String(state.tcAtivo);
+  } else if (anexo === 'anx3') {
+    const selTc  = document.getElementById('anx3-tc');
+    const selPar = document.getElementById('rel-parcela');
+    tcId   = selTc  ? selTc.value  : '';
+    parcela = selPar ? selPar.value : '';
+    if (!tcId && state.tcAtivo) tcId = String(state.tcAtivo);
+  }
+
+  if (!tcId || !parcela) return;
+
+  // --- Buscar linha de parcelaValores ---
+  const pv = (state.parcelaValores || []).find(r =>
+    String(r.tcId) === String(tcId) && r.parcela === parcela
+  );
+
+  // --- Buscar objeto TC para pegar o número ---
+  const tcObj = (state.tcs || []).find(t => String(t.id) === String(tcId));
+  const tcNumero = tcObj
+    ? (tcObj.tcPaiId
+        ? (() => { const pai = (state.tcs||[]).find(p => String(p.id)===String(tcObj.tcPaiId)); return pai ? `${pai.numero} (ADITIVO ${tcObj.numero||'01'})` : tcObj.numero; })()
+        : tcObj.numero)
+    : '';
+
+  // --- Calcular valores a partir dos dados de Termos ---
+  let dataCredito = '';
+  let periodoExec = '';
+  let valorCreditado = '';
+  let rendimentos = '';
+
+  if (pv) {
+    // Data de Crédito: campo direto salvo, senão inferir do mesAnoInicio
+    if (pv.dataCredito) {
+      const pts = pv.dataCredito.split('-');
+      dataCredito = pts.length === 3 ? `${pts[2]}/${pts[1]}/${pts[0]}` : pv.dataCredito;
+    } else if (pv.mesAnoInicio) {
+      const [ano, mes] = pv.mesAnoInicio.split('-');
+      dataCredito = `30/${mes.padStart(2,'0')}/${ano}`;
+    }
+
+    // Período de Execução: mesAnoInicio → dataTermino ou dataLimite
+    if (pv.mesAnoInicio) {
+      const [ano, mes] = pv.mesAnoInicio.split('-');
+      const mesAbr = mesAbrs[parseInt(mes) - 1] || mes;
+      let fimAbr = mesAbr, fimAno = ano;
+      if (pv.dataTermino) {
+        const tp = pv.dataTermino.split('-');
+        if (tp.length === 3) { fimAbr = mesAbrs[parseInt(tp[1])-1] || tp[1]; fimAno = tp[0]; }
+      } else if (pv.dataLimite) {
+        const lp = pv.dataLimite.split('-');
+        if (lp.length === 3) { fimAbr = mesAbrs[parseInt(lp[1])-1] || lp[1]; fimAno = lp[0]; }
+      }
+      periodoExec = `${mesAbr}//${ano} A ${fimAbr}//${fimAno}`;
+    }
+
+    // Valor Creditado: soma das categorias (sem rendimentos)
+    const total = parseMoney(pv.custeio||'0') + parseMoney(pv.capital||'0') +
+                  parseMoney(pv.alem||'0') + parseMoney(pv.obras||'0') +
+                  parseMoney(pv.capina||'0');
+    if (total > 0) valorCreditado = fmtMoneyStr(total);
+
+    // Rendimentos separado
+    if (parseMoney(pv.rendimentos||'0') > 0) rendimentos = fmtMoneyStr(parseMoney(pv.rendimentos));
+  }
+
+  // Parcela ordinal para exibição
+  const parOrd = parNomesOrd[parcela] ? parNomesOrd[parcela] + ' Parcela' : 'Parcela ' + parcela;
+
+  // --- Preencher campos (só se estiver vazio — para não sobrescrever edição manual) ---
+  // Ao usar ↺ Atualizar, força o preenchimento; ao mudar select, só preenche vazio.
+  const forcar = (anexo === '_force_anx2' || anexo === '_force_anx3');
+  const alvo = forcar ? anexo.replace('_force_','') : anexo;
+  const setAuto = (id, val, iconId) => {
+    const el = document.getElementById(id);
+    const icon = iconId ? document.getElementById(iconId) : null;
+    if (!el) return;
+    if (val && (forcar || !el.value.trim())) {
+      el.value = val;
+      el.style.borderColor = 'rgba(56,217,169,0.5)';
+      el.style.color = 'var(--accent2)';
+      if (icon) icon.style.display = '';
+    } else if (!val) {
+      if (icon) icon.style.display = 'none';
+    }
+  };
+
+  if (alvo === 'anx2') {
+    setAuto('doc-periodo',          periodoExec,    'anx2-periodo-auto-icon');
+    setAuto('anx2-datacredito-form', dataCredito,   'anx2-datacred-auto-icon');
+    setAuto('anx2-valor-form',      valorCreditado, 'anx2-valor-auto-icon');
+    // Nº TC e Nº Parcela
+    const elTc  = document.getElementById('doc-tc');
+    const elPar = document.getElementById('doc-parcela');
+    if (elTc  && (forcar || !elTc.value.trim())  && tcNumero)   { elTc.value  = tcNumero;  elTc.style.borderColor  = 'rgba(56,217,169,0.5)'; elTc.style.color  = 'var(--accent2)'; }
+    if (elPar && (forcar || !elPar.value.trim()) && parOrd)     { elPar.value = parOrd;    elPar.style.borderColor = 'rgba(56,217,169,0.5)'; elPar.style.color = 'var(--accent2)'; }
+
+    // Mostrar badge de autofill
+    const badge = document.getElementById('anx2-autofill-badge');
+    const info  = document.getElementById('anx2-autofill-info');
+    if (pv && badge) { badge.style.display = 'flex'; }
+    if (pv && info)  { info.style.display  = ''; }
+  }
+
+  if (alvo === 'anx3') {
+    setAuto('rel-data-credito', dataCredito,    'anx3-datacred-auto-icon');
+    setAuto('rel-creditado',    valorCreditado, 'anx3-valor-auto-icon');
+    if (rendimentos) setAuto('rel-rendimento', rendimentos, 'anx3-rend-auto-icon');
+  }
+
+  // Sem dados cadastrados: aviso sutil
+  if (!pv) {
+    console.info(`[ANX] Nenhuma distribuição de parcela encontrada para TC ${tcId}, parcela ${parcela}`);
+  }
+}
+
+/**
+ * Força o recarregamento dos dados (ignorando se o campo já tem valor).
+ * Chamado pelo botão ↺ Atualizar.
+ */
+function preencherDadosParcelaForcado(anexo) {
+  const mesAbrs = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const parNomesOrd = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única'};
+
+  let tcId = '', parcela = '';
+  if (anexo === 'anx2') {
+    const selTc  = document.getElementById('anx2-tc');
+    const selPar = document.getElementById('anx2-parcela');
+    tcId   = selTc  ? selTc.value  : '';
+    parcela = selPar ? selPar.value : '';
+    if (!tcId && state.tcAtivo) tcId = String(state.tcAtivo);
+  } else if (anexo === 'anx3') {
+    const selTc  = document.getElementById('anx3-tc');
+    const selPar = document.getElementById('rel-parcela');
+    tcId   = selTc  ? selTc.value  : '';
+    parcela = selPar ? selPar.value : '';
+    if (!tcId && state.tcAtivo) tcId = String(state.tcAtivo);
+  }
+
+  if (!tcId || !parcela) {
+    alert('Selecione o TC e a Parcela antes de atualizar.');
+    return;
+  }
+
+  const pv = (state.parcelaValores || []).find(r =>
+    String(r.tcId) === String(tcId) && r.parcela === parcela
+  );
+
+  if (!pv) {
+    alert(`⚠ Nenhuma distribuição de parcela cadastrada para esta combinação TC + Parcela.\n\nCadastre os valores em "📊 Parcelas" no card do TC para habilitar o preenchimento automático.`);
+    return;
+  }
+
+  const tcObj = (state.tcs || []).find(t => String(t.id) === String(tcId));
+  const tcNumero = tcObj
+    ? (tcObj.tcPaiId
+        ? (() => { const pai = (state.tcs||[]).find(p => String(p.id)===String(tcObj.tcPaiId)); return pai ? `${pai.numero} (ADITIVO ${tcObj.numero||'01'})` : tcObj.numero; })()
+        : tcObj.numero)
+    : '';
+
+  let dataCredito = '', periodoExec = '', valorCreditado = '', rendimentos = '';
+
+  if (pv.dataCredito) {
+    const pts = pv.dataCredito.split('-');
+    dataCredito = pts.length === 3 ? `${pts[2]}/${pts[1].padStart(2,'0')}/${pts[0]}` : pv.dataCredito;
+  } else if (pv.mesAnoInicio) {
+    const [ano, mes] = pv.mesAnoInicio.split('-');
+    dataCredito = `30/${mes.padStart(2,'0')}/${ano}`;
+  }
+
+  if (pv.mesAnoInicio) {
+    const [ano, mes] = pv.mesAnoInicio.split('-');
+    const mesAbr = mesAbrs[parseInt(mes) - 1] || mes;
+    let fimAbr = mesAbr, fimAno = ano;
+    if (pv.dataTermino) {
+      const tp = pv.dataTermino.split('-');
+      if (tp.length === 3) { fimAbr = mesAbrs[parseInt(tp[1])-1] || tp[1]; fimAno = tp[0]; }
+    } else if (pv.dataLimite) {
+      const lp = pv.dataLimite.split('-');
+      if (lp.length === 3) { fimAbr = mesAbrs[parseInt(lp[1])-1] || lp[1]; fimAno = lp[0]; }
+    }
+    periodoExec = `${mesAbr}//${ano} A ${fimAbr}//${fimAno}`;
+  }
+
+  const total = parseMoney(pv.custeio||'0') + parseMoney(pv.capital||'0') +
+                parseMoney(pv.alem||'0') + parseMoney(pv.obras||'0') +
+                parseMoney(pv.capina||'0');
+  if (total > 0) valorCreditado = fmtMoneyStr(total);
+  if (parseMoney(pv.rendimentos||'0') > 0) rendimentos = fmtMoneyStr(parseMoney(pv.rendimentos));
+
+  const parNomesOrdLocal = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única'};
+  const parOrd = parNomesOrdLocal[parcela] ? parNomesOrdLocal[parcela] + ' Parcela' : 'Parcela ' + parcela;
+
+  const forceSet = (id, val, iconId) => {
+    const el = document.getElementById(id);
+    const icon = iconId ? document.getElementById(iconId) : null;
+    if (!el || !val) return;
+    el.value = val;
+    el.style.borderColor = 'rgba(56,217,169,0.5)';
+    el.style.color = 'var(--accent2)';
+    if (icon) icon.style.display = '';
+  };
+
+  if (anexo === 'anx2') {
+    forceSet('doc-periodo',           periodoExec,    'anx2-periodo-auto-icon');
+    forceSet('anx2-datacredito-form', dataCredito,    'anx2-datacred-auto-icon');
+    forceSet('anx2-valor-form',       valorCreditado, 'anx2-valor-auto-icon');
+    forceSet('doc-tc',    tcNumero);
+    forceSet('doc-parcela', parOrd);
+    const badge = document.getElementById('anx2-autofill-badge');
+    const info  = document.getElementById('anx2-autofill-info');
+    if (badge) badge.style.display = 'flex';
+    if (info)  info.style.display  = '';
+  }
+
+  if (anexo === 'anx3') {
+    forceSet('rel-data-credito', dataCredito,    'anx3-datacred-auto-icon');
+    forceSet('rel-creditado',    valorCreditado, 'anx3-valor-auto-icon');
+    if (rendimentos) forceSet('rel-rendimento', rendimentos, 'anx3-rend-auto-icon');
+  }
+
+  // Feedback visual no botão
+  const btn = document.querySelector(`#${anexo === 'anx2' ? 'anx2' : 'anx3'} .btn-secondary[onclick*="Atualizar"], #${anexo} .btn-secondary[onclick*="Forcado"]`);
+  // Pulsar todos os campos atualizados
+  ['doc-periodo','anx2-datacredito-form','anx2-valor-form','doc-tc','doc-parcela',
+   'rel-data-credito','rel-creditado','rel-rendimento'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value) {
+      el.style.transition = 'background 0.3s';
+      el.style.background = 'rgba(56,217,169,0.12)';
+      setTimeout(() => { el.style.background = ''; }, 800);
+    }
+  });
 }
 
 
