@@ -2116,11 +2116,11 @@
         <div style="font-size:13px;font-weight:600;margin-bottom:14px">Dados da Deliberação (Anexo II)</div>
         <div class="form-grid form-grid-3">
           <div class="field">
-            <label>Dia da Reunião</label>
+            <label>Dia da Reunião <span id="preview-dia-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
             <input type="number" id="doc-dia" value="" min="1" max="31">
           </div>
           <div class="field">
-            <label>Mês</label>
+            <label>Mês <span id="preview-mes-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
             <select id="doc-mes">
               <option value="janeiro">janeiro</option>
               <option value="fevereiro">fevereiro</option>
@@ -2137,7 +2137,7 @@
             </select>
           </div>
           <div class="field">
-            <label>Ano</label>
+            <label>Ano <span id="preview-ano-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
             <input type="number" id="doc-ano" placeholder="aaaa">
           </div>
           <div class="field">
@@ -2193,13 +2193,29 @@
           <div class="card-header"><div class="card-title">📄 Anexo I — Certidão de Execução do Objeto</div>
             <div class="gap-8">
               <button class="btn btn-secondary" onclick="imprimirAnexo('prev-anx1')">🖨 Imprimir</button>
+              <button class="btn btn-secondary" onclick="preencherDadosParcelaForcado('anx1')" title="Buscar dados da parcela nos Termos e Despesas">↺ Atualizar</button>
               <button class="btn btn-primary" onclick="gerarAnexo1()">↺ Gerar</button>
             </div>
           </div>
           <div class="form-grid">
-            <div class="field form-full"><label style="color:var(--accent3)">TC / Aditivo</label>
-              <select id="anx1-tc"><option value="">— Usar TC Ativo —</option></select></div>
-            <div class="field"><label>Nº da Parcela</label>
+            <div class="field" style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="field"><label style="color:var(--accent3)">TC / Aditivo</label>
+                <select id="anx1-tc" onchange="preencherDadosParcela('anx1')"><option value="">— Usar TC Ativo —</option></select></div>
+              <div class="field"><label style="color:var(--accent3)">Parcela <span style="font-size:10px;color:var(--text-dim);font-weight:400">(preenche campos automaticamente)</span></label>
+                <select id="anx1-parcela-auto" onchange="preencherDadosParcela('anx1')">
+                  <option value="">— Selecione a Parcela —</option>
+                  <option value="01">1ª Parcela</option>
+                  <option value="02">2ª Parcela</option>
+                  <option value="03">3ª Parcela</option>
+                  <option value="04">4ª Parcela</option>
+                  <option value="05">5ª Parcela</option>
+                  <option value="U">Parcela Única</option>
+                </select></div>
+            </div>
+            <div id="anx1-autofill-badge" style="display:none;grid-column:1/-1;padding:8px 12px;background:rgba(56,217,169,0.08);border:1px solid rgba(56,217,169,0.25);border-radius:7px;font-size:12px;color:var(--accent2);align-items:center;gap:8px">
+              <span>✓</span><span>Campos preenchidos automaticamente com dados da parcela — você pode editar conforme necessário.</span>
+            </div>
+            <div class="field"><label>Nº da Parcela <span id="anx1-parcela-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
               <select id="anx1-parcela"><option value="1ª">1ª Parcela</option><option value="2ª">2ª Parcela</option><option value="3ª" selected>3ª Parcela</option><option value="4ª">4ª Parcela</option><option value="Única">Parcela Única</option></select></div>
             <div class="field"><label>Categoria</label>
               <select id="anx1-cat"><option value="CUSTEIO">Custeio</option><option value="CAPITAL">Capital</option></select></div>
@@ -2208,10 +2224,12 @@
                 <option value="MANUTENCAO">Despesas com a Manutenção do Funcionamento Escolar</option>
                 <option value="CAPITAL">Despesas com Aquisição de Bens Móveis de Capital ou Reforma, Manutenção, Reforma e Requalificação</option>
               </select></div>
-            <div class="field"><label>Dia</label><input type="number" id="anx1-dia" value="" min="1" max="31"></div>
-            <div class="field"><label>Mês</label>
+            <div class="field"><label>Dia <span id="anx1-dia-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><input type="number" id="anx1-dia" value="" min="1" max="31"></div>
+            <div class="field"><label>Mês <span id="anx1-mes-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
               <select id="anx1-mes"><option>janeiro</option><option>fevereiro</option><option>março</option><option>abril</option><option>maio</option><option>junho</option><option>julho</option><option>agosto</option><option>setembro</option><option>outubro</option><option>novembro</option><option selected>dezembro</option></select></div>
-            <div class="field"><label>Ano</label><input type="number" id="anx1-ano" placeholder="aaaa"></div>
+            <div class="field"><label>Ano <span id="anx1-ano-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><input type="number" id="anx1-ano" placeholder="aaaa"></div>
+            <div class="field form-full"><label>Período de Execução <span id="anx1-periodo-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
+              <input type="text" id="anx1-periodo" value="" placeholder="JAN//2026 A MAR//2026"></div>
           </div>
         </div>
         <div class="card"><div class="preview-box" id="prev-anx1">Clique em "Gerar" para visualizar.</div></div>
@@ -2253,11 +2271,11 @@
               <span>✓</span><span>Campos preenchidos automaticamente com dados da parcela selecionada — você pode editar conforme necessário.</span>
             </div>
             <div class="field">
-              <label>Dia da Reunião</label>
+              <label>Dia da Reunião <span id="anx2-reuniao-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
               <input type="number" id="doc-dia" value="" min="1" max="31">
             </div>
             <div class="field">
-              <label>Mês</label>
+              <label>Mês <span id="anx2-reuniao-mes-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
               <select id="doc-mes">
                 <option value="janeiro">janeiro</option>
                 <option value="fevereiro">fevereiro</option>
@@ -2274,7 +2292,7 @@
               </select>
             </div>
             <div class="field">
-              <label>Ano</label>
+              <label>Ano <span id="anx2-reuniao-ano-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label>
               <input type="number" id="doc-ano" placeholder="aaaa">
             </div>
             <div class="field">
@@ -2392,13 +2410,27 @@
           <div class="card-header"><div class="card-title">📋 Anexo IV — Relação de Guias Pagas</div>
             <div class="gap-8">
               <button class="btn btn-secondary" onclick="imprimirAnexo('prev-anx4')">🖨 Imprimir</button>
+              <button class="btn btn-secondary" onclick="preencherDadosParcelaForcado('anx4')" title="Buscar dados da parcela (Período, Data de Crédito, Valor) nos Termos e Despesas">↺ Atualizar</button>
               <button class="btn btn-primary" onclick="gerarAnexo4()">↺ Gerar</button>
             </div>
           </div>
           <div class="alert alert-info"><span>ℹ</span><span>Informe as guias de INSS, ISSQN, DARF retidos nas notas fiscais de serviço. Para compras de material (sem retenção), deixe em branco.</span></div>
-          <div class="form-grid mb-16" style="grid-template-columns:1fr">
+          <div class="form-grid mb-16" style="grid-template-columns:1fr 1fr">
             <div class="field"><label style="color:var(--accent3)">TC / Aditivo</label>
-              <select id="anx4-tc"><option value="">— Usar TC Ativo —</option></select></div>
+              <select id="anx4-tc" onchange="preencherDadosParcela('anx4')"><option value="">— Usar TC Ativo —</option></select></div>
+            <div class="field"><label style="color:var(--accent3)">Parcela <span style="font-size:10px;color:var(--text-dim);font-weight:400">(preenche campos automaticamente)</span></label>
+              <select id="anx4-parcela" onchange="preencherDadosParcela('anx4')">
+                <option value="">— Selecione a Parcela —</option>
+                <option value="01">1ª Parcela</option>
+                <option value="02">2ª Parcela</option>
+                <option value="03">3ª Parcela</option>
+                <option value="04">4ª Parcela</option>
+                <option value="05">5ª Parcela</option>
+                <option value="U">Parcela Única</option>
+              </select></div>
+          </div>
+          <div id="anx4-autofill-badge" style="display:none;margin-bottom:14px;padding:8px 12px;background:rgba(56,217,169,0.08);border:1px solid rgba(56,217,169,0.25);border-radius:7px;font-size:12px;color:var(--accent2);align-items:center;gap:8px">
+            <span>✓</span><span>Campos preenchidos automaticamente com dados da parcela — você pode editar conforme necessário.</span>
           </div>
           <div id="anx4-linhas">
             <div style="display:grid;grid-template-columns:2fr 1fr 2fr 1fr 1fr;gap:8px;margin-bottom:6px;font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;padding:0 4px">
@@ -2408,9 +2440,9 @@
           </div>
           <button class="btn btn-ghost mt-16" onclick="addAnx4Row()">+ Adicionar Linha</button>
           <div class="form-grid mt-16" style="grid-template-columns:1fr 1fr 1fr">
-            <div class="field"><label>Dia</label><input type="number" id="anx4-dia" value=""></div>
-            <div class="field"><label>Mês</label><select id="anx4-mes"><option>janeiro</option><option>fevereiro</option><option>março</option><option>abril</option><option>maio</option><option>junho</option><option>julho</option><option>agosto</option><option>setembro</option><option>outubro</option><option>novembro</option><option selected>dezembro</option></select></div>
-            <div class="field"><label>Ano</label><input type="number" id="anx4-ano" placeholder="aaaa"></div>
+            <div class="field"><label>Dia <span id="anx4-dia-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><input type="number" id="anx4-dia" value=""></div>
+            <div class="field"><label>Mês <span id="anx4-mes-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><select id="anx4-mes"><option>janeiro</option><option>fevereiro</option><option>março</option><option>abril</option><option>maio</option><option>junho</option><option>julho</option><option>agosto</option><option>setembro</option><option>outubro</option><option>novembro</option><option selected>dezembro</option></select></div>
+            <div class="field"><label>Ano <span id="anx4-ano-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><input type="number" id="anx4-ano" placeholder="aaaa"></div>
           </div>
         </div>
         <div class="card"><div class="preview-box" id="prev-anx4">Clique em "Gerar" para visualizar.</div></div>
@@ -2422,13 +2454,29 @@
           <div class="card-header"><div class="card-title">📋 Anexo V — Parecer do Conselho Fiscal</div>
             <div class="gap-8">
               <button class="btn btn-secondary" onclick="imprimirAnexo('prev-anx5')">🖨 Imprimir</button>
+              <button class="btn btn-secondary" onclick="preencherDadosParcelaForcado('anx5')" title="Buscar dados da parcela (Data de Crédito, Período) nos Termos e Despesas">↺ Atualizar</button>
               <button class="btn btn-primary" onclick="gerarAnexo5()">↺ Gerar</button>
             </div>
           </div>
           <div class="form-grid">
-            <div class="field form-full"><label style="color:var(--accent3)">TC / Aditivo</label>
-              <select id="anx5-tc"><option value="">— Usar TC Ativo —</option></select></div>
-            <div class="field"><label>Data do Crédito (dd/mm/aaaa)</label><input type="text" id="anx5-datacred" value=""></div>
+            <div class="field" style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="field"><label style="color:var(--accent3)">TC / Aditivo</label>
+                <select id="anx5-tc" onchange="preencherDadosParcela('anx5')"><option value="">— Usar TC Ativo —</option></select></div>
+              <div class="field"><label style="color:var(--accent3)">Parcela <span style="font-size:10px;color:var(--text-dim);font-weight:400">(preenche campos automaticamente)</span></label>
+                <select id="anx5-parcela" onchange="preencherDadosParcela('anx5')">
+                  <option value="">— Selecione a Parcela —</option>
+                  <option value="01">1ª Parcela</option>
+                  <option value="02">2ª Parcela</option>
+                  <option value="03">3ª Parcela</option>
+                  <option value="04">4ª Parcela</option>
+                  <option value="05">5ª Parcela</option>
+                  <option value="U">Parcela Única</option>
+                </select></div>
+            </div>
+            <div id="anx5-autofill-badge" style="display:none;grid-column:1/-1;padding:8px 12px;background:rgba(56,217,169,0.08);border:1px solid rgba(56,217,169,0.25);border-radius:7px;font-size:12px;color:var(--accent2);align-items:center;gap:8px">
+              <span>✓</span><span>Campos preenchidos automaticamente com dados da parcela — você pode editar conforme necessário.</span>
+            </div>
+            <div class="field"><label>Data do Crédito (dd/mm/aaaa) <span id="anx5-datacred-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><input type="text" id="anx5-datacred" value=""></div>
             <div class="field"><label>Categoria da verba</label>
               <select id="anx5-cat"><option value="custeio">custeio</option><option value="capital">capital</option></select></div>
             <div class="field"><label>Resultado</label>
@@ -2438,9 +2486,9 @@
                 <option value="reprovada">Reprovada</option>
               </select></div>
             <div class="field form-full"><label>Ressalvas / Observações (opcional)</label><input type="text" id="anx5-ressalva" placeholder="Ex.: NF sem carimbo de recebimento..."></div>
-            <div class="field"><label>Dia</label><input type="number" id="anx5-dia" value=""></div>
-            <div class="field"><label>Mês</label><select id="anx5-mes"><option>janeiro</option><option>fevereiro</option><option>março</option><option>abril</option><option>maio</option><option>junho</option><option>julho</option><option>agosto</option><option>setembro</option><option>outubro</option><option>novembro</option><option selected>dezembro</option></select></div>
-            <div class="field"><label>Ano</label><input type="number" id="anx5-ano" placeholder="aaaa"></div>
+            <div class="field"><label>Dia <span id="anx5-dia-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><input type="number" id="anx5-dia" value=""></div>
+            <div class="field"><label>Mês <span id="anx5-mes-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><select id="anx5-mes"><option>janeiro</option><option>fevereiro</option><option>março</option><option>abril</option><option>maio</option><option>junho</option><option>julho</option><option>agosto</option><option>setembro</option><option>outubro</option><option>novembro</option><option selected>dezembro</option></select></div>
+            <div class="field"><label>Ano <span id="anx5-ano-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><input type="number" id="anx5-ano" placeholder="aaaa"></div>
           </div>
         </div>
         <div class="card"><div class="preview-box" id="prev-anx5">Clique em "Gerar" para visualizar.</div></div>
@@ -2452,13 +2500,27 @@
           <div class="card-header"><div class="card-title">📋 Anexo VI — Termo de Doação (Bens de Capital)</div>
             <div class="gap-8">
               <button class="btn btn-secondary" onclick="imprimirAnexo('prev-anx6')">🖨 Imprimir</button>
+              <button class="btn btn-secondary" onclick="preencherDadosParcelaForcado('anx6')" title="Buscar dados da parcela (Período, Data de Crédito, Valor) nos Termos e Despesas">↺ Atualizar</button>
               <button class="btn btn-primary" onclick="gerarAnexo6()">↺ Gerar</button>
             </div>
           </div>
           <div class="alert alert-warn"><span>⚠</span><span>Obrigatório para <strong>todos os bens de Capital</strong> adquiridos. Devem ser tombados em nome do Município imediatamente após a aquisição.</span></div>
-          <div class="form-grid mb-16" style="grid-template-columns:1fr">
+          <div class="form-grid mb-16" style="grid-template-columns:1fr 1fr">
             <div class="field"><label style="color:var(--accent3)">TC / Aditivo</label>
-              <select id="anx6-tc"><option value="">— Usar TC Ativo —</option></select></div>
+              <select id="anx6-tc" onchange="preencherDadosParcela('anx6')"><option value="">— Usar TC Ativo —</option></select></div>
+            <div class="field"><label style="color:var(--accent3)">Parcela <span style="font-size:10px;color:var(--text-dim);font-weight:400">(preenche campos automaticamente)</span></label>
+              <select id="anx6-parcela" onchange="preencherDadosParcela('anx6')">
+                <option value="">— Selecione a Parcela —</option>
+                <option value="01">1ª Parcela</option>
+                <option value="02">2ª Parcela</option>
+                <option value="03">3ª Parcela</option>
+                <option value="04">4ª Parcela</option>
+                <option value="05">5ª Parcela</option>
+                <option value="U">Parcela Única</option>
+              </select></div>
+          </div>
+          <div id="anx6-autofill-badge" style="display:none;margin-bottom:14px;padding:8px 12px;background:rgba(56,217,169,0.08);border:1px solid rgba(56,217,169,0.25);border-radius:7px;font-size:12px;color:var(--accent2);align-items:center;gap:8px">
+            <span>✓</span><span>Campos preenchidos automaticamente com dados da parcela — você pode editar conforme necessário.</span>
           </div>
           <div id="anx6-itens-wrap">
             <div style="display:grid;grid-template-columns:1fr 60px 80px 1fr 100px 100px;gap:8px;margin-bottom:6px;font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px">
@@ -2468,9 +2530,9 @@
           </div>
           <button class="btn btn-ghost mt-16" onclick="addAnx6Row()">+ Adicionar Item</button>
           <div class="form-grid mt-16" style="grid-template-columns:1fr 1fr 1fr">
-            <div class="field"><label>Dia</label><input type="number" id="anx6-dia" value=""></div>
-            <div class="field"><label>Mês</label><select id="anx6-mes"><option>janeiro</option><option>fevereiro</option><option>março</option><option>abril</option><option>maio</option><option>junho</option><option>julho</option><option>agosto</option><option>setembro</option><option>outubro</option><option>novembro</option><option selected>dezembro</option></select></div>
-            <div class="field"><label>Ano</label><input type="number" id="anx6-ano" placeholder="aaaa"></div>
+            <div class="field"><label>Dia <span id="anx6-dia-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><input type="number" id="anx6-dia" value=""></div>
+            <div class="field"><label>Mês <span id="anx6-mes-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><select id="anx6-mes"><option>janeiro</option><option>fevereiro</option><option>março</option><option>abril</option><option>maio</option><option>junho</option><option>julho</option><option>agosto</option><option>setembro</option><option>outubro</option><option>novembro</option><option selected>dezembro</option></select></div>
+            <div class="field"><label>Ano <span id="anx6-ano-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><input type="number" id="anx6-ano" placeholder="aaaa"></div>
           </div>
         </div>
         <div class="card"><div class="preview-box" id="prev-anx6">Clique em "Gerar" para visualizar.</div></div>
@@ -2508,10 +2570,28 @@
           <div class="card-header"><div class="card-title">📋 Anexo VIII — Termo de Recebimento Definitivo</div>
             <div class="gap-8">
               <button class="btn btn-secondary" onclick="imprimirAnexo('prev-anx8')">🖨 Imprimir</button>
+              <button class="btn btn-secondary" onclick="preencherDadosParcelaForcado('anx8')" title="Buscar dados da parcela (Data de Crédito, Período) nos Termos e Despesas">↺ Atualizar</button>
               <button class="btn btn-primary" onclick="gerarAnexo8()">↺ Gerar</button>
             </div>
           </div>
           <div class="alert alert-warn"><span>⚠</span><span>Obrigatório para serviços de <strong>reforma, manutenção, reparo e requalificação</strong> de imóveis. Deve ser assinado pelo Engenheiro da SEDUC/FUNEC.</span></div>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr;margin-bottom:14px">
+            <div class="field"><label style="color:var(--accent3)">TC / Aditivo</label>
+              <select id="anx8-tc" onchange="preencherDadosParcela('anx8')"><option value="">— Usar TC Ativo —</option></select></div>
+            <div class="field"><label style="color:var(--accent3)">Parcela <span style="font-size:10px;color:var(--text-dim);font-weight:400">(preenche campos automaticamente)</span></label>
+              <select id="anx8-parcela" onchange="preencherDadosParcela('anx8')">
+                <option value="">— Selecione a Parcela —</option>
+                <option value="01">1ª Parcela</option>
+                <option value="02">2ª Parcela</option>
+                <option value="03">3ª Parcela</option>
+                <option value="04">4ª Parcela</option>
+                <option value="05">5ª Parcela</option>
+                <option value="U">Parcela Única</option>
+              </select></div>
+          </div>
+          <div id="anx8-autofill-badge" style="display:none;margin-bottom:14px;padding:8px 12px;background:rgba(56,217,169,0.08);border:1px solid rgba(56,217,169,0.25);border-radius:7px;font-size:12px;color:var(--accent2);align-items:center;gap:8px">
+            <span>✓</span><span>Campos preenchidos automaticamente com dados da parcela — você pode editar conforme necessário.</span>
+          </div>
           <div class="form-grid">
             <div class="field"><label>Nº do Contrato</label><input type="text" id="anx8-contrato" placeholder="Ex.: 001/2025"></div>
             <div class="field"><label>Objeto do Contrato</label><input type="text" id="anx8-objeto" placeholder="Ex.: Reforma da rede hidráulica"></div>
@@ -2520,9 +2600,9 @@
             <div class="field"><label>Engenheiro SEDUC/FUNEC</label><input type="text" id="anx8-eng" placeholder="Nome do engenheiro responsável"></div>
             <div class="field"><label>Gestor do Contrato (Caixa Escolar)</label><input type="text" id="anx8-gestor" placeholder="Nome do responsável na escola"></div>
             <div class="field"><label>Fiscal do Contrato</label><input type="text" id="anx8-fiscal" placeholder="Nome do fiscal"></div>
-            <div class="field"><label>Dia</label><input type="number" id="anx8-dia" value=""></div>
-            <div class="field"><label>Mês</label><select id="anx8-mes"><option>janeiro</option><option>fevereiro</option><option>março</option><option>abril</option><option>maio</option><option>junho</option><option>julho</option><option>agosto</option><option>setembro</option><option>outubro</option><option>novembro</option><option selected>dezembro</option></select></div>
-            <div class="field"><label>Ano</label><input type="number" id="anx8-ano" placeholder="aaaa"></div>
+            <div class="field"><label>Dia <span id="anx8-dia-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><input type="number" id="anx8-dia" value=""></div>
+            <div class="field"><label>Mês <span id="anx8-mes-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><select id="anx8-mes"><option>janeiro</option><option>fevereiro</option><option>março</option><option>abril</option><option>maio</option><option>junho</option><option>julho</option><option>agosto</option><option>setembro</option><option>outubro</option><option>novembro</option><option selected>dezembro</option></select></div>
+            <div class="field"><label>Ano <span id="anx8-ano-auto-icon" style="display:none;font-size:10px;color:var(--accent2);font-weight:500">✦ auto</span></label><input type="number" id="anx8-ano" placeholder="aaaa"></div>
           </div>
         </div>
         <div class="card"><div class="preview-box" id="prev-anx8">Clique em "Gerar" para visualizar.</div></div>
@@ -10484,7 +10564,7 @@ function popularTCSelectAnexo(selId) {
 }
 
 function popularTodosAnexosTCSelects() {
-  ['anx1-tc','anx2-tc','anx3-tc','anx4-tc','anx5-tc','anx6-tc'].forEach(popularTCSelectAnexo);
+  ['anx1-tc','anx2-tc','anx3-tc','anx4-tc','anx5-tc','anx6-tc','anx8-tc'].forEach(popularTCSelectAnexo);
 }
 
 function getTCDoAnexo(selId) {
@@ -10545,6 +10625,7 @@ function gerarAnexo1() {
   const dia = document.getElementById('anx1-dia').value;
   const mes = document.getElementById('anx1-mes').value;
   const ano = document.getElementById('anx1-ano').value;
+  const periodo = (document.getElementById('anx1-periodo') || {}).value || '';
   const tcNum = getTCNumeroDoAnexo('anx1-tc');
   const acaoText = acao === 'MANUTENCAO'
     ? '(X) DESPESAS COM A MANUTENÇÃO DO FUNCIONAMENTO ESCOLAR\n( ) DESPESAS COM AQUISIÇÃO DE BENS MÓVEIS DE CAPITAL OU REFORMA, MANUTENÇÃO, REFORMA E REQUALIFICAÇÃO.'
@@ -10556,6 +10637,7 @@ Caixa Escolar: ${CAIXA_ESCOLAR}
 Endereço: ${ENDERECO_ESCOLA}
 N.º do Termo de Compromisso: ${tcNum}
 N.º da Parcela: ( ) ____ª Parcela   (X) ${parcela}   ( ) Parcela Única
+Período de Execução: ${periodo || '__________/_____'}
 Categoria: ${cat === 'CUSTEIO' ? '(X) CUSTEIO   ( ) CAPITAL' : '( ) CUSTEIO   (X) CAPITAL'}
 
 AÇÕES DESENVOLVIDAS NA MANUTENÇÃO DO DESENVOLVIMENTO DO ENSINO:
@@ -12278,39 +12360,94 @@ function onAnx2ParcelaChange() {
 }
 
 /**
- * Busca os dados da parcela selecionada (de parcelaValores, cadastrados na aba Termos)
- * e pré-preenche os campos do Anexo indicado. Mantém valores já editados manualmente.
- * @param {string} anexo - 'anx2' ou 'anx3'
+ * Calcula o próximo dia útil após uma data, considerando fins de semana
+ * e feriados nacionais brasileiros (fixos + móveis aproximados).
+ * @param {Date} data - data de referência
+ * @returns {Date} - próximo dia útil
  */
-function preencherDadosParcela(anexo) {
+function proxDiaUtil(data) {
+  const d = new Date(data);
+  // Avança um dia
+  d.setDate(d.getDate() + 1);
+
+  function isFeriado(dt) {
+    const dia = dt.getDate();
+    const mes = dt.getMonth() + 1; // 1-12
+    const ano = dt.getFullYear();
+    // Feriados fixos nacionais
+    const fixos = [
+      [1,1],[21,4],[1,5],[7,9],[12,10],[2,11],[15,11],[25,12]
+    ];
+    if (fixos.some(([d,m]) => d === dia && m === mes)) return true;
+    // Aproximação: Carnaval (terça ~48 dias antes da Páscoa) e Semana Santa
+    // Páscoa calculada (algoritmo de Oudin)
+    function pascoa(y) {
+      const c = Math.floor(y/100), n = y - 19*Math.floor(y/19);
+      const k = Math.floor((c-17)/25);
+      let i = c - Math.floor(c/4) - Math.floor((c-k)/3) + 19*n + 15;
+      i = i - 30*Math.floor(i/30);
+      i = i - Math.floor(i/28)*(1-Math.floor(i/28)*Math.floor(29/(i+1))*Math.floor((21-n)/11));
+      let j = ano + Math.floor(ano/4) + i + 2 - c + Math.floor(c/4);
+      j = j - 7*Math.floor(j/7);
+      const l = i - j;
+      const m2 = 3 + Math.floor((l+40)/44);
+      const d2 = l + 28 - 31*Math.floor(m2/4);
+      return new Date(y, m2-1, d2);
+    }
+    const p = pascoa(ano);
+    const offsets = [-48,-47,-3,-2,0,60]; // Carnaval seg/ter, Quinta-Quinta, Sexta-Santa, Páscoa, Corpus Christi
+    for (const off of offsets) {
+      const fd = new Date(p); fd.setDate(p.getDate() + off);
+      if (fd.getDate() === dia && fd.getMonth()+1 === mes) return true;
+    }
+    return false;
+  }
+
+  // Avança enquanto for fim de semana ou feriado
+  let maxIter = 20;
+  while (maxIter-- > 0) {
+    const dow = d.getDay();
+    if (dow === 0 || dow === 6 || isFeriado(d)) {
+      d.setDate(d.getDate() + 1);
+    } else {
+      break;
+    }
+  }
+  return d;
+}
+
+/**
+ * A partir de uma string "dd/mm/aaaa" retorna os campos de dia/mes/ano para os selects
+ */
+function parseDateDDMMYYYY(str) {
+  const meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const pts = str.split('/');
+  if (pts.length !== 3) return null;
+  const [dd, mm, aaaa] = pts;
+  return { dia: parseInt(dd, 10), mes: meses[parseInt(mm,10)-1], ano: parseInt(aaaa, 10) };
+}
+
+/**
+ * Extrai dados comuns da parcela (tcId, parcela, pv, tcNumero, campos calculados)
+ * para um determinado anexo.
+ */
+function _resolverDadosParcela(anexo) {
   const mesAbrs = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
   const parNomesOrd = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única'};
 
-  // --- Determinar TC e Parcela selecionados ---
-  let tcId = '', parcela = '';
-  if (anexo === 'anx2') {
-    const selTc  = document.getElementById('anx2-tc');
-    const selPar = document.getElementById('anx2-parcela');
-    tcId   = selTc  ? selTc.value  : '';
-    parcela = selPar ? selPar.value : '';
-    // Fallback para TC ativo se nenhum selecionado
-    if (!tcId && state.tcAtivo) tcId = String(state.tcAtivo);
-  } else if (anexo === 'anx3') {
-    const selTc  = document.getElementById('anx3-tc');
-    const selPar = document.getElementById('rel-parcela');
-    tcId   = selTc  ? selTc.value  : '';
-    parcela = selPar ? selPar.value : '';
-    if (!tcId && state.tcAtivo) tcId = String(state.tcAtivo);
-  }
+  // Mapeamento de IDs de select por anexo
+  const tcSelMap  = { anx1:'anx1-tc', anx2:'anx2-tc', anx3:'anx3-tc', anx4:'anx4-tc', anx5:'anx5-tc', anx6:'anx6-tc', anx8:'anx8-tc' };
+  const parSelMap = { anx1:'anx1-parcela-auto', anx2:'anx2-parcela', anx3:'rel-parcela', anx4:'anx4-parcela', anx5:'anx5-parcela', anx6:'anx6-parcela', anx8:'anx8-parcela' };
 
-  if (!tcId || !parcela) return;
+  const selTc  = document.getElementById(tcSelMap[anexo]);
+  const selPar = document.getElementById(parSelMap[anexo]);
+  let tcId    = (selTc  && selTc.value)  ? selTc.value  : (state.tcAtivo ? String(state.tcAtivo) : '');
+  let parcela = (selPar && selPar.value) ? selPar.value : (state.parcelaSelecionada ? String(state.parcelaSelecionada) : '');
+  if (!tcId && state.tcAtivo) tcId = String(state.tcAtivo);
 
-  // --- Buscar linha de parcelaValores ---
   const pv = (state.parcelaValores || []).find(r =>
     String(r.tcId) === String(tcId) && r.parcela === parcela
   );
-
-  // --- Buscar objeto TC para pegar o número ---
   const tcObj = (state.tcs || []).find(t => String(t.id) === String(tcId));
   const tcNumero = tcObj
     ? (tcObj.tcPaiId
@@ -12318,23 +12455,21 @@ function preencherDadosParcela(anexo) {
         : tcObj.numero)
     : '';
 
-  // --- Calcular valores a partir dos dados de Termos ---
-  let dataCredito = '';
-  let periodoExec = '';
-  let valorCreditado = '';
-  let rendimentos = '';
+  let dataCredito = '', periodoExec = '', valorCreditado = '', rendimentos = '';
+  let reuniaoDate = null;
 
   if (pv) {
-    // Data de Crédito: campo direto salvo, senão inferir do mesAnoInicio
     if (pv.dataCredito) {
       const pts = pv.dataCredito.split('-');
-      dataCredito = pts.length === 3 ? `${pts[2]}/${pts[1]}/${pts[0]}` : pv.dataCredito;
+      dataCredito = pts.length === 3 ? `${pts[2].padStart(2,'0')}/${pts[1].padStart(2,'0')}/${pts[0]}` : pv.dataCredito;
+      // Calcular próximo dia útil
+      reuniaoDate = proxDiaUtil(new Date(pv.dataCredito + 'T00:00:00'));
     } else if (pv.mesAnoInicio) {
       const [ano, mes] = pv.mesAnoInicio.split('-');
       dataCredito = `30/${mes.padStart(2,'0')}/${ano}`;
+      reuniaoDate = proxDiaUtil(new Date(`${ano}-${mes.padStart(2,'0')}-30T00:00:00`));
     }
 
-    // Período de Execução: mesAnoInicio → dataTermino ou dataLimite
     if (pv.mesAnoInicio) {
       const [ano, mes] = pv.mesAnoInicio.split('-');
       const mesAbr = mesAbrs[parseInt(mes) - 1] || mes;
@@ -12349,23 +12484,65 @@ function preencherDadosParcela(anexo) {
       periodoExec = `${mesAbr}//${ano} A ${fimAbr}//${fimAno}`;
     }
 
-    // Valor Creditado: soma das categorias (sem rendimentos)
     const total = parseMoney(pv.custeio||'0') + parseMoney(pv.capital||'0') +
                   parseMoney(pv.alem||'0') + parseMoney(pv.obras||'0') +
                   parseMoney(pv.capina||'0');
     if (total > 0) valorCreditado = fmtMoneyStr(total);
-
-    // Rendimentos separado
     if (parseMoney(pv.rendimentos||'0') > 0) rendimentos = fmtMoneyStr(parseMoney(pv.rendimentos));
   }
 
-  // Parcela ordinal para exibição
   const parOrd = parNomesOrd[parcela] ? parNomesOrd[parcela] + ' Parcela' : 'Parcela ' + parcela;
 
-  // --- Preencher campos (só se estiver vazio — para não sobrescrever edição manual) ---
-  // Ao usar ↺ Atualizar, força o preenchimento; ao mudar select, só preenche vazio.
-  const forcar = (anexo === '_force_anx2' || anexo === '_force_anx3');
-  const alvo = forcar ? anexo.replace('_force_','') : anexo;
+  return { tcId, parcela, pv, tcNumero, dataCredito, periodoExec, valorCreditado, rendimentos, parOrd, reuniaoDate };
+}
+
+/**
+ * Define dia/mes/ano de reunião em campos específicos
+ */
+function _preencherReuniao(prefixo, reuniaoDate, forcar) {
+  if (!reuniaoDate) return;
+  const mesesNomes = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const dia  = reuniaoDate.getDate();
+  const mes  = mesesNomes[reuniaoDate.getMonth()];
+  const ano  = reuniaoDate.getFullYear();
+
+  const elDia = document.getElementById(`${prefixo}-dia`);
+  const elMes = document.getElementById(`${prefixo}-mes`);
+  const elAno = document.getElementById(`${prefixo}-ano`);
+
+  const autoDia = document.getElementById(`${prefixo}-dia-auto-icon`);
+  const autoMes = document.getElementById(`${prefixo}-mes-auto-icon`);
+  const autoAno = document.getElementById(`${prefixo}-ano-auto-icon`);
+
+  if (elDia && (forcar || !elDia.value)) {
+    elDia.value = dia;
+    elDia.style.borderColor = 'rgba(56,217,169,0.5)'; elDia.style.color = 'var(--accent2)';
+    if (autoDia) autoDia.style.display = '';
+  }
+  if (elMes && (forcar || !elMes.value || elMes.value === 'dezembro')) {
+    for (let i = 0; i < elMes.options.length; i++) {
+      if (elMes.options[i].value === mes || elMes.options[i].text === mes) { elMes.selectedIndex = i; break; }
+    }
+    elMes.style.borderColor = 'rgba(56,217,169,0.5)'; elMes.style.color = 'var(--accent2)';
+    if (autoMes) autoMes.style.display = '';
+  }
+  if (elAno && (forcar || !elAno.value)) {
+    elAno.value = ano;
+    elAno.style.borderColor = 'rgba(56,217,169,0.5)'; elAno.style.color = 'var(--accent2)';
+    if (autoAno) autoAno.style.display = '';
+  }
+}
+
+/**
+ * Busca os dados da parcela selecionada (de parcelaValores, cadastrados na aba Termos)
+ * e pré-preenche os campos do Anexo indicado. Mantém valores já editados manualmente.
+ * @param {string} anexo - 'anx1','anx2','anx3','anx4','anx5','anx6','anx8'
+ */
+function preencherDadosParcela(anexo) {
+  const { tcId, parcela, pv, tcNumero, dataCredito, periodoExec, valorCreditado, rendimentos, parOrd, reuniaoDate } = _resolverDadosParcela(anexo);
+  if (!tcId || !parcela) return;
+
+  const forcar = false;
   const setAuto = (id, val, iconId) => {
     const el = document.getElementById(id);
     const icon = iconId ? document.getElementById(iconId) : null;
@@ -12375,35 +12552,72 @@ function preencherDadosParcela(anexo) {
       el.style.borderColor = 'rgba(56,217,169,0.5)';
       el.style.color = 'var(--accent2)';
       if (icon) icon.style.display = '';
-    } else if (!val) {
-      if (icon) icon.style.display = 'none';
+    } else if (!val && icon) {
+      icon.style.display = 'none';
     }
   };
 
-  if (alvo === 'anx2') {
-    setAuto('doc-periodo',          periodoExec,    'anx2-periodo-auto-icon');
-    setAuto('anx2-datacredito-form', dataCredito,   'anx2-datacred-auto-icon');
-    setAuto('anx2-valor-form',      valorCreditado, 'anx2-valor-auto-icon');
-    // Nº TC e Nº Parcela
+  const showBadge = (id) => { const el = document.getElementById(id); if (el && pv) el.style.display = 'flex'; };
+  const pulsar = (...ids) => ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value) { el.style.transition='background 0.3s'; el.style.background='rgba(56,217,169,0.12)'; setTimeout(()=>{el.style.background='';},800); }
+  });
+
+  if (anexo === 'anx2') {
+    setAuto('doc-periodo',           periodoExec,    'anx2-periodo-auto-icon');
+    setAuto('anx2-datacredito-form', dataCredito,    'anx2-datacred-auto-icon');
+    setAuto('anx2-valor-form',       valorCreditado, 'anx2-valor-auto-icon');
     const elTc  = document.getElementById('doc-tc');
     const elPar = document.getElementById('doc-parcela');
-    if (elTc  && (forcar || !elTc.value.trim())  && tcNumero)   { elTc.value  = tcNumero;  elTc.style.borderColor  = 'rgba(56,217,169,0.5)'; elTc.style.color  = 'var(--accent2)'; }
-    if (elPar && (forcar || !elPar.value.trim()) && parOrd)     { elPar.value = parOrd;    elPar.style.borderColor = 'rgba(56,217,169,0.5)'; elPar.style.color = 'var(--accent2)'; }
-
-    // Mostrar badge de autofill
-    const badge = document.getElementById('anx2-autofill-badge');
-    const info  = document.getElementById('anx2-autofill-info');
-    if (pv && badge) { badge.style.display = 'flex'; }
-    if (pv && info)  { info.style.display  = ''; }
+    if (elTc  && (!elTc.value.trim())  && tcNumero) { elTc.value  = tcNumero;  elTc.style.borderColor  = 'rgba(56,217,169,0.5)'; elTc.style.color  = 'var(--accent2)'; }
+    if (elPar && (!elPar.value.trim()) && parOrd)   { elPar.value = parOrd;    elPar.style.borderColor = 'rgba(56,217,169,0.5)'; elPar.style.color = 'var(--accent2)'; }
+    _preencherReuniao('doc', reuniaoDate, false);
+    const docReuniaoIcon = document.getElementById('anx2-reuniao-auto-icon');
+    if (docReuniaoIcon && reuniaoDate) docReuniaoIcon.style.display = '';
+    showBadge('anx2-autofill-badge');
+    const info = document.getElementById('anx2-autofill-info'); if (info && pv) info.style.display = '';
+    pulsar('doc-periodo','anx2-datacredito-form','anx2-valor-form','doc-tc','doc-parcela','doc-dia','doc-mes','doc-ano');
   }
 
-  if (alvo === 'anx3') {
+  if (anexo === 'anx3') {
     setAuto('rel-data-credito', dataCredito,    'anx3-datacred-auto-icon');
     setAuto('rel-creditado',    valorCreditado, 'anx3-valor-auto-icon');
     if (rendimentos) setAuto('rel-rendimento', rendimentos, 'anx3-rend-auto-icon');
+    pulsar('rel-data-credito','rel-creditado','rel-rendimento');
   }
 
-  // Sem dados cadastrados: aviso sutil
+  if (anexo === 'anx1') {
+    setAuto('anx1-periodo', periodoExec, 'anx1-periodo-auto-icon');
+    _preencherReuniao('anx1', reuniaoDate, false);
+    showBadge('anx1-autofill-badge');
+    pulsar('anx1-periodo','anx1-dia','anx1-mes','anx1-ano');
+  }
+
+  if (anexo === 'anx4') {
+    _preencherReuniao('anx4', reuniaoDate, false);
+    showBadge('anx4-autofill-badge');
+    pulsar('anx4-dia','anx4-mes','anx4-ano');
+  }
+
+  if (anexo === 'anx5') {
+    setAuto('anx5-datacred', dataCredito, 'anx5-datacred-auto-icon');
+    _preencherReuniao('anx5', reuniaoDate, false);
+    showBadge('anx5-autofill-badge');
+    pulsar('anx5-datacred','anx5-dia','anx5-mes','anx5-ano');
+  }
+
+  if (anexo === 'anx6') {
+    _preencherReuniao('anx6', reuniaoDate, false);
+    showBadge('anx6-autofill-badge');
+    pulsar('anx6-dia','anx6-mes','anx6-ano');
+  }
+
+  if (anexo === 'anx8') {
+    _preencherReuniao('anx8', reuniaoDate, false);
+    showBadge('anx8-autofill-badge');
+    pulsar('anx8-dia','anx8-mes','anx8-ano');
+  }
+
   if (!pv) {
     console.info(`[ANX] Nenhuma distribuição de parcela encontrada para TC ${tcId}, parcela ${parcela}`);
   }
@@ -12414,21 +12628,7 @@ function preencherDadosParcela(anexo) {
  * Chamado pelo botão ↺ Atualizar.
  */
 function preencherDadosParcelaForcado(anexo) {
-  const mesAbrs = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
-  const parNomesOrd = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única'};
-
-  let tcId = '', parcela = '';
-  if (anexo === 'anx2') {
-    const selTc  = document.getElementById('anx2-tc');
-    const selPar = document.getElementById('anx2-parcela');
-    tcId    = (selTc  && selTc.value)  ? selTc.value  : (state.tcAtivo ? String(state.tcAtivo) : '');
-    parcela = (selPar && selPar.value) ? selPar.value : (state.parcelaSelecionada ? String(state.parcelaSelecionada) : '');
-  } else if (anexo === 'anx3') {
-    const selTc  = document.getElementById('anx3-tc');
-    const selPar = document.getElementById('rel-parcela');
-    tcId    = (selTc  && selTc.value)  ? selTc.value  : (state.tcAtivo ? String(state.tcAtivo) : '');
-    parcela = (selPar && selPar.value) ? selPar.value : (state.parcelaSelecionada ? String(state.parcelaSelecionada) : '');
-  }
+  const { tcId, parcela, pv, tcNumero, dataCredito, periodoExec, valorCreditado, rendimentos, parOrd, reuniaoDate } = _resolverDadosParcela(anexo);
 
   if (!tcId) {
     alert('Nenhum TC ativo encontrado. Ative um TC na aba Termos de Compromisso.');
@@ -12438,54 +12638,10 @@ function preencherDadosParcelaForcado(anexo) {
     alert('Selecione a Parcela antes de atualizar.');
     return;
   }
-
-  const pv = (state.parcelaValores || []).find(r =>
-    String(r.tcId) === String(tcId) && r.parcela === parcela
-  );
-
   if (!pv) {
     alert(`⚠ Nenhuma distribuição de parcela cadastrada para esta combinação TC + Parcela.\n\nCadastre os valores em "📊 Parcelas" no card do TC para habilitar o preenchimento automático.`);
     return;
   }
-
-  const tcObj = (state.tcs || []).find(t => String(t.id) === String(tcId));
-  const tcNumero = tcObj
-    ? (tcObj.tcPaiId
-        ? (() => { const pai = (state.tcs||[]).find(p => String(p.id)===String(tcObj.tcPaiId)); return pai ? `${pai.numero} (ADITIVO ${tcObj.numero||'01'})` : tcObj.numero; })()
-        : tcObj.numero)
-    : '';
-
-  let dataCredito = '', periodoExec = '', valorCreditado = '', rendimentos = '';
-
-  if (pv.dataCredito) {
-    const pts = pv.dataCredito.split('-');
-    dataCredito = pts.length === 3 ? `${pts[2]}/${pts[1].padStart(2,'0')}/${pts[0]}` : pv.dataCredito;
-  } else if (pv.mesAnoInicio) {
-    const [ano, mes] = pv.mesAnoInicio.split('-');
-    dataCredito = `30/${mes.padStart(2,'0')}/${ano}`;
-  }
-
-  if (pv.mesAnoInicio) {
-    const [ano, mes] = pv.mesAnoInicio.split('-');
-    const mesAbr = mesAbrs[parseInt(mes) - 1] || mes;
-    let fimAbr = mesAbr, fimAno = ano;
-    if (pv.dataTermino) {
-      const tp = pv.dataTermino.split('-');
-      if (tp.length === 3) { fimAbr = mesAbrs[parseInt(tp[1])-1] || tp[1]; fimAno = tp[0]; }
-    } else if (pv.dataLimite) {
-      const lp = pv.dataLimite.split('-');
-      if (lp.length === 3) { fimAbr = mesAbrs[parseInt(lp[1])-1] || lp[1]; fimAno = lp[0]; }
-    }
-    periodoExec = `${mesAbr}//${ano} A ${fimAbr}//${fimAno}`;
-  }
-
-  const total = parseMoney(pv.custeio||'0') + parseMoney(pv.capital||'0') +
-                parseMoney(pv.alem||'0') + parseMoney(pv.obras||'0') +
-                parseMoney(pv.capina||'0');
-  if (total > 0) valorCreditado = fmtMoneyStr(total);
-  if (parseMoney(pv.rendimentos||'0') > 0) rendimentos = fmtMoneyStr(parseMoney(pv.rendimentos));
-
-  const parOrd = parNomesOrd[parcela] ? parNomesOrd[parcela] + ' Parcela' : 'Parcela ' + parcela;
 
   const forceSet = (id, val, iconId) => {
     const el = document.getElementById(id);
@@ -12497,36 +12653,64 @@ function preencherDadosParcelaForcado(anexo) {
     if (icon) icon.style.display = '';
   };
 
+  const showBadge = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'flex'; };
+  const pulsar = (...ids) => ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value) { el.style.transition='background 0.3s'; el.style.background='rgba(56,217,169,0.12)'; setTimeout(()=>{el.style.background='';},800); }
+  });
+
   if (anexo === 'anx2') {
     forceSet('doc-periodo',           periodoExec,    'anx2-periodo-auto-icon');
     forceSet('anx2-datacredito-form', dataCredito,    'anx2-datacred-auto-icon');
     forceSet('anx2-valor-form',       valorCreditado, 'anx2-valor-auto-icon');
     forceSet('doc-tc',      tcNumero);
     forceSet('doc-parcela', parOrd);
-    const badge = document.getElementById('anx2-autofill-badge');
-    const info  = document.getElementById('anx2-autofill-info');
-    if (badge) badge.style.display = 'flex';
-    if (info)  info.style.display  = '';
+    _preencherReuniao('doc', reuniaoDate, true);
+    const docReuniaoIcon = document.getElementById('anx2-reuniao-auto-icon');
+    if (docReuniaoIcon && reuniaoDate) docReuniaoIcon.style.display = '';
+    showBadge('anx2-autofill-badge');
+    const info = document.getElementById('anx2-autofill-info'); if (info) info.style.display = '';
+    pulsar('doc-periodo','anx2-datacredito-form','anx2-valor-form','doc-tc','doc-parcela','doc-dia','doc-mes','doc-ano');
   }
 
   if (anexo === 'anx3') {
     forceSet('rel-data-credito', dataCredito,    'anx3-datacred-auto-icon');
     forceSet('rel-creditado',    valorCreditado, 'anx3-valor-auto-icon');
     if (rendimentos) forceSet('rel-rendimento', rendimentos, 'anx3-rend-auto-icon');
+    pulsar('rel-data-credito','rel-creditado','rel-rendimento');
   }
 
-  // Pulsar campos atualizados com feedback visual
-  const camposAnx2 = ['doc-periodo','anx2-datacredito-form','anx2-valor-form','doc-tc','doc-parcela'];
-  const camposAnx3 = ['rel-data-credito','rel-creditado','rel-rendimento'];
-  const camposPulsar = anexo === 'anx2' ? camposAnx2 : camposAnx3;
-  camposPulsar.forEach(id => {
-    const el = document.getElementById(id);
-    if (el && el.value) {
-      el.style.transition = 'background 0.3s';
-      el.style.background = 'rgba(56,217,169,0.12)';
-      setTimeout(() => { el.style.background = ''; }, 800);
-    }
-  });
+  if (anexo === 'anx1') {
+    forceSet('anx1-periodo', periodoExec, 'anx1-periodo-auto-icon');
+    _preencherReuniao('anx1', reuniaoDate, true);
+    showBadge('anx1-autofill-badge');
+    pulsar('anx1-periodo','anx1-dia','anx1-mes','anx1-ano');
+  }
+
+  if (anexo === 'anx4') {
+    _preencherReuniao('anx4', reuniaoDate, true);
+    showBadge('anx4-autofill-badge');
+    pulsar('anx4-dia','anx4-mes','anx4-ano');
+  }
+
+  if (anexo === 'anx5') {
+    forceSet('anx5-datacred', dataCredito, 'anx5-datacred-auto-icon');
+    _preencherReuniao('anx5', reuniaoDate, true);
+    showBadge('anx5-autofill-badge');
+    pulsar('anx5-datacred','anx5-dia','anx5-mes','anx5-ano');
+  }
+
+  if (anexo === 'anx6') {
+    _preencherReuniao('anx6', reuniaoDate, true);
+    showBadge('anx6-autofill-badge');
+    pulsar('anx6-dia','anx6-mes','anx6-ano');
+  }
+
+  if (anexo === 'anx8') {
+    _preencherReuniao('anx8', reuniaoDate, true);
+    showBadge('anx8-autofill-badge');
+    pulsar('anx8-dia','anx8-mes','anx8-ano');
+  }
 }
 
 
