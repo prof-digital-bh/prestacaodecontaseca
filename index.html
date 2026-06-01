@@ -12534,183 +12534,108 @@ function _preencherReuniao(prefixo, reuniaoDate, forcar) {
 }
 
 /**
- * Busca os dados da parcela selecionada (de parcelaValores, cadastrados na aba Termos)
- * e pré-preenche os campos do Anexo indicado. Mantém valores já editados manualmente.
- * @param {string} anexo - 'anx1','anx2','anx3','anx4','anx5','anx6','anx8'
+ * Núcleo unificado de autofill — sempre sobrescreve os campos ao trocar parcela.
+ * @param {string} anexo
+ * @param {boolean} comAlerta  se true, exibe alert quando não há dados
  */
-function preencherDadosParcela(anexo) {
-  const { tcId, parcela, pv, tcNumero, dataCredito, periodoExec, valorCreditado, rendimentos, parOrd, reuniaoDate } = _resolverDadosParcela(anexo);
-  if (!tcId || !parcela) return;
-
-  const forcar = false;
-  const setAuto = (id, val, iconId) => {
-    const el = document.getElementById(id);
-    const icon = iconId ? document.getElementById(iconId) : null;
-    if (!el) return;
-    if (val && (forcar || !el.value.trim())) {
-      el.value = val;
-      el.style.borderColor = 'rgba(56,217,169,0.5)';
-      el.style.color = 'var(--accent2)';
-      if (icon) icon.style.display = '';
-    } else if (!val && icon) {
-      icon.style.display = 'none';
-    }
-  };
-
-  const showBadge = (id) => { const el = document.getElementById(id); if (el && pv) el.style.display = 'flex'; };
-  const pulsar = (...ids) => ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el && el.value) { el.style.transition='background 0.3s'; el.style.background='rgba(56,217,169,0.12)'; setTimeout(()=>{el.style.background='';},800); }
-  });
-
-  if (anexo === 'anx2') {
-    setAuto('doc-periodo',           periodoExec,    'anx2-periodo-auto-icon');
-    setAuto('anx2-datacredito-form', dataCredito,    'anx2-datacred-auto-icon');
-    setAuto('anx2-valor-form',       valorCreditado, 'anx2-valor-auto-icon');
-    const elTc  = document.getElementById('doc-tc');
-    const elPar = document.getElementById('doc-parcela');
-    if (elTc  && (!elTc.value.trim())  && tcNumero) { elTc.value  = tcNumero;  elTc.style.borderColor  = 'rgba(56,217,169,0.5)'; elTc.style.color  = 'var(--accent2)'; }
-    if (elPar && (!elPar.value.trim()) && parOrd)   { elPar.value = parOrd;    elPar.style.borderColor = 'rgba(56,217,169,0.5)'; elPar.style.color = 'var(--accent2)'; }
-    _preencherReuniao('doc', reuniaoDate, false);
-    const docReuniaoIcon = document.getElementById('anx2-reuniao-auto-icon');
-    if (docReuniaoIcon && reuniaoDate) docReuniaoIcon.style.display = '';
-    showBadge('anx2-autofill-badge');
-    const info = document.getElementById('anx2-autofill-info'); if (info && pv) info.style.display = '';
-    pulsar('doc-periodo','anx2-datacredito-form','anx2-valor-form','doc-tc','doc-parcela','doc-dia','doc-mes','doc-ano');
-  }
-
-  if (anexo === 'anx3') {
-    setAuto('rel-data-credito', dataCredito,    'anx3-datacred-auto-icon');
-    setAuto('rel-creditado',    valorCreditado, 'anx3-valor-auto-icon');
-    if (rendimentos) setAuto('rel-rendimento', rendimentos, 'anx3-rend-auto-icon');
-    pulsar('rel-data-credito','rel-creditado','rel-rendimento');
-  }
-
-  if (anexo === 'anx1') {
-    setAuto('anx1-periodo', periodoExec, 'anx1-periodo-auto-icon');
-    _preencherReuniao('anx1', reuniaoDate, false);
-    showBadge('anx1-autofill-badge');
-    pulsar('anx1-periodo','anx1-dia','anx1-mes','anx1-ano');
-  }
-
-  if (anexo === 'anx4') {
-    _preencherReuniao('anx4', reuniaoDate, false);
-    showBadge('anx4-autofill-badge');
-    pulsar('anx4-dia','anx4-mes','anx4-ano');
-  }
-
-  if (anexo === 'anx5') {
-    setAuto('anx5-datacred', dataCredito, 'anx5-datacred-auto-icon');
-    _preencherReuniao('anx5', reuniaoDate, false);
-    showBadge('anx5-autofill-badge');
-    pulsar('anx5-datacred','anx5-dia','anx5-mes','anx5-ano');
-  }
-
-  if (anexo === 'anx6') {
-    _preencherReuniao('anx6', reuniaoDate, false);
-    showBadge('anx6-autofill-badge');
-    pulsar('anx6-dia','anx6-mes','anx6-ano');
-  }
-
-  if (anexo === 'anx8') {
-    _preencherReuniao('anx8', reuniaoDate, false);
-    showBadge('anx8-autofill-badge');
-    pulsar('anx8-dia','anx8-mes','anx8-ano');
-  }
-
-  if (!pv) {
-    console.info(`[ANX] Nenhuma distribuição de parcela encontrada para TC ${tcId}, parcela ${parcela}`);
-  }
-}
-
-/**
- * Força o recarregamento dos dados (ignorando se o campo já tem valor).
- * Chamado pelo botão ↺ Atualizar.
- */
-function preencherDadosParcelaForcado(anexo) {
+function _aplicarAutofill(anexo, comAlerta) {
   const { tcId, parcela, pv, tcNumero, dataCredito, periodoExec, valorCreditado, rendimentos, parOrd, reuniaoDate } = _resolverDadosParcela(anexo);
 
-  if (!tcId) {
-    alert('Nenhum TC ativo encontrado. Ative um TC na aba Termos de Compromisso.');
-    return;
-  }
-  if (!parcela) {
-    alert('Selecione a Parcela antes de atualizar.');
-    return;
-  }
+  if (!tcId) { if (comAlerta) alert('Nenhum TC ativo encontrado. Ative um TC na aba Termos de Compromisso.'); return; }
+  if (!parcela) { if (comAlerta) alert('Selecione a Parcela antes de atualizar.'); return; }
   if (!pv) {
-    alert(`⚠ Nenhuma distribuição de parcela cadastrada para esta combinação TC + Parcela.\n\nCadastre os valores em "📊 Parcelas" no card do TC para habilitar o preenchimento automático.`);
+    if (comAlerta) alert('⚠ Nenhuma distribuição de parcela cadastrada para esta combinação TC + Parcela.\n\nCadastre os valores em "📊 Parcelas" no card do TC.');
+    else console.info('[ANX] Sem dados de parcela para TC=' + tcId + ' parcela=' + parcela);
     return;
   }
 
-  const forceSet = (id, val, iconId) => {
+  // Sempre força — ao trocar parcela, o usuário quer os dados da nova parcela
+  const set = (id, val, iconId) => {
     const el = document.getElementById(id);
     const icon = iconId ? document.getElementById(iconId) : null;
-    if (!el || !val) return;
+    if (!el || val === undefined || val === null || val === '') return;
     el.value = val;
     el.style.borderColor = 'rgba(56,217,169,0.5)';
     el.style.color = 'var(--accent2)';
-    if (icon) icon.style.display = '';
+    if (icon) icon.style.display = 'inline';
   };
 
   const showBadge = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'flex'; };
+
   const pulsar = (...ids) => ids.forEach(id => {
     const el = document.getElementById(id);
-    if (el && el.value) { el.style.transition='background 0.3s'; el.style.background='rgba(56,217,169,0.12)'; setTimeout(()=>{el.style.background='';},800); }
+    if (el) {
+      el.style.transition = 'background 0.4s';
+      el.style.background = 'rgba(56,217,169,0.15)';
+      setTimeout(() => { el.style.background = ''; el.style.transition = ''; }, 700);
+    }
   });
 
   if (anexo === 'anx2') {
-    forceSet('doc-periodo',           periodoExec,    'anx2-periodo-auto-icon');
-    forceSet('anx2-datacredito-form', dataCredito,    'anx2-datacred-auto-icon');
-    forceSet('anx2-valor-form',       valorCreditado, 'anx2-valor-auto-icon');
-    forceSet('doc-tc',      tcNumero);
-    forceSet('doc-parcela', parOrd);
+    set('doc-periodo',           periodoExec,    'anx2-periodo-auto-icon');
+    set('anx2-datacredito-form', dataCredito,    'anx2-datacred-auto-icon');
+    set('anx2-valor-form',       valorCreditado, 'anx2-valor-auto-icon');
+    set('doc-tc',                tcNumero);
+    set('doc-parcela',           parOrd);
     _preencherReuniao('doc', reuniaoDate, true);
-    const docReuniaoIcon = document.getElementById('anx2-reuniao-auto-icon');
-    if (docReuniaoIcon && reuniaoDate) docReuniaoIcon.style.display = '';
+    const icon2 = document.getElementById('anx2-reuniao-auto-icon');
+    if (icon2 && reuniaoDate) icon2.style.display = 'inline';
     showBadge('anx2-autofill-badge');
-    const info = document.getElementById('anx2-autofill-info'); if (info) info.style.display = '';
-    pulsar('doc-periodo','anx2-datacredito-form','anx2-valor-form','doc-tc','doc-parcela','doc-dia','doc-mes','doc-ano');
+    const info2 = document.getElementById('anx2-autofill-info'); if (info2) info2.style.display = '';
+    pulsar('doc-periodo','anx2-datacredito-form','anx2-valor-form','doc-tc','doc-parcela','doc-dia','doc-ano');
   }
 
   if (anexo === 'anx3') {
-    forceSet('rel-data-credito', dataCredito,    'anx3-datacred-auto-icon');
-    forceSet('rel-creditado',    valorCreditado, 'anx3-valor-auto-icon');
-    if (rendimentos) forceSet('rel-rendimento', rendimentos, 'anx3-rend-auto-icon');
+    set('rel-data-credito', dataCredito,    'anx3-datacred-auto-icon');
+    set('rel-creditado',    valorCreditado, 'anx3-valor-auto-icon');
+    if (rendimentos) set('rel-rendimento', rendimentos, 'anx3-rend-auto-icon');
     pulsar('rel-data-credito','rel-creditado','rel-rendimento');
   }
 
   if (anexo === 'anx1') {
-    forceSet('anx1-periodo', periodoExec, 'anx1-periodo-auto-icon');
+    set('anx1-periodo', periodoExec, 'anx1-periodo-auto-icon');
     _preencherReuniao('anx1', reuniaoDate, true);
     showBadge('anx1-autofill-badge');
-    pulsar('anx1-periodo','anx1-dia','anx1-mes','anx1-ano');
+    pulsar('anx1-periodo','anx1-dia','anx1-ano');
   }
 
   if (anexo === 'anx4') {
     _preencherReuniao('anx4', reuniaoDate, true);
     showBadge('anx4-autofill-badge');
-    pulsar('anx4-dia','anx4-mes','anx4-ano');
+    pulsar('anx4-dia','anx4-ano');
   }
 
   if (anexo === 'anx5') {
-    forceSet('anx5-datacred', dataCredito, 'anx5-datacred-auto-icon');
+    set('anx5-datacred', dataCredito, 'anx5-datacred-auto-icon');
     _preencherReuniao('anx5', reuniaoDate, true);
     showBadge('anx5-autofill-badge');
-    pulsar('anx5-datacred','anx5-dia','anx5-mes','anx5-ano');
+    pulsar('anx5-datacred','anx5-dia','anx5-ano');
   }
 
   if (anexo === 'anx6') {
     _preencherReuniao('anx6', reuniaoDate, true);
     showBadge('anx6-autofill-badge');
-    pulsar('anx6-dia','anx6-mes','anx6-ano');
+    pulsar('anx6-dia','anx6-ano');
   }
 
   if (anexo === 'anx8') {
     _preencherReuniao('anx8', reuniaoDate, true);
     showBadge('anx8-autofill-badge');
-    pulsar('anx8-dia','anx8-mes','anx8-ano');
+    pulsar('anx8-dia','anx8-ano');
   }
+}
+
+/**
+ * Chamado pelos selects de TC/Parcela — sempre força preenchimento, silencioso se sem dados.
+ */
+function preencherDadosParcela(anexo) {
+  _aplicarAutofill(anexo, false);
+}
+/**
+ * Botão ↺ Atualizar — força preenchimento e mostra alerta se não houver dados.
+ */
+function preencherDadosParcelaForcado(anexo) {
+  _aplicarAutofill(anexo, true);
 }
 
 
