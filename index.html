@@ -1750,17 +1750,7 @@
         <div id="sidebar-user-role" style="font-size:11px;color:var(--text-dim);margin-top:2px">Prestador de Contas</div>
         <div style="font-size:10px;color:var(--text-dim);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);line-height:1.5;opacity:0.7">Criado e desenvolvido por<br><span style="color:var(--text-muted)">Prof. Everton Correa Alves</span></div>
       </div>
-      <div id="pg-sidebar-box" style="display:none">
-      <div class="pg-side-inner">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px;">TC / Parcela Ativa</div>
-        <select id="side-sel-tc" style="width:100%;margin-bottom:8px;font-size:12px" onchange="pgOnSideTcChange()">
-          <option value="">— Selecione TC —</option>
-        </select>
-        <select id="side-sel-parcela" style="width:100%;font-size:12px" onchange="pgOnSideParcelaChange()">
-          <option value="">— Parcela —</option>
-        </select>
-      </div>
-    </div>
+      <div id="pg-sidebar-box" style="display:none"></div>
 
     <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()">
         <span class="theme-toggle-icon" id="theme-toggle-icon">🌙</span>
@@ -5117,6 +5107,22 @@ init();
             <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="pgShowView('manual')">📖 Manual</button>
             <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="pgExportarCSV()" title="Exportar como CSV">⬇ Exportar</button>
             <button class="btn btn-success" style="font-size:12px;padding:6px 12px" onclick="pgSalvarPaginacao()">💾 Salvar</button>
+          </div>
+        </div>
+
+        <!-- ── Seletor TC / Parcela (dentro da aba) ── -->
+        <div id="pg-inner-selector" style="display:flex;gap:12px;align-items:flex-end;margin-bottom:18px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px">
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+            <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)">TC / Aditivo</label>
+            <select id="side-sel-tc" style="width:100%;font-size:13px" onchange="pgOnSideTcChange()">
+              <option value="">— Selecione o TC —</option>
+            </select>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+            <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)">Parcela</label>
+            <select id="side-sel-parcela" style="width:100%;font-size:13px" onchange="pgOnSideParcelaChange()">
+              <option value="">— Selecione a Parcela —</option>
+            </select>
           </div>
         </div>
 
@@ -13011,6 +13017,7 @@ function preencherDadosParcelaForcado(anexo) {
 const pgState = {
   tcs: [],
   paginacoes: [],
+  parcelasPorTc: {},
   tcAtual: null,
   parcelaAtual: null,
   partes: [],
@@ -13058,30 +13065,38 @@ window.pgShowView = function(view) {
 };
 window.pgShowView('montar');
 
-// ── Listener de showSection para mostrar sidebar box ──
+// ── Listener de showSection para inicializar o módulo ao entrar na aba ──
 const _origShowSection = window.showSection;
 window.showSection = function(id) {
   _origShowSection(id);
-  const box = document.getElementById('pg-sidebar-box');
-  if (box) box.style.display = id === 'paginacao' ? '' : 'none';
   if (id === 'paginacao' && !pgState.tcs.length) pgInit();
 };
 
-// ── Init: carrega TCs e paginações ──
+// ── Init: carrega TCs, parcela_valores e paginações ──
 async function pgInit() {
   try {
-    const [{ data: tcsData }, { data: pagData }] = await Promise.all([
+    const [{ data: tcsData }, { data: pagData }, { data: pvData }] = await Promise.all([
       supa.from('tcs').select('*').order('criado_em'),
-      supa.from('paginacoes_prestacao').select('*').order('criado_em', { ascending: false })
+      supa.from('paginacoes_prestacao').select('*').order('criado_em', { ascending: false }),
+      supa.from('parcela_valores').select('tc_id,parcela').order('parcela')
     ]);
     pgState.tcs = (tcsData || []).map(pgRowToTc);
     pgState.paginacoes = pagData || [];
+    // Mapa tcId -> Set de parcelas reais cadastradas
+    pgState.parcelasPorTc = {};
+    (pvData || []).forEach(pv => {
+      if (!pv.tc_id || !pv.parcela) return;
+      const key = String(pv.tc_id);
+      if (!pgState.parcelasPorTc[key]) pgState.parcelasPorTc[key] = new Set();
+      pgState.parcelasPorTc[key].add(pv.parcela);
+    });
     pgPreencherSeletoresTc();
     pgRenderHistorico();
   } catch(e) {
     console.warn('Paginação: Supabase indisponível, carregando local:', e);
     try { pgState.paginacoes = JSON.parse(localStorage.getItem('pg_paginacoes') || '[]'); } catch{}
     try { pgState.tcs = JSON.parse(localStorage.getItem('pg_tcs_cache') || '[]'); } catch{}
+    pgState.parcelasPorTc = {};
     pgPreencherSeletoresTc();
     pgRenderHistorico();
   }
@@ -13118,15 +13133,31 @@ window.pgOnSideTcChange = function() {
 function pgPreencherSeletorParcela() {
   const sel = document.getElementById('side-sel-parcela');
   if (!sel) return;
-  const parcelasSet = new Set();
-  (pgState.paginacoes || []).filter(p => String(p.tc_id) === String(pgState.tcAtual)).forEach(p => parcelasSet.add(p.parcela));
-  ['01','02','03','04','05','U'].forEach(p => parcelasSet.add(p));
   const parOrdem = ['01','02','03','04','05','U'];
-  const lista = [...parcelasSet].sort((a,b) => {
+  const parcelasSet = new Set();
+
+  // 1) Parcelas cadastradas em parcela_valores para este TC (fonte principal)
+  const pvSet = (pgState.parcelasPorTc || {})[String(pgState.tcAtual)];
+  if (pvSet && pvSet.size) {
+    pvSet.forEach(p => parcelasSet.add(p));
+  }
+
+  // 2) Parcelas já salvas em paginações (fallback / complemento)
+  (pgState.paginacoes || [])
+    .filter(p => String(p.tc_id) === String(pgState.tcAtual))
+    .forEach(p => parcelasSet.add(p.parcela));
+
+  // 3) Se ainda vazio (TC sem parcela_valores), mostra todas as opções padrão
+  if (!parcelasSet.size) {
+    parOrdem.forEach(p => parcelasSet.add(p));
+  }
+
+  const lista = [...parcelasSet].sort((a, b) => {
     const ia = parOrdem.indexOf(a), ib = parOrdem.indexOf(b);
-    return (ia===-1?99:ia)-(ib===-1?99:ib);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
   });
-  sel.innerHTML = '<option value="">— Parcela —</option>';
+
+  sel.innerHTML = '<option value=>— Selecione a Parcela —</option>';
   lista.forEach(p => {
     const o = document.createElement('option');
     o.value = p; o.textContent = PG_PAR_NOMES[p] || `Parcela ${p}`;
