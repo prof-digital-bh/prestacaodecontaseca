@@ -1581,6 +1581,53 @@
     margin-bottom: 6px;
   }
 
+  /* ═══════════════════════════════
+     PAGINAÇÃO — estilos integrados
+     ═══════════════════════════════ */
+  .pg-selector-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-bottom:24px;}
+  .pg-selector-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:end;}
+  .pg-header-strip{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:linear-gradient(135deg,rgba(79,142,247,.1),rgba(56,217,169,.06));border:1px solid var(--border);border-radius:10px;margin-bottom:20px;}
+  .pg-header-info{font-size:13px;color:var(--text-muted);}
+  .pg-header-info strong{color:var(--text);}
+  .pg-total-badge{font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:var(--accent2);display:flex;align-items:baseline;gap:6px;}
+  .pg-total-badge span{font-size:12px;color:var(--text-muted);font-family:'Outfit',sans-serif;}
+  .parte-row td{vertical-align:middle;}
+  .parte-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.4px;}
+  .chip-capa{background:rgba(136,146,164,.15);color:var(--text-muted);}
+  .chip-tc{background:rgba(246,166,35,.15);color:var(--accent3);}
+  .chip-extrato{background:rgba(56,217,169,.15);color:var(--accent2);}
+  .chip-anexo{background:rgba(79,142,247,.15);color:var(--accent);}
+  .chip-compra{background:rgba(181,123,238,.15);color:var(--alem);}
+  .pg-input{width:72px;padding:6px 8px;font-size:13px;font-family:'DM Mono',monospace;text-align:center;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);outline:none;}
+  .pg-input:focus{border-color:var(--accent);}
+  .pg-calc{font-family:'DM Mono',monospace;font-size:13px;color:var(--accent2);min-width:36px;text-align:center;font-weight:600;}
+  .status-sel{font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Outfit',sans-serif;cursor:pointer;}
+  .obs-input{font-size:12px;padding:5px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);width:100%;font-family:'Outfit',sans-serif;outline:none;}
+  .obs-input:focus{border-color:var(--accent);}
+  .cond-dim{opacity:.65;font-style:italic;}
+  .drag-handle{cursor:grab;color:var(--text-dim);font-size:14px;padding:0 4px;}
+  .drag-handle:active{cursor:grabbing;}
+  .add-compra-row td{border-top:1px dashed var(--border-light)!important;padding:8px 12px!important;}
+  .hist-section{margin-top:32px;}
+  .hist-section-title{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);font-weight:600;padding:0 0 10px;border-bottom:1px solid var(--border);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .sdot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .sdot-ok{background:#38d9a9;}
+  .sdot-and{background:#f6a623;}
+  .sdot-pend{background:#f05060;}
+  .sdot-ni{background:#5a6478;}
+  .legenda-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-top:12px;}
+  .legenda-item{padding:10px 14px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);}
+  .legenda-tipo{font-size:10px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;margin-bottom:4px;}
+  .legenda-anexos{font-size:12px;color:var(--text-muted);line-height:1.5;}
+  .pg-num-destaque{font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:var(--accent2);}
+  .pg-zero{color:var(--text-dim);}
+  .status-finalizada td{opacity:.75;}
+  .status-finalizada .parte-desc{text-decoration:line-through;text-decoration-color:var(--text-dim);}
+  /* Sidebar box de TC/Parcela para paginação */
+  #pg-sidebar-box{padding:12px 16px 0;}
+  #pg-sidebar-box .pg-side-inner{padding:12px 14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);}
+  #pg-sidebar-box .pg-side-inner.hidden{display:none;}
+
   /* PRINT STYLES */
   @media print {
     .sidebar, .page-header .btn, .action-btn, .modal-overlay { display: none !important; }
@@ -1679,6 +1726,9 @@
       <div class="nav-item" onclick="showSection('links')">
         <span class="nav-icon">🔗</span> Links Rápidos
       </div>
+      <div class="nav-item" onclick="showSection('paginacao')">
+        <span class="nav-icon">📄</span> Paginação de Prestações
+      </div>
     </nav>
 
     <nav class="nav-section">
@@ -1700,7 +1750,19 @@
         <div id="sidebar-user-role" style="font-size:11px;color:var(--text-dim);margin-top:2px">Prestador de Contas</div>
         <div style="font-size:10px;color:var(--text-dim);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);line-height:1.5;opacity:0.7">Criado e desenvolvido por<br><span style="color:var(--text-muted)">Prof. Everton Correa Alves</span></div>
       </div>
-      <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()">
+      <div id="pg-sidebar-box" style="display:none">
+      <div class="pg-side-inner">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px;">TC / Parcela Ativa</div>
+        <select id="side-sel-tc" style="width:100%;margin-bottom:8px;font-size:12px" onchange="pgOnSideTcChange()">
+          <option value="">— Selecione TC —</option>
+        </select>
+        <select id="side-sel-parcela" style="width:100%;font-size:12px" onchange="pgOnSideParcelaChange()">
+          <option value="">— Parcela —</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()">
         <span class="theme-toggle-icon" id="theme-toggle-icon">🌙</span>
         <span id="theme-toggle-label">Modo Claro</span>
       </button>
@@ -5038,7 +5100,195 @@ init();
       Criado e desenvolvido por <span style="color:var(--text-muted)">Prof. Everton Correa Alves</span>
     </div>
 
+    <!-- ═══════════════════════════════════════════════════════
+         SEÇÃO: PAGINAÇÃO DE PRESTAÇÕES (integrada)
+         ═══════════════════════════════════════════════════════ -->
+    <section class="section" id="section-paginacao">
+
+      <!-- ── Montar Paginação ── -->
+      <div id="pg-view-montar">
+        <div class="page-header">
+          <div>
+            <div class="page-title">🗂 Paginação da Prestação</div>
+            <div class="page-subtitle" id="pg-subtitle-label">Selecione um TC e parcela na barra lateral para começar</div>
+          </div>
+          <div class="gap-8">
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="pgShowView('historico')">📋 Histórico</button>
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="pgShowView('manual')">📖 Manual</button>
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="pgExportarCSV()" title="Exportar como CSV">⬇ Exportar</button>
+            <button class="btn btn-success" style="font-size:12px;padding:6px 12px" onclick="pgSalvarPaginacao()">💾 Salvar</button>
+          </div>
+        </div>
+
+        <div id="pg-header-strip" class="pg-header-strip" style="display:none">
+          <div>
+            <div class="pg-header-info">
+              TC: <strong id="ph-tc">—</strong> &nbsp;|&nbsp;
+              Parcela: <strong id="ph-parcela">—</strong> &nbsp;|&nbsp;
+              Status: <span id="ph-status-badge" class="badge badge-gray">Não iniciada</span>
+            </div>
+            <div style="margin-top:4px;font-size:11px;color:var(--text-dim)" id="ph-saved-at">Não salva</div>
+          </div>
+          <div style="text-align:right">
+            <div class="pg-total-badge"><span id="ph-total-pg">0</span><span>páginas no total</span></div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:2px" id="ph-partes-ok">0 de 0 partes definidas</div>
+          </div>
+        </div>
+
+        <div id="pg-empty" style="text-align:center;padding:60px 20px;border:1px dashed var(--border);border-radius:12px;color:var(--text-muted)">
+          <div style="font-size:36px;margin-bottom:10px;opacity:.5">🗂</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Nenhuma Paginação em Edição</div>
+          <div style="font-size:13px;max-width:340px;margin-inline:auto">Selecione um TC e parcela na barra lateral para montar a paginação da prestação de contas.</div>
+        </div>
+
+        <div id="pg-tabela-wrap" style="display:none">
+          <div style="background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:8px;padding:10px 14px;font-size:12.5px;line-height:1.5;color:var(--accent);display:flex;align-items:flex-start;gap:8px;margin-bottom:16px">
+            <span>ℹ️</span>
+            <span>Os <strong>Anexos VI, VII e VIII</strong> são condicionais — aparecem somente quando necessários conforme o tipo de parcela. Marque a coluna "Incluir?" para ativá-los. As <strong>Compras</strong> podem ser adicionadas sem limite.</span>
+          </div>
+          <div class="table-wrap" style="margin-bottom:24px">
+            <table class="data-table" id="pg-table">
+              <thead>
+                <tr>
+                  <th style="width:28px"></th>
+                  <th style="width:32px">#</th>
+                  <th>Parte / Descrição</th>
+                  <th style="width:70px">Tipo</th>
+                  <th style="width:80px;text-align:center">Incluir?</th>
+                  <th style="width:88px;text-align:center">Pg. Início</th>
+                  <th style="width:88px;text-align:center">Pg. Final</th>
+                  <th style="width:72px;text-align:center">Páginas</th>
+                  <th style="width:130px">Status</th>
+                  <th>Observações</th>
+                  <th style="width:36px"></th>
+                </tr>
+              </thead>
+              <tbody id="pg-tbody"></tbody>
+            </table>
+          </div>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;color:var(--alem);border-color:rgba(181,123,238,.3)" onclick="pgAdicionarCompra()">➕ Adicionar Compra</button>
+          &nbsp;
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;color:var(--accent-red);border-color:rgba(240,80,96,.2)" onclick="pgLimparPaginacao()">🗑 Limpar tudo</button>
+        </div>
+      </div>
+
+      <!-- ── Histórico ── -->
+      <div id="pg-view-historico" style="display:none">
+        <div class="page-header">
+          <div>
+            <div class="page-title">📋 Histórico de Paginações</div>
+            <div class="page-subtitle">Todas as paginações salvas, em andamento e finalizadas</div>
+          </div>
+          <div class="gap-8">
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="pgShowView('montar')">← Voltar</button>
+            <select id="hist-filtro-tc" style="font-size:12px" onchange="pgRenderHistorico()"><option value="">Todos os TCs</option></select>
+            <select id="hist-filtro-status" style="font-size:12px" onchange="pgRenderHistorico()">
+              <option value="">Todos os status</option>
+              <option value="nao_iniciada">Não iniciada</option>
+              <option value="em_andamento">Em andamento</option>
+              <option value="finalizada">Finalizada</option>
+            </select>
+          </div>
+        </div>
+        <div class="hist-section">
+          <div class="hist-section-title"><div class="sdot sdot-and"></div> Em Andamento</div>
+          <div id="hist-and-body"></div>
+        </div>
+        <div class="hist-section">
+          <div class="hist-section-title"><div class="sdot sdot-ok"></div> Finalizadas</div>
+          <div id="hist-fin-body"></div>
+        </div>
+        <div class="hist-section">
+          <div class="hist-section-title"><div class="sdot sdot-ni"></div> Não Iniciadas / Outras</div>
+          <div id="hist-out-body"></div>
+        </div>
+      </div>
+
+      <!-- ── Manual de Anexos ── -->
+      <div id="pg-view-manual" style="display:none">
+        <div class="page-header">
+          <div>
+            <div class="page-title">📖 Manual de Anexos</div>
+            <div class="page-subtitle">Referência rápida — Portaria Conjunta SEDUC/FUNEC nº 08/2024</div>
+          </div>
+          <div><button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="pgShowView('montar')">← Voltar</button></div>
+        </div>
+        <div style="background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--accent);display:flex;align-items:flex-start;gap:8px;margin-bottom:16px">
+          <span>📌</span>
+          <span>Os <strong>Anexos IX, X e XI</strong> são preenchidos pela SEDUC/FUNEC, não pela Caixa Escolar. Os <strong>Documentos Fiscais, Orçamentos e Certidões</strong> não têm numeração de Anexo — integram as <strong>Compras (C1, C2…)</strong>.</span>
+        </div>
+        <div class="card" style="margin-bottom:24px">
+          <div class="card-header"><div class="card-title"><div class="card-title-icon" style="background:rgba(79,142,247,.1);color:var(--accent)">📋</div> Checklist por Tipo de Parcela</div></div>
+          <div class="legenda-grid">
+            <div class="legenda-item"><div class="legenda-tipo" style="color:var(--custeio)">CUSTEIO</div><div class="legenda-anexos">✅ Capa &nbsp; ✅ TC + Plano &nbsp; ✅ Extratos<br>✅ Anexos I a V &nbsp; ⚠️ Anexo VI, VII, VIII — SE HOUVER<br>✅ Compras (C1, C2…)</div></div>
+            <div class="legenda-item"><div class="legenda-tipo" style="color:var(--capital)">CAPITAL</div><div class="legenda-anexos">✅ Capa &nbsp; ✅ TC + Plano &nbsp; ✅ Extratos<br>✅ Anexos I a V &nbsp; ✅ Anexo VIII — obrigatório<br>⚠️ Anexo VI, VII — SE HOUVER &nbsp; ✅ Compras</div></div>
+            <div class="legenda-item"><div class="legenda-tipo" style="color:var(--obras)">REFORMA / MANUTENÇÃO</div><div class="legenda-anexos">✅ Capa &nbsp; ✅ TC + Plano &nbsp; ✅ Extratos<br>✅ Anexos I a V &nbsp; ✅ Anexo VIII (ART/RRT)<br>⚠️ Anexo VI, VII — SE HOUVER &nbsp; ✅ Compras</div></div>
+            <div class="legenda-item"><div class="legenda-tipo" style="color:var(--alem)">ALÉM DOS MUROS</div><div class="legenda-anexos">✅ Capa &nbsp; ✅ TC + Plano &nbsp; ✅ Extratos<br>✅ Anexos I a V &nbsp; ✅ Anexo VII — obrigatório<br>⚠️ Anexo VI, VIII — SE HOUVER &nbsp; ✅ Compras</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><div class="card-title-icon" style="background:rgba(56,217,169,.1);color:var(--accent2)">📑</div> Estrutura de Partes e Ordem</div></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>#</th><th>Parte</th><th>Descrição</th><th>Obrigatório?</th></tr></thead>
+              <tbody>
+                <tr><td>—</td><td><span class="parte-chip chip-capa">CAPA</span></td><td>Capa da prestação</td><td><span class="badge badge-green">Sempre</span></td></tr>
+                <tr><td>1–2</td><td><span class="parte-chip chip-tc">TC</span></td><td>Termo de Compromisso + Plano de Trabalho</td><td><span class="badge badge-green">Sempre</span></td></tr>
+                <tr><td>3</td><td><span class="parte-chip chip-extrato">EXTRATO</span></td><td>Extratos Bancários do período</td><td><span class="badge badge-green">Sempre</span></td></tr>
+                <tr><td>ANX I–V</td><td><span class="parte-chip chip-anexo">ANEXO</span></td><td>Certidão, Ata CF, Rel. Financeiro, Guias, Parecer</td><td><span class="badge badge-green">Sempre</span></td></tr>
+                <tr><td>ANX VI–VIII</td><td><span class="parte-chip chip-anexo">ANEXO</span></td><td>Doação, Trabalho de Campo, Recebimento Definitivo</td><td><span class="badge badge-orange">SE HOUVER</span></td></tr>
+                <tr><td>C1, C2…</td><td><span class="parte-chip chip-compra">COMPRA</span></td><td>NF, orçamentos, certidões, recibo por compra</td><td><span class="badge badge-green">Sempre</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top:14px;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);font-size:12px;color:var(--text-muted);line-height:1.6">
+            <strong style="color:var(--text)">💡 Paginação:</strong> A CAPA não recebe número de página. As páginas são numeradas sequencialmente a partir da página 1 (1ª página do TC). Todas devem ser <strong>numeradas e rubricadas</strong> pelo Presidente com carimbo <code style="font-size:11px;padding:1px 4px;background:var(--surface3);border-radius:3px">01/100</code>.
+          </div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
+</div>
+
+<!-- ═══════════ MODAIS DE PAGINAÇÃO ═══════════ -->
+<div class="modal-overlay" id="modal-pg-finalizar">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">✅ Finalizar Paginação</div>
+      <button class="modal-close" onclick="pgCloseModal('modal-pg-finalizar')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(56,217,169,.08);border:1px solid rgba(56,217,169,.2);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--accent2);display:flex;align-items:flex-start;gap:8px;margin-bottom:16px">
+        <span>✅</span>
+        <span>Todas as partes com páginas definidas. Deseja marcar esta paginação como <strong>Finalizada</strong>?</span>
+      </div>
+      <div class="field">
+        <label>Observação final (opcional)</label>
+        <textarea id="modal-fin-obs" placeholder="Ex.: Paginação conferida e enviada em 15/06/2025. Total: 87 páginas." style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:'Outfit',sans-serif;outline:none;resize:vertical;min-height:60px;width:100%"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="pgCloseModal('modal-pg-finalizar')">Cancelar</button>
+      <button class="btn btn-success" onclick="pgConfirmarFinalizar()">✅ Confirmar Finalização</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-pg-hist-detalhe">
+  <div class="modal" style="width:720px">
+    <div class="modal-header">
+      <div class="modal-title" id="mhd-title">Detalhes da Paginação</div>
+      <button class="modal-close" onclick="pgCloseModal('modal-pg-hist-detalhe')">✕</button>
+    </div>
+    <div class="modal-body" id="mhd-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="pgCloseModal('modal-pg-hist-detalhe')">Fechar</button>
+      <button class="btn btn-secondary" onclick="pgAbrirParaEdicao()">✏️ Editar</button>
+      <button class="btn btn-danger" onclick="pgExcluirPaginacaoAtual()">🗑 Excluir</button>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL: LINK RÁPIDO READER -->
@@ -12749,6 +12999,502 @@ function preencherDadosParcelaForcado(anexo) {
 }
 
 
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MÓDULO: PAGINAÇÃO DE PRESTAÇÕES
+     Todas as funções prefixadas com pg para evitar conflitos
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+// ── Estado interno do módulo ──
+const pgState = {
+  tcs: [],
+  paginacoes: [],
+  tcAtual: null,
+  parcelaAtual: null,
+  partes: [],
+  paginacaoId: null,
+  editHistId: null
+};
+
+const PG_PARTES_BASE = [
+  { id:'capa',    descr:'Capa',                                           tipo:'CAPA',    obrig:true,  condicional:false },
+  { id:'tc',      descr:'TC — Termo de Compromisso',                      tipo:'TC',      obrig:true,  condicional:false },
+  { id:'plano',   descr:'Plano de Trabalho',                              tipo:'TC',      obrig:true,  condicional:false },
+  { id:'extrato', descr:'Extratos Bancários',                             tipo:'EXTRATO', obrig:true,  condicional:false },
+  { id:'anx1',    descr:'Anexo I — Certidão de Execução do Objeto',       tipo:'ANEXO',   obrig:true,  condicional:false },
+  { id:'anx2',    descr:'Anexo II — Ata do Conselho Fiscal',              tipo:'ANEXO',   obrig:true,  condicional:false },
+  { id:'anx3',    descr:'Anexo III — Rel. Execução Físico-Financeiro',    tipo:'ANEXO',   obrig:true,  condicional:false },
+  { id:'anx4',    descr:'Anexo IV — Relação de Guias Pagas',              tipo:'ANEXO',   obrig:true,  condicional:false },
+  { id:'anx5',    descr:'Anexo V — Parecer do Conselho Fiscal',           tipo:'ANEXO',   obrig:true,  condicional:false },
+  { id:'anx6',    descr:'Anexo VI — Termo de Doação (SE HOUVER)',         tipo:'ANEXO',   obrig:false, condicional:true  },
+  { id:'anx7',    descr:'Anexo VII — Rel. Trabalho de Campo (SE HOUVER)', tipo:'ANEXO',   obrig:false, condicional:true  },
+  { id:'anx8',    descr:'Anexo VIII — Termo Recebimento Def. (SE HOUVER)',tipo:'ANEXO',   obrig:false, condicional:true  },
+];
+
+const PG_TIPO_CHIP  = { CAPA:'chip-capa', TC:'chip-tc', EXTRATO:'chip-extrato', ANEXO:'chip-anexo', COMPRA:'chip-compra' };
+const PG_TIPO_LABEL = { CAPA:'Capa', TC:'TC', EXTRATO:'Extrato', ANEXO:'Anexo', COMPRA:'Compra' };
+const PG_STATUS_OPT = [
+  { v:'nao_iniciada', l:'⚪ Não iniciada' },
+  { v:'coletando',    l:'📝 Coletando assinaturas' },
+  { v:'em_andamento', l:'🟡 Em andamento' },
+  { v:'ok',           l:'✅ OK' },
+];
+const PG_PAR_NOMES = {'01':'1ª Parcela','02':'2ª Parcela','03':'3ª Parcela','04':'4ª Parcela','05':'5ª Parcela','U':'Parcela Única'};
+
+// ── rowToTc helper (usa mesmo formato do main) ──
+function pgRowToTc(r) {
+  return { id:r.id, numero:r.numero, escola:r.escola, ehAditivo:r.eh_aditivo, tcPaiId:r.tc_pai_id };
+}
+
+// ── Mostrar/Ocultar sidebar box e init quando entrar na seção ──
+window.pgShowView = function(view) {
+  ['montar','historico','manual'].forEach(v => {
+    const el = document.getElementById('pg-view-' + v);
+    if (el) el.style.display = v === view ? '' : 'none';
+  });
+  if (view === 'historico') pgRenderHistorico();
+};
+window.pgShowView('montar');
+
+// ── Listener de showSection para mostrar sidebar box ──
+const _origShowSection = window.showSection;
+window.showSection = function(id) {
+  _origShowSection(id);
+  const box = document.getElementById('pg-sidebar-box');
+  if (box) box.style.display = id === 'paginacao' ? '' : 'none';
+  if (id === 'paginacao' && !pgState.tcs.length) pgInit();
+};
+
+// ── Init: carrega TCs e paginações ──
+async function pgInit() {
+  try {
+    const [{ data: tcsData }, { data: pagData }] = await Promise.all([
+      supa.from('tcs').select('*').order('criado_em'),
+      supa.from('paginacoes_prestacao').select('*').order('criado_em', { ascending: false })
+    ]);
+    pgState.tcs = (tcsData || []).map(pgRowToTc);
+    pgState.paginacoes = pagData || [];
+    pgPreencherSeletoresTc();
+    pgRenderHistorico();
+  } catch(e) {
+    console.warn('Paginação: Supabase indisponível, carregando local:', e);
+    try { pgState.paginacoes = JSON.parse(localStorage.getItem('pg_paginacoes') || '[]'); } catch{}
+    try { pgState.tcs = JSON.parse(localStorage.getItem('pg_tcs_cache') || '[]'); } catch{}
+    pgPreencherSeletoresTc();
+    pgRenderHistorico();
+  }
+}
+
+function pgPreencherSeletoresTc() {
+  const sels = ['side-sel-tc','hist-filtro-tc'];
+  sels.forEach(sid => {
+    const sel = document.getElementById(sid);
+    if (!sel) return;
+    const anterior = sel.value;
+    sel.innerHTML = sid === 'hist-filtro-tc'
+      ? '<option value="">Todos os TCs</option>'
+      : '<option value="">— Selecione TC —</option>';
+    pgState.tcs.filter(t => !t.tcPaiId).forEach(tc => {
+      const o = document.createElement('option');
+      o.value = tc.id; o.textContent = `TC ${tc.numero}`;
+      sel.appendChild(o);
+      pgState.tcs.filter(a => a.tcPaiId === tc.id).forEach(a => {
+        const o2 = document.createElement('option');
+        o2.value = a.id; o2.textContent = `  └ Aditivo ${a.numero} (TC ${tc.numero})`;
+        sel.appendChild(o2);
+      });
+    });
+    if (anterior) sel.value = anterior;
+  });
+}
+
+window.pgOnSideTcChange = function() {
+  pgState.tcAtual = document.getElementById('side-sel-tc').value || null;
+  pgPreencherSeletorParcela();
+};
+
+function pgPreencherSeletorParcela() {
+  const sel = document.getElementById('side-sel-parcela');
+  if (!sel) return;
+  const parcelasSet = new Set();
+  (pgState.paginacoes || []).filter(p => String(p.tc_id) === String(pgState.tcAtual)).forEach(p => parcelasSet.add(p.parcela));
+  ['01','02','03','04','05','U'].forEach(p => parcelasSet.add(p));
+  const parOrdem = ['01','02','03','04','05','U'];
+  const lista = [...parcelasSet].sort((a,b) => {
+    const ia = parOrdem.indexOf(a), ib = parOrdem.indexOf(b);
+    return (ia===-1?99:ia)-(ib===-1?99:ib);
+  });
+  sel.innerHTML = '<option value="">— Parcela —</option>';
+  lista.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p; o.textContent = PG_PAR_NOMES[p] || `Parcela ${p}`;
+    sel.appendChild(o);
+  });
+  if (pgState.parcelaAtual) sel.value = pgState.parcelaAtual;
+}
+
+window.pgOnSideParcelaChange = function() {
+  pgState.parcelaAtual = document.getElementById('side-sel-parcela').value || null;
+  if (pgState.tcAtual && pgState.parcelaAtual) pgAbrirOuCriarPaginacao();
+  else pgMostrarVazio();
+};
+
+function pgAbrirOuCriarPaginacao() {
+  const existente = (pgState.paginacoes || []).find(
+    p => String(p.tc_id) === String(pgState.tcAtual) && p.parcela === pgState.parcelaAtual
+  );
+  if (existente) {
+    pgState.paginacaoId = existente.id;
+    pgState.partes = JSON.parse(existente.partes_json || '[]');
+    if (!pgState.partes.length) pgState.partes = pgGerarPartesIniciais();
+    pgAtualizarHeaderInfo(existente);
+  } else {
+    pgState.paginacaoId = null;
+    pgState.partes = pgGerarPartesIniciais();
+    pgAtualizarHeaderInfo(null);
+  }
+  pgShowView('montar');
+  pgRenderTabela();
+  pgAtualizarTotais();
+}
+
+function pgGerarPartesIniciais() {
+  return PG_PARTES_BASE.map(p => ({
+    id: p.id, descr: p.descr, tipo: p.tipo, obrig: p.obrig,
+    condicional: p.condicional, incluir: p.obrig,
+    pgInicio: '', pgFinal: '', status: 'nao_iniciada', obs: ''
+  }));
+}
+
+function pgMostrarVazio() {
+  document.getElementById('pg-empty').style.display = '';
+  document.getElementById('pg-tabela-wrap').style.display = 'none';
+  document.getElementById('pg-header-strip').style.display = 'none';
+  document.getElementById('pg-subtitle-label').textContent = 'Selecione um TC e parcela na barra lateral para começar';
+}
+
+function pgAtualizarHeaderInfo(pg) {
+  const tc = pgState.tcs.find(t => String(t.id) === String(pgState.tcAtual));
+  const tcNum = tc ? `TC ${tc.numero}` : `TC #${pgState.tcAtual}`;
+  const parNome = PG_PAR_NOMES[pgState.parcelaAtual] || pgState.parcelaAtual;
+  document.getElementById('ph-tc').textContent = tcNum;
+  document.getElementById('ph-parcela').textContent = parNome;
+  document.getElementById('pg-subtitle-label').textContent = `${tcNum} — ${parNome}`;
+  const badgeEl = document.getElementById('ph-status-badge');
+  if (pg) {
+    const s = pg.status || 'nao_iniciada';
+    badgeEl.className = 'badge ' + (s==='finalizada'?'badge-green':s==='em_andamento'?'badge-orange':s==='coletando'?'badge-blue':'badge-gray');
+    badgeEl.textContent = s==='finalizada'?'✅ Finalizada':s==='em_andamento'?'🟡 Em andamento':s==='coletando'?'📝 Coletando':'⚪ Não iniciada';
+    document.getElementById('ph-saved-at').textContent = pg.atualizado_em ? `Salva em ${new Date(pg.atualizado_em).toLocaleString('pt-BR')}` : 'Salva';
+  } else {
+    badgeEl.className = 'badge badge-gray';
+    badgeEl.textContent = '⚪ Nova (não salva)';
+    document.getElementById('ph-saved-at').textContent = 'Ainda não salva';
+  }
+  document.getElementById('pg-empty').style.display = 'none';
+  document.getElementById('pg-tabela-wrap').style.display = '';
+  document.getElementById('pg-header-strip').style.display = '';
+}
+
+function pgEscHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+function pgRenderTabela() {
+  const tbody = document.getElementById('pg-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  pgState.partes.forEach((p, idx) => {
+    const pgIni = parseInt(p.pgInicio) || '';
+    const pgFin = parseInt(p.pgFinal) || '';
+    const qtd = (pgIni !== '' && pgFin !== '' && pgFin >= pgIni) ? pgFin - pgIni + 1 : '';
+    const chipClass = PG_TIPO_CHIP[p.tipo] || 'chip-capa';
+    const tipoLabel = PG_TIPO_LABEL[p.tipo] || p.tipo;
+    const descrText = p.condicional ? `<span style="opacity:.65;font-style:italic">${p.descr}</span>` : p.descr;
+    const incluirCol = p.condicional
+      ? `<input type="checkbox" ${p.incluir?'checked':''} onchange="pgToggleIncluir(${idx}, this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">`
+      : `<span style="color:var(--text-dim);font-size:11px">—</span>`;
+    const statusOpts = PG_STATUS_OPT.map(s => `<option value="${s.v}" ${p.status===s.v?'selected':''}>${s.l}</option>`).join('');
+    const disabled = (!p.incluir && p.condicional) ? 'disabled' : '';
+    const rowStyle = !p.incluir && p.condicional ? 'opacity:.45;' : '';
+
+    const tr = document.createElement('tr');
+    if (p.status === 'ok') tr.style.opacity = '.75';
+    tr.setAttribute('data-idx', idx);
+    tr.setAttribute('draggable', p.tipo === 'COMPRA' ? 'true' : 'false');
+    if (p.tipo === 'COMPRA') {
+      tr.addEventListener('dragstart', pgOnDragStart);
+      tr.addEventListener('dragover', pgOnDragOver);
+      tr.addEventListener('drop', pgOnDrop);
+    }
+    if (rowStyle) tr.style.cssText += rowStyle;
+    tr.innerHTML = `
+      <td style="color:var(--text-dim);text-align:center">${p.tipo==='COMPRA'?'<span style="cursor:grab;color:var(--text-dim);font-size:14px;padding:0 4px" title="Arrastar para reordenar">⠿</span>':''}</td>
+      <td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:11px;color:var(--text-dim)">${idx+1}</td>
+      <td>
+        <span class="parte-chip ${chipClass}">${tipoLabel}</span>
+        <span style="margin-left:8px;font-size:13px">${descrText}</span>
+        ${p.tipo==='COMPRA'?`<button class="btn btn-ghost" style="margin-left:8px;padding:2px 6px;font-size:11px;color:var(--accent-red)" onclick="pgRemoverCompra(${idx})">✕</button>`:''}
+      </td>
+      <td style="text-align:center"><span class="parte-chip ${chipClass}" style="font-size:10px">${tipoLabel}</span></td>
+      <td style="text-align:center">${incluirCol}</td>
+      <td style="text-align:center"><input style="width:72px;padding:6px 8px;font-size:13px;font-family:\'DM Mono\',monospace;text-align:center;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);outline:none" type="number" min="0" value="${p.pgInicio}" ${disabled} onchange="pgSetPg(${idx},'pgInicio',this.value)" placeholder="—"></td>
+      <td style="text-align:center"><input style="width:72px;padding:6px 8px;font-size:13px;font-family:\'DM Mono\',monospace;text-align:center;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);outline:none" type="number" min="0" value="${p.pgFinal}" ${disabled} onchange="pgSetPg(${idx},'pgFinal',this.value)" placeholder="—"></td>
+      <td style="text-align:center"><span style="font-family:\'DM Mono\',monospace;font-size:13px;color:${qtd===''?'var(--text-dim)':'var(--accent2)'};min-width:36px;text-align:center;font-weight:600">${qtd===''?'—':qtd}</span></td>
+      <td><select style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:\'Outfit\',sans-serif;cursor:pointer" onchange="pgSetStatus(${idx},this.value)" ${disabled}>${statusOpts}</select></td>
+      <td><input style="font-size:12px;padding:5px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);width:100%;font-family:\'Outfit\',sans-serif;outline:none" type="text" value="${pgEscHtml(p.obs||'')}" ${disabled} onchange="pgSetObs(${idx},this.value)" placeholder="${p.condicional&&!p.incluir?'(não incluído)':'Observações...'}"></td>
+      <td></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+window.pgSetPg = function(idx, campo, val) {
+  pgState.partes[idx][campo] = val === '' ? '' : parseInt(val) || '';
+  pgAtualizarTotais();
+  pgRenderTabela();
+};
+window.pgSetStatus = function(idx, val) { pgState.partes[idx].status = val; };
+window.pgSetObs    = function(idx, val) { pgState.partes[idx].obs    = val; };
+
+window.pgToggleIncluir = function(idx, val) {
+  pgState.partes[idx].incluir = val;
+  if (!val) { pgState.partes[idx].pgInicio = ''; pgState.partes[idx].pgFinal = ''; pgState.partes[idx].status = 'nao_iniciada'; }
+  pgRenderTabela();
+  pgAtualizarTotais();
+};
+
+window.pgAdicionarCompra = function() {
+  const n = pgState.partes.filter(p => p.tipo === 'COMPRA').length + 1;
+  pgState.partes.push({ id:'c'+n+'_'+Date.now(), descr:`Compra C${n}`, tipo:'COMPRA', obrig:true, condicional:false, incluir:true, pgInicio:'', pgFinal:'', status:'nao_iniciada', obs:'' });
+  pgRenderTabela();
+  pgAtualizarTotais();
+  setTimeout(() => document.getElementById('pg-tbody')?.lastElementChild?.scrollIntoView({ behavior:'smooth', block:'center' }), 80);
+};
+
+window.pgRemoverCompra = function(idx) {
+  if (!confirm('Remover esta compra?')) return;
+  pgState.partes.splice(idx, 1);
+  let n = 1;
+  pgState.partes.forEach(p => { if (p.tipo === 'COMPRA') { p.descr = `Compra C${n}`; n++; } });
+  pgRenderTabela();
+  pgAtualizarTotais();
+};
+
+window.pgLimparPaginacao = function() {
+  if (!confirm('Limpar todas as páginas preenchidas?')) return;
+  pgState.partes.forEach(p => { p.pgInicio=''; p.pgFinal=''; p.status='nao_iniciada'; p.obs=''; if (p.condicional) p.incluir=false; });
+  pgState.partes = pgState.partes.filter(p => p.tipo !== 'COMPRA');
+  pgRenderTabela();
+  pgAtualizarTotais();
+};
+
+let pgDragIdx = null;
+function pgOnDragStart(e) { pgDragIdx = parseInt(e.currentTarget.getAttribute('data-idx')); e.dataTransfer.effectAllowed = 'move'; }
+function pgOnDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+function pgOnDrop(e) {
+  e.preventDefault();
+  const dropIdx = parseInt(e.currentTarget.getAttribute('data-idx'));
+  if (pgDragIdx === null || pgDragIdx === dropIdx) return;
+  if (pgState.partes[pgDragIdx].tipo !== 'COMPRA' || pgState.partes[dropIdx].tipo !== 'COMPRA') return;
+  const item = pgState.partes.splice(pgDragIdx, 1)[0];
+  pgState.partes.splice(dropIdx, 0, item);
+  let n = 1;
+  pgState.partes.forEach(p => { if (p.tipo === 'COMPRA') { p.descr = `Compra C${n}`; n++; } });
+  pgDragIdx = null;
+  pgRenderTabela();
+  pgAtualizarTotais();
+}
+
+function pgAtualizarTotais() {
+  let total = 0, definidas = 0;
+  const incluidas = pgState.partes.filter(p => p.incluir !== false || !p.condicional);
+  incluidas.forEach(p => {
+    const ini = parseInt(p.pgInicio)||0, fin = parseInt(p.pgFinal)||0;
+    if (ini > 0 && fin >= ini) { total += fin-ini+1; definidas++; }
+  });
+  const totalEl = document.getElementById('ph-total-pg');
+  const partesEl = document.getElementById('ph-partes-ok');
+  if (totalEl) totalEl.textContent = total;
+  if (partesEl) partesEl.textContent = `${definidas} de ${incluidas.length} partes com páginas definidas`;
+}
+
+window.pgSalvarPaginacao = async function() {
+  if (!pgState.tcAtual || !pgState.parcelaAtual) {
+    alert('Selecione um TC e Parcela na barra lateral primeiro.'); return;
+  }
+  const incluidas = pgState.partes.filter(p => p.incluir !== false || !p.condicional);
+  const todasOk   = incluidas.every(p => p.status === 'ok' || (p.condicional && !p.incluir));
+  const alguma    = incluidas.some(p => p.pgInicio !== '' || p.pgFinal !== '');
+  const statusGeral = todasOk ? 'finalizada' : alguma ? 'em_andamento' : 'nao_iniciada';
+  const row = { tc_id:pgState.tcAtual, parcela:pgState.parcelaAtual, partes_json:JSON.stringify(pgState.partes), status:statusGeral, atualizado_em:new Date().toISOString() };
+  try {
+    if (pgState.paginacaoId) {
+      const { error } = await supa.from('paginacoes_prestacao').update(row).eq('id', pgState.paginacaoId);
+      if (error) throw error;
+      const idx = pgState.paginacoes.findIndex(p => p.id === pgState.paginacaoId);
+      if (idx >= 0) pgState.paginacoes[idx] = { ...pgState.paginacoes[idx], ...row };
+    } else {
+      row.criado_em = new Date().toISOString();
+      const { data, error } = await supa.from('paginacoes_prestacao').insert(row).select().single();
+      if (error) throw error;
+      pgState.paginacaoId = data.id;
+      pgState.paginacoes.unshift(data);
+    }
+    const savedEl = document.getElementById('ph-saved-at');
+    if (savedEl) savedEl.textContent = `Salva em ${new Date().toLocaleString('pt-BR')}`;
+    const badgeEl = document.getElementById('ph-status-badge');
+    if (badgeEl) { badgeEl.className='badge '+(statusGeral==='finalizada'?'badge-green':statusGeral==='em_andamento'?'badge-orange':'badge-gray'); badgeEl.textContent=statusGeral==='finalizada'?'✅ Finalizada':statusGeral==='em_andamento'?'🟡 Em andamento':'⚪ Não iniciada'; }
+    pgMostrarToast('✅ Paginação salva com sucesso!');
+    pgRenderHistorico();
+  } catch(e) {
+    // Salva localmente
+    try {
+      const arr = JSON.parse(localStorage.getItem('pg_paginacoes') || '[]');
+      const rowLocal = { ...row, id: pgState.paginacaoId || Date.now(), criado_em: new Date().toISOString() };
+      const idx = arr.findIndex(p => String(p.tc_id)===String(pgState.tcAtual) && p.parcela===pgState.parcelaAtual);
+      if (idx >= 0) arr[idx] = rowLocal; else arr.unshift(rowLocal);
+      localStorage.setItem('pg_paginacoes', JSON.stringify(arr));
+      if (!pgState.paginacaoId) { pgState.paginacaoId = rowLocal.id; pgState.paginacoes.unshift(rowLocal); }
+    } catch{}
+    pgMostrarToast('💾 Salvo localmente (sem conexão)');
+  }
+};
+
+window.pgExportarCSV = function() {
+  if (!pgState.partes.length) { alert('Nenhuma paginação carregada.'); return; }
+  const tc = pgState.tcs.find(t => String(t.id) === String(pgState.tcAtual));
+  const linhas = [['#','Parte','Tipo','Incluir','Pg.Início','Pg.Final','Páginas','Status','Observações']];
+  pgState.partes.forEach((p,i) => {
+    const ini=parseInt(p.pgInicio)||0, fin=parseInt(p.pgFinal)||0;
+    linhas.push([i+1,p.descr,p.tipo,p.incluir?'Sim':'Não',p.pgInicio||'',p.pgFinal||'',(ini>0&&fin>=ini)?fin-ini+1:'',p.status,p.obs||'']);
+  });
+  const csv = linhas.map(r => r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = `Paginacao_${tc?'TC'+tc.numero:'TC'}_${pgState.parcelaAtual||''}.csv`;
+  a.click();
+};
+
+window.pgConfirmarFinalizar = function() {
+  const obs = document.getElementById('modal-fin-obs')?.value || '';
+  pgState.partes.forEach(p => { if (p.incluir !== false || !p.condicional) p.status = 'ok'; });
+  if (obs && pgState.partes.length) { const last = pgState.partes[pgState.partes.length-1]; last.obs = (last.obs||'') + ' | ' + obs; }
+  pgCloseModal('modal-pg-finalizar');
+  pgRenderTabela();
+  pgAtualizarTotais();
+  pgSalvarPaginacao();
+};
+
+window.pgRenderHistorico = function() {
+  const filtroTc     = document.getElementById('hist-filtro-tc')?.value || '';
+  const filtroStatus = document.getElementById('hist-filtro-status')?.value || '';
+  let lista = pgState.paginacoes;
+  if (filtroTc)     lista = lista.filter(p => String(p.tc_id) === filtroTc);
+  if (filtroStatus) lista = lista.filter(p => p.status === filtroStatus);
+  const grupos = { em_andamento:[], finalizada:[], outros:[] };
+  lista.forEach(p => {
+    if (p.status==='finalizada') grupos.finalizada.push(p);
+    else if (p.status==='em_andamento'||p.status==='coletando') grupos.em_andamento.push(p);
+    else grupos.outros.push(p);
+  });
+  ['em_andamento','finalizada','outros'].forEach((g, gi) => {
+    const el = document.getElementById(['hist-and-body','hist-fin-body','hist-out-body'][gi]);
+    if (!el) return;
+    if (!grupos[g].length) { el.innerHTML='<div style="font-size:12px;color:var(--text-dim);padding:8px 0">Nenhum registro.</div>'; return; }
+    el.innerHTML = `<div class="table-wrap"><table class="data-table">
+      <thead><tr><th>TC</th><th>Parcela</th><th>Partes</th><th>Total Pág.</th><th>Status</th><th>Atualizado</th><th></th></tr></thead>
+      <tbody>${grupos[g].map(pg => pgHistRow(pg)).join('')}</tbody>
+    </table></div>`;
+  });
+};
+
+function pgHistRow(pg) {
+  const tc = pgState.tcs.find(t => String(t.id) === String(pg.tc_id));
+  const tcLabel = tc ? `TC ${tc.numero}` : `#${pg.tc_id}`;
+  const parNome = PG_PAR_NOMES[pg.parcela] || pg.parcela;
+  let partes = []; try { partes = JSON.parse(pg.partes_json||'[]'); } catch{}
+  const incluidas = partes.filter(p => p.incluir !== false || !p.condicional);
+  const totalPg = incluidas.reduce((s,p) => { const ini=parseInt(p.pgInicio)||0,fin=parseInt(p.pgFinal)||0; return (ini>0&&fin>=ini)?s+fin-ini+1:s; }, 0);
+  const sdotClass = pg.status==='finalizada'?'sdot-ok':pg.status==='em_andamento'||pg.status==='coletando'?'sdot-and':'sdot-ni';
+  const statusLabel = pg.status==='finalizada'?'✅ Finalizada':pg.status==='em_andamento'?'🟡 Em andamento':pg.status==='coletando'?'📝 Coletando':'⚪ Não iniciada';
+  const atualizado = pg.atualizado_em ? new Date(pg.atualizado_em).toLocaleDateString('pt-BR') : '—';
+  return `<tr>
+    <td style="font-family:'DM Mono',monospace;font-size:12px">${tcLabel}</td>
+    <td>${parNome}</td>
+    <td style="text-align:center">${incluidas.length}</td>
+    <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--accent2)">${totalPg}</td>
+    <td><div style="display:flex;align-items:center;gap:6px"><div class="sdot ${sdotClass}"></div>${statusLabel}</div></td>
+    <td style="font-size:11px;color:var(--text-muted)">${atualizado}</td>
+    <td><button class="btn btn-ghost" style="font-size:12px;padding:4px 10px" onclick="pgAbrirHistDetalhe('${pg.id}')">Ver</button> <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;color:var(--accent)" onclick="pgEditarDoHistorico('${pg.id}')">Editar</button></td>
+  </tr>`;
+}
+
+window.pgAbrirHistDetalhe = function(pgId) {
+  const pg = pgState.paginacoes.find(p => String(p.id) === String(pgId));
+  if (!pg) return;
+  pgState.editHistId = pgId;
+  const tc = pgState.tcs.find(t => String(t.id) === String(pg.tc_id));
+  const tcLabel = tc ? `TC ${tc.numero}` : `#${pg.tc_id}`;
+  document.getElementById('mhd-title').textContent = `${tcLabel} — ${PG_PAR_NOMES[pg.parcela]||pg.parcela}`;
+  let partes = []; try { partes = JSON.parse(pg.partes_json||'[]'); } catch{}
+  const rows = partes.map(p => {
+    const ini=parseInt(p.pgInicio)||0,fin=parseInt(p.pgFinal)||0,qtd=(ini>0&&fin>=ini)?fin-ini+1:'—';
+    const chipClass=PG_TIPO_CHIP[p.tipo]||'chip-capa',tipoLabel=PG_TIPO_LABEL[p.tipo]||p.tipo;
+    return `<tr style="${(!p.incluir&&p.condicional)?'opacity:.4':''}"><td><span class="parte-chip ${chipClass}">${tipoLabel}</span></td><td>${p.descr}</td><td style="text-align:center;font-family:'DM Mono',monospace">${p.pgInicio||'—'}</td><td style="text-align:center;font-family:'DM Mono',monospace">${p.pgFinal||'—'}</td><td style="text-align:center;font-family:'DM Mono',monospace;color:var(--accent2)">${qtd}</td><td style="font-size:11px;color:var(--text-muted)">${p.obs||''}</td></tr>`;
+  }).join('');
+  document.getElementById('mhd-body').innerHTML = `<div class="table-wrap"><table class="data-table"><thead><tr><th>Tipo</th><th>Parte</th><th style="text-align:center">Início</th><th style="text-align:center">Final</th><th style="text-align:center">Pgs</th><th>Obs</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  pgOpenModal('modal-pg-hist-detalhe');
+};
+
+window.pgEditarDoHistorico = function(pgId) {
+  const pg = pgState.paginacoes.find(p => String(p.id) === String(pgId));
+  if (!pg) return;
+  pgState.tcAtual = pg.tc_id;
+  pgState.parcelaAtual = pg.parcela;
+  const selTc = document.getElementById('side-sel-tc');
+  if (selTc) selTc.value = pg.tc_id;
+  pgPreencherSeletorParcela();
+  const selPar = document.getElementById('side-sel-parcela');
+  if (selPar) selPar.value = pg.parcela;
+  pgCloseModal('modal-pg-hist-detalhe');
+  pgAbrirOuCriarPaginacao();
+};
+
+window.pgAbrirParaEdicao = function() {
+  if (!pgState.editHistId) return;
+  pgEditarDoHistorico(pgState.editHistId);
+};
+
+window.pgExcluirPaginacaoAtual = async function() {
+  if (!pgState.editHistId) return;
+  if (!confirm('Excluir esta paginação permanentemente?')) return;
+  try { await supa.from('paginacoes_prestacao').delete().eq('id', pgState.editHistId); } catch(e){}
+  pgState.paginacoes = pgState.paginacoes.filter(p => String(p.id) !== String(pgState.editHistId));
+  pgCloseModal('modal-pg-hist-detalhe');
+  pgRenderHistorico();
+  if (pgState.paginacaoId === pgState.editHistId) { pgState.paginacaoId = null; pgState.partes = []; pgMostrarVazio(); }
+};
+
+function pgOpenModal(id)  { const el = document.getElementById(id); if (el) el.classList.add('open'); }
+window.pgCloseModal = function(id) { const el = document.getElementById(id); if (el) el.classList.remove('open'); };
+
+let _pgToastTimer = null;
+function pgMostrarToast(msg) {
+  let t = document.getElementById('pg-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'pg-toast';
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;padding:12px 18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--text);box-shadow:var(--shadow);z-index:9999;transition:opacity .3s;pointer-events:none';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(_pgToastTimer);
+  _pgToastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2800);
+}
+
+})(); // fim IIFE do módulo de paginação
 </script>
 
 <!-- MODAL: INSERIR COMPROBATÓRIO -->
