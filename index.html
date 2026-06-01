@@ -5106,6 +5106,7 @@ init();
             <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="pgShowView('historico')">📋 Histórico</button>
             <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="pgShowView('manual')">📖 Manual</button>
             <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="pgExportarCSV()" title="Exportar como CSV">⬇ Exportar</button>
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;color:var(--accent3);border-color:rgba(246,166,35,.3)" onclick="pgImprimirEnxuto()" title="Imprimir resumo da paginação">🖨 Imprimir Paginação</button>
             <button class="btn btn-success" style="font-size:12px;padding:6px 12px" onclick="pgSalvarPaginacao()">💾 Salvar</button>
           </div>
         </div>
@@ -5161,9 +5162,9 @@ init();
                   <th>Parte / Descrição</th>
                   <th style="width:70px">Tipo</th>
                   <th style="width:80px;text-align:center">Incluir?</th>
-                  <th style="width:88px;text-align:center">Pg. Início</th>
-                  <th style="width:88px;text-align:center">Pg. Final</th>
-                  <th style="width:72px;text-align:center">Páginas</th>
+                  <th style="width:76px;text-align:center" title="Digite a quantidade de páginas desta parte para calcular automaticamente">Qtd. Pgs.</th>
+                  <th style="width:82px;text-align:center">Pg. Início</th>
+                  <th style="width:82px;text-align:center">Pg. Final</th>
                   <th style="width:130px">Status</th>
                   <th>Observações</th>
                   <th style="width:36px"></th>
@@ -13178,7 +13179,7 @@ function pgAbrirOuCriarPaginacao() {
   );
   if (existente) {
     pgState.paginacaoId = existente.id;
-    pgState.partes = JSON.parse(existente.partes_json || '[]');
+    pgState.partes = pgNormalizarPartes(JSON.parse(existente.partes_json || '[]'));
     if (!pgState.partes.length) pgState.partes = pgGerarPartesIniciais();
     pgAtualizarHeaderInfo(existente);
   } else {
@@ -13195,8 +13196,19 @@ function pgGerarPartesIniciais() {
   return PG_PARTES_BASE.map(p => ({
     id: p.id, descr: p.descr, tipo: p.tipo, obrig: p.obrig,
     condicional: p.condicional, incluir: p.obrig,
-    pgInicio: '', pgFinal: '', status: 'nao_iniciada', obs: ''
+    qtdPgs: '', pgInicio: '', pgFinal: '', status: 'nao_iniciada', obs: ''
   }));
+}
+
+// ── Garante que partes carregadas do banco tenham qtdPgs populado ──
+function pgNormalizarPartes(partes) {
+  return partes.map(p => {
+    if (p.qtdPgs === undefined || p.qtdPgs === null) {
+      const ini = parseInt(p.pgInicio)||0, fin = parseInt(p.pgFinal)||0;
+      p.qtdPgs = (ini > 0 && fin >= ini && p.tipo !== 'CAPA') ? fin - ini + 1 : '';
+    }
+    return p;
+  });
 }
 
 function pgMostrarVazio() {
@@ -13238,7 +13250,7 @@ function pgRenderTabela() {
   pgState.partes.forEach((p, idx) => {
     const pgIni = parseInt(p.pgInicio) || '';
     const pgFin = parseInt(p.pgFinal) || '';
-    const qtd = (pgIni !== '' && pgFin !== '' && pgFin >= pgIni) ? pgFin - pgIni + 1 : '';
+    const isCapa = p.tipo === 'CAPA';
     const chipClass = PG_TIPO_CHIP[p.tipo] || 'chip-capa';
     const tipoLabel = PG_TIPO_LABEL[p.tipo] || p.tipo;
     const descrText = p.condicional ? `<span style="opacity:.65;font-style:italic">${p.descr}</span>` : p.descr;
@@ -13248,6 +13260,18 @@ function pgRenderTabela() {
     const statusOpts = PG_STATUS_OPT.map(s => `<option value="${s.v}" ${p.status===s.v?'selected':''}>${s.l}</option>`).join('');
     const disabled = (!p.incluir && p.condicional) ? 'disabled' : '';
     const rowStyle = !p.incluir && p.condicional ? 'opacity:.45;' : '';
+
+    // Campo Qtd. Pgs. — destaque visual, editável, capa mostra "—"
+    const qtdVal = p.qtdPgs !== undefined && p.qtdPgs !== '' ? p.qtdPgs : '';
+    const qtdCell = isCapa
+      ? `<span style="color:var(--text-dim);font-size:11px" title="Capa não é paginada">—</span>`
+      : `<input data-qtd="${idx}" style="width:62px;padding:6px 8px;font-size:13px;font-family:'DM Mono',monospace;text-align:center;border-radius:6px;background:rgba(79,142,247,.08);border:1px solid var(--accent);color:var(--accent2);outline:none;font-weight:600" type="number" min="1" value="${qtdVal}" ${disabled} oninput="pgSetQtd(${idx},this.value)" placeholder="Qtd">`;
+
+    // Pg. Início / Pg. Final — exibição apenas (calculados), mas editáveis manualmente
+    const pgIniCell = isCapa ? `<span style="color:var(--text-dim);font-size:11px">—</span>`
+      : `<input style="width:68px;padding:6px 8px;font-size:12px;font-family:'DM Mono',monospace;text-align:center;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);outline:none" type="number" min="0" value="${p.pgInicio}" ${disabled} onchange="pgSetPgManual(${idx},'pgInicio',this.value)" placeholder="—">`;
+    const pgFinCell = isCapa ? `<span style="color:var(--text-dim);font-size:11px">—</span>`
+      : `<input style="width:68px;padding:6px 8px;font-size:12px;font-family:'DM Mono',monospace;text-align:center;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);outline:none" type="number" min="0" value="${p.pgFinal}" ${disabled} onchange="pgSetPgManual(${idx},'pgFinal',this.value)" placeholder="—">`;
 
     const tr = document.createElement('tr');
     if (p.status === 'ok') tr.style.opacity = '.75';
@@ -13261,7 +13285,7 @@ function pgRenderTabela() {
     if (rowStyle) tr.style.cssText += rowStyle;
     tr.innerHTML = `
       <td style="color:var(--text-dim);text-align:center">${p.tipo==='COMPRA'?'<span style="cursor:grab;color:var(--text-dim);font-size:14px;padding:0 4px" title="Arrastar para reordenar">⠿</span>':''}</td>
-      <td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:11px;color:var(--text-dim)">${idx+1}</td>
+      <td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">${idx+1}</td>
       <td>
         <span class="parte-chip ${chipClass}">${tipoLabel}</span>
         <span style="margin-left:8px;font-size:13px">${descrText}</span>
@@ -13269,30 +13293,180 @@ function pgRenderTabela() {
       </td>
       <td style="text-align:center"><span class="parte-chip ${chipClass}" style="font-size:10px">${tipoLabel}</span></td>
       <td style="text-align:center">${incluirCol}</td>
-      <td style="text-align:center"><input style="width:72px;padding:6px 8px;font-size:13px;font-family:\'DM Mono\',monospace;text-align:center;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);outline:none" type="number" min="0" value="${p.pgInicio}" ${disabled} onchange="pgSetPg(${idx},'pgInicio',this.value)" placeholder="—"></td>
-      <td style="text-align:center"><input style="width:72px;padding:6px 8px;font-size:13px;font-family:\'DM Mono\',monospace;text-align:center;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);outline:none" type="number" min="0" value="${p.pgFinal}" ${disabled} onchange="pgSetPg(${idx},'pgFinal',this.value)" placeholder="—"></td>
-      <td style="text-align:center"><span style="font-family:\'DM Mono\',monospace;font-size:13px;color:${qtd===''?'var(--text-dim)':'var(--accent2)'};min-width:36px;text-align:center;font-weight:600">${qtd===''?'—':qtd}</span></td>
-      <td><select style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:\'Outfit\',sans-serif;cursor:pointer" onchange="pgSetStatus(${idx},this.value)" ${disabled}>${statusOpts}</select></td>
-      <td><input style="font-size:12px;padding:5px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);width:100%;font-family:\'Outfit\',sans-serif;outline:none" type="text" value="${pgEscHtml(p.obs||'')}" ${disabled} onchange="pgSetObs(${idx},this.value)" placeholder="${p.condicional&&!p.incluir?'(não incluído)':'Observações...'}"></td>
+      <td style="text-align:center">${qtdCell}</td>
+      <td style="text-align:center">${pgIniCell}</td>
+      <td style="text-align:center">${pgFinCell}</td>
+      <td><select style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Outfit',sans-serif;cursor:pointer" onchange="pgSetStatus(${idx},this.value)" ${disabled}>${statusOpts}</select></td>
+      <td><input style="font-size:12px;padding:5px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);width:100%;font-family:'Outfit',sans-serif;outline:none" type="text" value="${pgEscHtml(p.obs||'')}" ${disabled} onchange="pgSetObs(${idx},this.value)" placeholder="${p.condicional&&!p.incluir?'(não incluído)':'Observações...'}"></td>
       <td></td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-window.pgSetPg = function(idx, campo, val) {
-  pgState.partes[idx][campo] = val === '' ? '' : parseInt(val) || '';
+// ── Recalcula pgInicio/pgFinal em cascata (capa excluída) ──
+function pgRecalcularCascata() {
+  let prox = 1;
+  pgState.partes.forEach(p => {
+    if (p.tipo === 'CAPA') { p.pgInicio = ''; p.pgFinal = ''; return; }
+    const ativa = p.incluir !== false || !p.condicional;
+    if (!ativa) { p.pgInicio = ''; p.pgFinal = ''; return; }
+    const qtd = parseInt(p.qtdPgs) || 0;
+    if (qtd > 0) {
+      p.pgInicio = prox;
+      p.pgFinal = prox + qtd - 1;
+      prox = p.pgFinal + 1;
+    } else if (parseInt(p.pgInicio) > 0 && parseInt(p.pgFinal) >= parseInt(p.pgInicio)) {
+      prox = parseInt(p.pgFinal) + 1;
+    }
+  });
+}
+
+// ── Usuário digita Qtd. Pgs. → recalcula cascata ──
+window.pgSetQtd = function(idx, val) {
+  pgState.partes[idx].qtdPgs = val === '' ? '' : Math.max(1, parseInt(val) || 1);
+  pgRecalcularCascata();
   pgAtualizarTotais();
   pgRenderTabela();
 };
+
+// ── Edição manual de Pg. Início ou Pg. Final → atualiza qtdPgs + recalcula ──
+window.pgSetPgManual = function(idx, campo, val) {
+  pgState.partes[idx][campo] = val === '' ? '' : parseInt(val) || '';
+  const p = pgState.partes[idx];
+  const ini = parseInt(p.pgInicio)||0, fin = parseInt(p.pgFinal)||0;
+  if (ini > 0 && fin >= ini) p.qtdPgs = fin - ini + 1;
+  pgRecalcularCascata();
+  pgAtualizarTotais();
+  pgRenderTabela();
+};
+
+window.pgSetPg = function(idx, campo, val) { window.pgSetPgManual(idx, campo, val); };
 window.pgSetStatus = function(idx, val) { pgState.partes[idx].status = val; };
 window.pgSetObs    = function(idx, val) { pgState.partes[idx].obs    = val; };
 
 window.pgToggleIncluir = function(idx, val) {
   pgState.partes[idx].incluir = val;
-  if (!val) { pgState.partes[idx].pgInicio = ''; pgState.partes[idx].pgFinal = ''; pgState.partes[idx].status = 'nao_iniciada'; }
+  if (!val) {
+    pgState.partes[idx].pgInicio = '';
+    pgState.partes[idx].pgFinal = '';
+    pgState.partes[idx].qtdPgs = '';
+    pgState.partes[idx].status = 'nao_iniciada';
+  }
+  pgRecalcularCascata();
   pgRenderTabela();
   pgAtualizarTotais();
+};
+
+// ── Impressão Enxuta da Paginação ──
+window.pgImprimirEnxuto = function() {
+  if (!pgState.partes.length || !pgState.tcAtual) { alert('Nenhuma paginação carregada.'); return; }
+  const tc = pgState.tcs.find(t => String(t.id) === String(pgState.tcAtual));
+  const tcLabel = tc ? 'TC ' + tc.numero + (tc.escola ? ' — ' + tc.escola : '') : 'TC';
+  const parNome = PG_PAR_NOMES[pgState.parcelaAtual] || pgState.parcelaAtual || '';
+  const totalPgs = pgState.partes.filter(p => p.tipo !== 'CAPA' && (p.incluir !== false || !p.condicional))
+    .reduce((acc, p) => { const qtd = parseInt(p.qtdPgs)||0; return acc + qtd; }, 0);
+
+  const TIPO_CORES = {
+    CAPA:'#8892a4', TC:'#4f8ef7', EXTRATO:'#38d9a9',
+    ANEXO:'#f6a623', COMPRA:'#b57bee'
+  };
+
+  const linhas = pgState.partes
+    .filter(p => p.incluir !== false || !p.condicional)
+    .map(p => {
+      const isCapa = p.tipo === 'CAPA';
+      const cor = TIPO_CORES[p.tipo] || '#8892a4';
+      const ini = isCapa ? '—' : (p.pgInicio || '—');
+      const fin = isCapa ? '—' : (p.pgFinal  || '—');
+      const qtd = isCapa ? '—' : (p.qtdPgs || ((parseInt(p.pgInicio) > 0 && parseInt(p.pgFinal) >= parseInt(p.pgInicio)) ? parseInt(p.pgFinal)-parseInt(p.pgInicio)+1 : '—'));
+      const statusMap = { nao_iniciada:'Não iniciada', coletando:'Coletando', em_andamento:'Em andamento', ok:'✅ OK' };
+      const st = statusMap[p.status] || p.status;
+      const obs = p.obs ? `<span style="color:#8892a4;font-size:10px;margin-left:6px">${p.obs}</span>` : '';
+      return `<tr>
+        <td style="padding:5px 8px;border-bottom:1px solid #e8edf510;font-size:11px">
+          <span style="display:inline-block;padding:1px 7px;border-radius:10px;background:${cor}22;color:${cor};font-size:10px;font-weight:600;border:1px solid ${cor}44;margin-right:6px">${p.tipo}</span>
+          ${p.descr}${obs}
+        </td>
+        <td style="padding:5px 8px;border-bottom:1px solid #e8edf510;text-align:center;font-family:monospace;font-size:12px;white-space:nowrap">${qtd === '—' ? '<span style=\"color:#5a6478\">—</span>' : '<strong style=\"color:#38d9a9\">' + qtd + '</strong>'}</td>
+        <td style="padding:5px 8px;border-bottom:1px solid #e8edf510;text-align:center;font-family:monospace;font-size:12px">${ini}</td>
+        <td style="padding:5px 8px;border-bottom:1px solid #e8edf510;text-align:center;font-family:monospace;font-size:12px">${fin}</td>
+        <td style="padding:5px 8px;border-bottom:1px solid #e8edf510;font-size:11px;color:#8892a4">${st}</td>
+      </tr>`;
+    }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Paginação — ${tcLabel} ${parNome}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Outfit',sans-serif; background:#fff; color:#0f1623; padding:28px 36px; font-size:13px; }
+  @media print {
+    body { padding:16px 20px; }
+    .no-print { display:none !important; }
+    @page { size: A4; margin: 15mm 18mm; }
+  }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; padding-bottom:14px; border-bottom:2px solid #4f8ef7; }
+  .header-left h1 { font-size:18px; font-weight:700; color:#0f1623; }
+  .header-left p { font-size:12px; color:#4a5568; margin-top:3px; }
+  .header-right { text-align:right; }
+  .total-badge { background:#4f8ef7; color:#fff; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+  .total-sub { font-size:10.5px; color:#8892a4; margin-top:4px; }
+  table { width:100%; border-collapse:collapse; }
+  thead tr { background:#f0f2f7; }
+  thead th { padding:7px 8px; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.6px; color:#4a5568; text-align:left; }
+  thead th.center { text-align:center; }
+  tbody tr:hover { background:#f7f9fc; }
+  .nota { margin-top:18px; padding:8px 12px; background:#f0f2f7; border-radius:6px; font-size:11px; color:#4a5568; line-height:1.5; }
+  .btn-print { position:fixed; bottom:24px; right:24px; padding:10px 20px; background:#4f8ef7; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:'Outfit',sans-serif; box-shadow:0 4px 12px rgba(79,142,247,.4); }
+  .btn-print:hover { background:#6fa3f9; }
+  .footer { margin-top:24px; font-size:10.5px; color:#8892a4; border-top:1px solid #e8edf5; padding-top:10px; display:flex; justify-content:space-between; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <h1>🗂 Paginação da Prestação de Contas</h1>
+      <p>${tcLabel} &nbsp;|&nbsp; ${parNome} &nbsp;|&nbsp; Emitido em ${new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}</p>
+    </div>
+    <div class="header-right">
+      <div class="total-badge">${totalPgs} páginas no total</div>
+      <div class="total-sub">Capa não contabilizada</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Parte / Descrição</th>
+        <th class="center" style="width:64px">Qtd. Pgs.</th>
+        <th class="center" style="width:68px">Pg. Início</th>
+        <th class="center" style="width:68px">Pg. Final</th>
+        <th style="width:110px">Status</th>
+      </tr>
+    </thead>
+    <tbody>${linhas}</tbody>
+  </table>
+
+  <div class="nota">
+    💡 <strong>Regra de paginação:</strong> A CAPA não recebe número de página. A numeração começa na página 1 (1ª página do TC) e vai até o final. Todas as páginas devem ser numeradas e rubricadas pelo Presidente com carimbo <code>01/${totalPgs}</code>.
+  </div>
+
+  <div class="footer">
+    <span>Sistema de Prestação de Contas — Caixa Escolar</span>
+    <span>Gerado em ${new Date().toLocaleString('pt-BR')}</span>
+  </div>
+
+  <button class="btn-print no-print" onclick="window.print()">🖨 Imprimir</button>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=900,height=700');
+  win.document.write(html);
+  win.document.close();
 };
 
 window.pgAdicionarCompra = function() {
@@ -13339,10 +13513,12 @@ function pgOnDrop(e) {
 
 function pgAtualizarTotais() {
   let total = 0, definidas = 0;
-  const incluidas = pgState.partes.filter(p => p.incluir !== false || !p.condicional);
+  const incluidas = pgState.partes.filter(p => (p.incluir !== false || !p.condicional) && p.tipo !== 'CAPA');
   incluidas.forEach(p => {
+    const qtd = parseInt(p.qtdPgs) || 0;
     const ini = parseInt(p.pgInicio)||0, fin = parseInt(p.pgFinal)||0;
-    if (ini > 0 && fin >= ini) { total += fin-ini+1; definidas++; }
+    const pgs = qtd > 0 ? qtd : (ini > 0 && fin >= ini ? fin-ini+1 : 0);
+    if (pgs > 0) { total += pgs; definidas++; }
   });
   const totalEl = document.getElementById('ph-total-pg');
   const partesEl = document.getElementById('ph-partes-ok');
