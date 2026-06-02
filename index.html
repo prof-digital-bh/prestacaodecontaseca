@@ -13066,14 +13066,20 @@ window.pgShowView = function(view) {
 };
 window.pgShowView('montar');
 
-// ── Listener de showSection para inicializar o módulo ao entrar na aba ──
+// ── Listener de showSection — sempre recarrega paginações ao entrar na aba ──
 const _origShowSection = window.showSection;
 window.showSection = function(id) {
   _origShowSection(id);
-  if (id === 'paginacao' && !pgState.tcs.length) pgInit();
+  if (id === 'paginacao') {
+    if (!pgState.tcs.length) {
+      pgInit();          // primeira vez: carrega tudo
+    } else {
+      pgRecarregarPaginacoes(); // retorno à aba: só recarrega paginações
+    }
+  }
 };
 
-// ── Init: carrega TCs, parcela_valores e paginações ──
+// ── Init completo: TCs + parcela_valores + paginações ──
 async function pgInit() {
   try {
     const [{ data: tcsData }, { data: pagData }, { data: pvData }] = await Promise.all([
@@ -13083,7 +13089,6 @@ async function pgInit() {
     ]);
     pgState.tcs = (tcsData || []).map(pgRowToTc);
     pgState.paginacoes = pagData || [];
-    // Mapa tcId -> Set de parcelas reais cadastradas
     pgState.parcelasPorTc = {};
     (pvData || []).forEach(pv => {
       if (!pv.tc_id || !pv.parcela) return;
@@ -13100,6 +13105,19 @@ async function pgInit() {
     pgState.parcelasPorTc = {};
     pgPreencherSeletoresTc();
     pgRenderHistorico();
+  }
+}
+
+// ── Recarrega somente paginações (retorno à aba) ──
+async function pgRecarregarPaginacoes() {
+  try {
+    const { data: pagData } = await supa.from('paginacoes_prestacao').select('*').order('criado_em', { ascending: false });
+    pgState.paginacoes = pagData || [];
+    pgRenderHistorico();
+    // Se havia TC+Parcela selecionados, reabre a paginação com dados frescos
+    if (pgState.tcAtual && pgState.parcelaAtual) pgAbrirOuCriarPaginacao();
+  } catch(e) {
+    // sem conexão — mantém o que estava em memória
   }
 }
 
@@ -13173,10 +13191,30 @@ window.pgOnSideParcelaChange = function() {
   else pgMostrarVazio();
 };
 
-function pgAbrirOuCriarPaginacao() {
-  const existente = (pgState.paginacoes || []).find(
+async function pgAbrirOuCriarPaginacao() {
+  // Busca primeiro no cache local
+  let existente = (pgState.paginacoes || []).find(
     p => String(p.tc_id) === String(pgState.tcAtual) && p.parcela === pgState.parcelaAtual
   );
+
+  // Se não achou localmente, tenta buscar direto no Supabase
+  if (!existente) {
+    try {
+      const { data } = await supa
+        .from('paginacoes_prestacao')
+        .select('*')
+        .eq('tc_id', pgState.tcAtual)
+        .eq('parcela', pgState.parcelaAtual)
+        .maybeSingle();
+      if (data) {
+        existente = data;
+        // Atualiza cache local
+        const idx = pgState.paginacoes.findIndex(p => p.id === data.id);
+        if (idx >= 0) pgState.paginacoes[idx] = data; else pgState.paginacoes.unshift(data);
+      }
+    } catch(e) { /* sem conexão, segue com vazio */ }
+  }
+
   if (existente) {
     pgState.paginacaoId = existente.id;
     pgState.partes = pgNormalizarPartes(JSON.parse(existente.partes_json || '[]'));
@@ -13528,43 +13566,85 @@ function pgAtualizarTotais() {
 
 window.pgSalvarPaginacao = async function() {
   if (!pgState.tcAtual || !pgState.parcelaAtual) {
-    alert('Selecione um TC e Parcela na barra lateral primeiro.'); return;
+    alert('Selecione um TC e Parcela primeiro.'); return;
   }
   const incluidas = pgState.partes.filter(p => p.incluir !== false || !p.condicional);
   const todasOk   = incluidas.every(p => p.status === 'ok' || (p.condicional && !p.incluir));
-  const alguma    = incluidas.some(p => p.pgInicio !== '' || p.pgFinal !== '');
+  const alguma    = incluidas.some(p => p.pgInicio !== '' || p.pgFinal !== '' || p.qtdPgs !== '');
   const statusGeral = todasOk ? 'finalizada' : alguma ? 'em_andamento' : 'nao_iniciada';
-  const row = { tc_id:pgState.tcAtual, parcela:pgState.parcelaAtual, partes_json:JSON.stringify(pgState.partes), status:statusGeral, atualizado_em:new Date().toISOString() };
+
+  // Payload apenas com colunas reais do schema (sem timestamps gerados pelo banco)
+  const payload = {
+    tc_id:       pgState.tcAtual,
+    parcela:     pgState.parcelaAtual,
+    partes_json: JSON.stringify(pgState.partes),
+    status:      statusGeral,
+  };
+
   try {
+    let savedRow;
+
     if (pgState.paginacaoId) {
-      const { error } = await supa.from('paginacoes_prestacao').update(row).eq('id', pgState.paginacaoId);
+      // UPDATE: envia só o que muda, sem tc_id/parcela/timestamps
+      const { data, error } = await supa
+        .from('paginacoes_prestacao')
+        .update({ partes_json: payload.partes_json, status: payload.status })
+        .eq('id', pgState.paginacaoId)
+        .select()
+        .single();
       if (error) throw error;
+      savedRow = data;
       const idx = pgState.paginacoes.findIndex(p => p.id === pgState.paginacaoId);
-      if (idx >= 0) pgState.paginacoes[idx] = { ...pgState.paginacoes[idx], ...row };
+      if (idx >= 0) pgState.paginacoes[idx] = savedRow;
     } else {
-      row.criado_em = new Date().toISOString();
-      const { data, error } = await supa.from('paginacoes_prestacao').insert(row).select().single();
-      if (error) throw error;
-      pgState.paginacaoId = data.id;
-      pgState.paginacoes.unshift(data);
+      // INSERT com fallback upsert caso haja constraint tc_id+parcela
+      const { data, error } = await supa
+        .from('paginacoes_prestacao')
+        .upsert(payload, { onConflict: 'tc_id,parcela' })
+        .select()
+        .single();
+      if (error) {
+        // upsert sem constraint configurada: tenta insert simples
+        const { data: d2, error: e2 } = await supa
+          .from('paginacoes_prestacao')
+          .insert(payload)
+          .select()
+          .single();
+        if (e2) throw e2;
+        savedRow = d2;
+      } else {
+        savedRow = data;
+      }
+      pgState.paginacaoId = savedRow.id;
+      const idx = pgState.paginacoes.findIndex(p => p.id === savedRow.id);
+      if (idx >= 0) pgState.paginacoes[idx] = savedRow; else pgState.paginacoes.unshift(savedRow);
     }
+
     const savedEl = document.getElementById('ph-saved-at');
-    if (savedEl) savedEl.textContent = `Salva em ${new Date().toLocaleString('pt-BR')}`;
+    if (savedEl) savedEl.textContent = 'Salva em ' + new Date().toLocaleString('pt-BR');
     const badgeEl = document.getElementById('ph-status-badge');
-    if (badgeEl) { badgeEl.className='badge '+(statusGeral==='finalizada'?'badge-green':statusGeral==='em_andamento'?'badge-orange':'badge-gray'); badgeEl.textContent=statusGeral==='finalizada'?'✅ Finalizada':statusGeral==='em_andamento'?'🟡 Em andamento':'⚪ Não iniciada'; }
+    if (badgeEl) {
+      badgeEl.className = 'badge ' + (statusGeral==='finalizada'?'badge-green':statusGeral==='em_andamento'?'badge-orange':'badge-gray');
+      badgeEl.textContent = statusGeral==='finalizada'?'✅ Finalizada':statusGeral==='em_andamento'?'🟡 Em andamento':'⚪ Não iniciada';
+    }
     pgMostrarToast('✅ Paginação salva com sucesso!');
     pgRenderHistorico();
+
   } catch(e) {
-    // Salva localmente
+    console.error('pgSalvar erro Supabase:', e);
+    // Fallback: salva em localStorage
     try {
       const arr = JSON.parse(localStorage.getItem('pg_paginacoes') || '[]');
-      const rowLocal = { ...row, id: pgState.paginacaoId || Date.now(), criado_em: new Date().toISOString() };
+      const rowLocal = Object.assign({}, payload, { id: pgState.paginacaoId || ('local_'+Date.now()) });
       const idx = arr.findIndex(p => String(p.tc_id)===String(pgState.tcAtual) && p.parcela===pgState.parcelaAtual);
       if (idx >= 0) arr[idx] = rowLocal; else arr.unshift(rowLocal);
       localStorage.setItem('pg_paginacoes', JSON.stringify(arr));
-      if (!pgState.paginacaoId) { pgState.paginacaoId = rowLocal.id; pgState.paginacoes.unshift(rowLocal); }
-    } catch{}
-    pgMostrarToast('💾 Salvo localmente (sem conexão)');
+      if (!pgState.paginacaoId) {
+        pgState.paginacaoId = rowLocal.id;
+        pgState.paginacoes.unshift(rowLocal);
+      }
+    } catch(_) {}
+    pgMostrarToast('⚠️ Falha no servidor — salvo localmente. (' + (e && e.message ? e.message : String(e)) + ')');
   }
 };
 
