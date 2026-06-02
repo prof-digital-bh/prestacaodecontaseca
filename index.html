@@ -13575,7 +13575,7 @@ window.pgSalvarPaginacao = async function() {
 
   const payload = {
     tc_id:       pgState.tcAtual,
-    parcela:     pgState.parcelaAtual,
+    parcela:     String(pgState.parcelaAtual).padStart(2, '0'),
     partes_json: JSON.stringify(pgState.partes),
     status:      statusGeral,
   };
