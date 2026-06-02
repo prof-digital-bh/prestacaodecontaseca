@@ -13049,7 +13049,7 @@ const PG_STATUS_OPT = [
   { v:'em_andamento', l:'🟡 Em andamento' },
   { v:'ok',           l:'✅ OK' },
 ];
-const PG_PAR_NOMES = {'01':'1ª Parcela','02':'2ª Parcela','03':'3ª Parcela','04':'4ª Parcela','05':'5ª Parcela','U':'Parcela Única'};
+const PG_PAR_NOMES = {'01':'1ª Parcela','02':'2ª Parcela','03':'3ª Parcela','04':'4ª Parcela','05':'5ª Parcela','U':'Parcela Única','UI':'Parcela Única (i)','UII':'Parcela Única (ii)','ALI':'Alimentação','SVC':'Serviços','MAT':'Materialidade'};
 
 // ── rowToTc helper (usa mesmo formato do main) ──
 function pgRowToTc(r) {
@@ -13152,7 +13152,7 @@ window.pgOnSideTcChange = function() {
 function pgPreencherSeletorParcela() {
   const sel = document.getElementById('side-sel-parcela');
   if (!sel) return;
-  const parOrdem = ['01','02','03','04','05','U'];
+  const parOrdem = ['01','02','03','04','05','U','UI','UII','ALI','SVC','MAT'];
   const parcelasSet = new Set();
 
   // 1) Parcelas cadastradas em parcela_valores para este TC (fonte principal)
