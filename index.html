@@ -13461,7 +13461,7 @@ window.pgImprimirEnxuto = function() {
   .nota { margin-top:18px; padding:8px 12px; background:#f0f2f7; border-radius:6px; font-size:11px; color:#4a5568; line-height:1.5; }
   .btn-print { position:fixed; bottom:24px; right:24px; padding:10px 20px; background:#4f8ef7; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:'Outfit',sans-serif; box-shadow:0 4px 12px rgba(79,142,247,.4); }
   .btn-print:hover { background:#6fa3f9; }
-  .footer { margin-top:24px; font-size:10.5px; color:#8892a4; border-top:1px solid #e8edf5; padding-top:10px; display:flex; justify-content:space-between; }
+  .footer { margin-top:24px; font-size:10.5px; color:#8892a4; border-top:1px solid #e8edf5; padding-top:10px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
 </style>
 </head>
 <body>
@@ -13495,6 +13495,7 @@ window.pgImprimirEnxuto = function() {
 
   <div class="footer">
     <span>Sistema de Prestação de Contas — Caixa Escolar</span>
+    <span style="text-align:center;color:#8892a4">Criado e desenvolvido por <strong style="color:#4a5568">Prof. Everton Correa Alves</strong></span>
     <span>Gerado em ${new Date().toLocaleString('pt-BR')}</span>
   </div>
 
