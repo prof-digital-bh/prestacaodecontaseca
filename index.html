@@ -13328,6 +13328,10 @@ function pgRenderTabela() {
         <span class="parte-chip ${chipClass}">${tipoLabel}</span>
         <span style="margin-left:8px;font-size:13px">${descrText}</span>
         ${p.tipo==='COMPRA'?`<button class="btn btn-ghost" style="margin-left:8px;padding:2px 6px;font-size:11px;color:var(--accent-red)" onclick="pgRemoverCompra(${idx})">✕</button>`:''}
+        ${p.tipo==='COMPRA'?`<div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
+          <input style="width:110px;padding:4px 8px;font-size:12px;font-family:'DM Mono',monospace;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);outline:none" type="text" value="${pgEscHtml(p.numNota||'')}" ${disabled} onchange="pgSetNumNota(${idx},this.value)" placeholder="Nº da Nota">
+          <input style="flex:1;min-width:160px;padding:4px 8px;font-size:12px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Outfit',sans-serif;outline:none" type="text" value="${pgEscHtml(p.tomador||'')}" ${disabled} onchange="pgSetTomador(${idx},this.value)" placeholder="Tomador / Prestador">
+        </div>`:''}
       </td>
       <td style="text-align:center"><span class="parte-chip ${chipClass}" style="font-size:10px">${tipoLabel}</span></td>
       <td style="text-align:center">${incluirCol}</td>
@@ -13380,8 +13384,10 @@ window.pgSetPgManual = function(idx, campo, val) {
 };
 
 window.pgSetPg = function(idx, campo, val) { window.pgSetPgManual(idx, campo, val); };
-window.pgSetStatus = function(idx, val) { pgState.partes[idx].status = val; };
-window.pgSetObs    = function(idx, val) { pgState.partes[idx].obs    = val; };
+window.pgSetStatus   = function(idx, val) { pgState.partes[idx].status   = val; };
+window.pgSetObs      = function(idx, val) { pgState.partes[idx].obs      = val; };
+window.pgSetNumNota  = function(idx, val) { pgState.partes[idx].numNota  = val; };
+window.pgSetTomador  = function(idx, val) { pgState.partes[idx].tomador  = val; };
 
 window.pgToggleIncluir = function(idx, val) {
   pgState.partes[idx].incluir = val;
@@ -13421,10 +13427,15 @@ window.pgImprimirEnxuto = function() {
       const statusMap = { nao_iniciada:'Não iniciada', coletando:'Coletando', em_andamento:'Em andamento', ok:'✅ OK' };
       const st = statusMap[p.status] || p.status;
       const obs = p.obs ? `<span style="color:#8892a4;font-size:10px;margin-left:6px">${p.obs}</span>` : '';
+      const notaInfo = (p.tipo === 'COMPRA' && (p.numNota || p.tomador)) ?
+        `<div style="font-size:10px;color:#5a6478;margin-top:2px">` +
+        (p.numNota ? `<span style="background:#b57bee22;color:#b57bee;border-radius:3px;padding:1px 5px;margin-right:4px">NF ${p.numNota}</span>` : '') +
+        (p.tomador ? `<span>${p.tomador}</span>` : '') +
+        `</div>` : '';
       return `<tr>
         <td style="padding:5px 8px;border-bottom:1px solid #e8edf510;font-size:11px">
           <span style="display:inline-block;padding:1px 7px;border-radius:10px;background:${cor}22;color:${cor};font-size:10px;font-weight:600;border:1px solid ${cor}44;margin-right:6px">${p.tipo}</span>
-          ${p.descr}${obs}
+          ${p.descr}${obs}${notaInfo}
         </td>
         <td style="padding:5px 8px;border-bottom:1px solid #e8edf510;text-align:center;font-family:monospace;font-size:12px;white-space:nowrap">${qtd === '—' ? '<span style=\"color:#5a6478\">—</span>' : '<strong style=\"color:#38d9a9\">' + qtd + '</strong>'}</td>
         <td style="padding:5px 8px;border-bottom:1px solid #e8edf510;text-align:center;font-family:monospace;font-size:12px">${ini}</td>
@@ -13510,7 +13521,7 @@ window.pgImprimirEnxuto = function() {
 
 window.pgAdicionarCompra = function() {
   const n = pgState.partes.filter(p => p.tipo === 'COMPRA').length + 1;
-  pgState.partes.push({ id:'c'+n+'_'+Date.now(), descr:`Compra C${n}`, tipo:'COMPRA', obrig:true, condicional:false, incluir:true, pgInicio:'', pgFinal:'', status:'nao_iniciada', obs:'' });
+  pgState.partes.push({ id:'c'+n+'_'+Date.now(), descr:`Compra C${n}`, tipo:'COMPRA', obrig:true, condicional:false, incluir:true, pgInicio:'', pgFinal:'', status:'nao_iniciada', obs:'', numNota:'', tomador:'' });
   pgRenderTabela();
   pgAtualizarTotais();
   setTimeout(() => document.getElementById('pg-tbody')?.lastElementChild?.scrollIntoView({ behavior:'smooth', block:'center' }), 80);
