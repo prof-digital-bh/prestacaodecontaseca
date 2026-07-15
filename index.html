@@ -9273,13 +9273,17 @@ function imprimirAba(nomeAba, filtros) {
     const statusLabel = { ativo:'Ativo', a_vencer:'A Vencer', encerrado:'Encerrado', suspenso:'Suspenso' };
     const statusBadge = { ativo:'badge-green', a_vencer:'badge-orange', encerrado:'badge-red', suspenso:'badge-gray' };
 
-    // Filtra TCs principais — se filtroTcId for um aditivo, busca o pai
+    // Se filtroTcId apontar para um aditivo, isolamos esse aditivo (mostra só os dados dele).
+    // Se apontar para um TC pai, ou não houver filtro, mostramos o TC + todos os seus aditivos.
+    const tcSelFiltro = filtroTcId ? tcs.find(t => String(t.id) === String(filtroTcId)) : null;
+    const itemFiltroId = (tcSelFiltro && tcSelFiltro.tcPaiId) ? String(tcSelFiltro.id) : '';
+
+    // Filtra TCs principais — se filtroTcId for um aditivo, busca o pai (o card do TC é sempre o do pai)
     let principais = tcs.filter(t => !t.tcPaiId);
     if (filtroTcId) {
-      const tcSel = tcs.find(t => String(t.id) === String(filtroTcId));
-      if (tcSel && tcSel.tcPaiId) {
-        // é aditivo — mostra só o pai com este aditivo destacado
-        principais = tcs.filter(t => String(t.id) === String(tcSel.tcPaiId));
+      if (tcSelFiltro && tcSelFiltro.tcPaiId) {
+        // é aditivo — mostra o card do pai, mas os dados de parcela ficam isolados no aditivo (itemFiltroId)
+        principais = tcs.filter(t => String(t.id) === String(tcSelFiltro.tcPaiId));
       } else {
         principais = tcs.filter(t => String(t.id) === String(filtroTcId));
       }
@@ -9287,7 +9291,13 @@ function imprimirAba(nomeAba, filtros) {
 
     // Subtítulo dinâmico
     const parNome = filtroParcela ? ({'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única'}[filtroParcela] || filtroParcela) + ' Parcela' : '';
-    const tcNome  = filtroTcId ? (() => { const t = tcs.find(x => String(x.id) === String(filtroTcId)); return t ? `TC ${t.numero}` : ''; })() : '';
+    const tcNome  = filtroTcId ? (() => {
+      if (tcSelFiltro && tcSelFiltro.tcPaiId) {
+        const pai = tcs.find(x => String(x.id) === String(tcSelFiltro.tcPaiId));
+        return `TC ${pai ? pai.numero : '—'} · Aditivo ${tcSelFiltro.numero}`;
+      }
+      return tcSelFiltro ? `TC ${tcSelFiltro.numero}` : '';
+    })() : '';
     const subtitulo = [tcNome, parNome].filter(Boolean).join(' · ') || `${principais.length} TC(s) cadastrado(s)`;
 
     const blocos = principais.map(tc => {
@@ -9295,35 +9305,54 @@ function imprimirAba(nomeAba, filtros) {
       const totalAdit = adits.reduce((s,a)=>s+_pm(a.valor),0);
       const totalTC = _pm(tc.valor) + totalAdit;
 
-      // Despesas filtradas por parcela (se selecionada)
-      const despTc = despesas.filter(d => String(d.tcVinculo) === String(tc.id) && (!filtroParcela || d.parcela === filtroParcela));
-      // Gasto total sem filtro (para saldo geral do TC)
-      const gastoTcTotal = despesas.filter(d=>String(d.tcVinculo)===String(tc.id)).reduce((s,d)=>s+_pm(d.valor),0);
+      // Itens cujos dados de parcela entram neste card: só o aditivo selecionado, ou o TC + todos os aditivos
+      const itemIds = itemFiltroId ? [itemFiltroId] : [tc.id, ...adits.map(a=>a.id)];
+      const mostrarItemCol = itemIds.length > 1;
+      const itemLabel = id => {
+        if (String(id) === String(tc.id)) return 'TC';
+        const a = adits.find(x => String(x.id) === String(id));
+        return a ? `Aditivo ${a.numero}` : '—';
+      };
+
+      // Despesas filtradas por parcela (se selecionada) — considerando TC e/ou aditivos conforme itemIds
+      const despTc = despesas.filter(d => itemIds.some(id => String(id) === String(d.tcVinculo)) && (!filtroParcela || d.parcela === filtroParcela));
+      // Gasto total sem filtro (para saldo geral)
+      const gastoTcTotal = despesas.filter(d => itemIds.some(id => String(id) === String(d.tcVinculo))).reduce((s,d)=>s+_pm(d.valor),0);
       // Gasto respeitando o filtro de parcela
       const gastoTC = despTc.reduce((s,d)=>s+_pm(d.valor),0);
-      // Saldo: quando parcela filtrada, usa previsto da parcela vs gasto da parcela
+      // Saldo: quando parcela filtrada, soma previsto x gasto de cada item (TC e/ou aditivos), isoladamente
       const saldo = filtroParcela
-        ? (() => { const pv=(state.parcelaValores||[]).find(r=>String(r.tcId)===String(tc.id)&&r.parcela===filtroParcela); if (!pv) return -gastoTC; const prevImp=['CUSTEIO','CAPITAL','ALEM_MUROS','OBRAS','CAPINA'].reduce((s,t2)=>{const cr=getCreditoReal(tc.id,filtroParcela,t2);return s+(cr?cr.credito:0);},0); return prevImp - gastoTC; })()
+        ? itemIds.reduce((acc, id) => {
+            const gastoId = despesas.filter(d => String(d.tcVinculo) === String(id) && d.parcela === filtroParcela).reduce((s,d)=>s+_pm(d.valor),0);
+            const pv = (state.parcelaValores||[]).find(r=>String(r.tcId)===String(id)&&r.parcela===filtroParcela);
+            if (!pv) return acc - gastoId;
+            const prevImp = ['CUSTEIO','CAPITAL','ALEM_MUROS','OBRAS','CAPINA'].reduce((s,t2)=>{const cr=getCreditoReal(id,filtroParcela,t2);return s+(cr?cr.credito:0);},0);
+            return acc + (prevImp - gastoId);
+          }, 0)
         : totalTC - gastoTcTotal;
 
       const st = typeof calcStatusTC==='function' && tc.inicio && tc.fim && tc.status!=='suspenso'
         ? calcStatusTC(tc.inicio,tc.fim) : (tc.status||'ativo');
 
-      // Parcelas: filtra por parcela se selecionada
-      let pvRows = (state.parcelaValores||[]).filter(r=>String(r.tcId)===String(tc.id));
-      let sitRows = (state.parcelaSituacoes||[]).filter(r=>String(r.tcId)===String(tc.id));
+      // Parcelas: uma linha por combinação (item, parcela) — TC e cada aditivo têm distribuições próprias e isoladas
+      let pvRows = (state.parcelaValores||[]).filter(r=>itemIds.some(id=>String(id)===String(r.tcId)));
+      let sitRows = (state.parcelaSituacoes||[]).filter(r=>itemIds.some(id=>String(id)===String(r.tcId)));
       if (filtroParcela) {
         pvRows  = pvRows.filter(r => r.parcela === filtroParcela);
         sitRows = sitRows.filter(r => r.parcela === filtroParcela);
       }
-      const parcelas = [...new Set([...pvRows.map(r=>r.parcela),...sitRows.map(r=>r.parcela)])].sort();
+      const chaveOrdem = id => { const i = itemIds.findIndex(x=>String(x)===String(id)); return i<0?999:i; };
+      const linhas = [...new Set([...pvRows.map(r=>`${r.tcId}||${r.parcela}`), ...sitRows.map(r=>`${r.tcId}||${r.parcela}`)])]
+        .map(k => { const [tcId, parcela] = k.split('||'); return { tcId, parcela }; })
+        .sort((a,b) => (a.parcela === b.parcela ? chaveOrdem(a.tcId) - chaveOrdem(b.tcId) : a.parcela.localeCompare(b.parcela)));
       const TIPOS = ['CUSTEIO','CAPITAL','ALEM_MUROS','OBRAS','CAPINA'];
       const tipoLabel = { CUSTEIO:'Custeio', CAPITAL:'Capital', ALEM_MUROS:'Além dos Muros', OBRAS:'Obras', CAPINA:'Capina' };
 
-      const parcelasHtml = parcelas.length ? `
+      const parcelasHtml = linhas.length ? `
         <h3>Distribuição por Parcela${filtroParcela ? ' — ' + (parNomes[filtroParcela]||filtroParcela) + ' Parcela' : ''}</h3>
         <table>
           <thead><tr>
+            ${mostrarItemCol ? '<th>Item</th>' : ''}
             <th>Parcela</th>
             <th class="right">Custeio</th><th class="right">Capital</th>
             <th class="right">Além dos Muros</th><th class="right">Obras</th><th class="right">Capina</th>
@@ -9332,23 +9361,22 @@ function imprimirAba(nomeAba, filtros) {
             <th>Situação</th>
           </tr></thead>
           <tbody>
-            ${parcelas.map(p => {
-              const pv = pvRows.find(r=>r.parcela===p)||{};
-              const sit = (sitRows.find(r=>r.parcela===p)||{}).situacao||'';
+            ${linhas.map(({tcId, parcela: p}) => {
+              const pv = pvRows.find(r=>r.parcela===p && String(r.tcId)===String(tcId))||{};
+              const sit = (sitRows.find(r=>r.parcela===p && String(r.tcId)===String(tcId))||{}).situacao||'';
               const cu=_pm(pv.custeio),ca=_pm(pv.capital),al=_pm(pv.alem),ob=_pm(pv.obras),ci=_pm(pv.capina),re=_pm(pv.rendimentos||'0,00');
-              // prevTot via getCreditoReal: inclui rendimentos + saldo anterior de cada tipo
-              const _tcIdImp = String(pvRows.find(r=>r.parcela===p)?.tcId || tc.id);
-              // prevTot via getCreditoReal (rendimentos só em CUSTEIO, sem fallback com re)
+              // prevTot via getCreditoReal: inclui rendimentos + saldo anterior de cada tipo (isolado por tcId)
               const prevTot = ['CUSTEIO','CAPITAL','ALEM_MUROS','OBRAS','CAPINA'].reduce((s,tipo) => {
-                const cr = getCreditoReal(_tcIdImp, p, tipo); return s + (cr ? cr.credito : 0);
+                const cr = getCreditoReal(tcId, p, tipo); return s + (cr ? cr.credito : 0);
               }, 0) || (cu+ca+al+ob+ci);
-              const gastoParc = despTc.filter(d=>d.parcela===p).reduce((s,d)=>s+_pm(d.valor),0);
+              const gastoParc = despesas.filter(d=>String(d.tcVinculo)===String(tcId) && d.parcela===p).reduce((s,d)=>s+_pm(d.valor),0);
               const saldoParc = prevTot - gastoParc;
               const naoCreditada = sit === 'nao_creditada';
               const saldoHtml = naoCreditada
                 ? `<span class="badge badge-red">Indisponível</span>`
                 : `<span class="mono" style="color:${saldoParc>=0?'#155724':'#c0392b'}">${_fmt(saldoParc)}</span>`;
               return `<tr>
+                ${mostrarItemCol ? `<td class="muted" style="font-size:11.5px">${itemLabel(tcId)}</td>` : ''}
                 <td class="bold">${parNomes[p]||p} Parcela</td>
                 <td class="right mono">${cu?_fmt(cu):'—'}</td>
                 <td class="right mono">${ca?_fmt(ca):'—'}</td>
@@ -9366,7 +9394,7 @@ function imprimirAba(nomeAba, filtros) {
         </table>
 
         ${filtroParcela ? (() => {
-          // Detalhamento das despesas desta parcela
+          // Detalhamento das despesas desta parcela (TC e/ou aditivos incluídos em itemIds)
           const dparcela = despTc;
           if (!dparcela.length) return '<p class="muted" style="font-size:12px">Nenhuma despesa lançada nesta parcela.</p>';
           const porTipo = {};
@@ -9394,7 +9422,7 @@ function imprimirAba(nomeAba, filtros) {
         })() : ''}
         ` : '<p class="muted" style="font-size:12px">Nenhuma distribuição de parcelas registrada.</p>';
 
-      const aditsHtml = adits.length ? `
+      const aditsHtml = (adits.length && !itemFiltroId) ? `
         <h3>Aditivos Vinculados</h3>
         <table>
           <thead><tr><th>Nº</th><th>Vigência</th><th class="right">Valor</th><th>Obs.</th></tr></thead>
@@ -9413,7 +9441,7 @@ function imprimirAba(nomeAba, filtros) {
         <div class="section-card" style="margin-bottom:20px">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
             <div>
-              <div style="font-size:15px;font-weight:800;color:#1a1a2e">TC ${tc.numero} — ${tc.escola||'—'}</div>
+              <div style="font-size:15px;font-weight:800;color:#1a1a2e">TC ${tc.numero} — ${tc.escola||'—'}${itemFiltroId ? ` <span style="font-weight:600;color:#e67e22">(${itemLabel(itemFiltroId)})</span>` : ''}</div>
               <div style="font-size:11.5px;color:#555;margin-top:3px">CNPJ: ${tc.cnpj||'—'} · Presidente: ${tc.presidente||'—'}</div>
             </div>
             <span class="badge ${statusBadge[st]||'badge-gray'}" style="font-size:11px">${statusLabel[st]||st}</span>
