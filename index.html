@@ -8953,11 +8953,11 @@ function imprimirAba(nomeAba, filtros) {
     .doc-header-left .sub   { font-size:11.5px; color:#555; margin-top:3px; }
     .doc-header-right       { text-align:right; font-size:11px; color:#666; }
     .doc-header-right strong { display:block; font-size:12px; }
-    table { width:100%; max-width:100%; border-collapse:collapse; margin-bottom:16px; table-layout:fixed; }
-    th { background:#f0f2f5; text-align:left; padding:6px 5px; font-size:9px; text-transform:uppercase; letter-spacing:0.3px; color:#555; border-bottom:2px solid #dee2e6; font-weight:600; word-wrap:break-word; overflow-wrap:break-word; hyphens:auto; }
-    td { padding:5px 5px; border-bottom:1px solid #eee; font-size:10.5px; vertical-align:top; word-wrap:break-word; overflow-wrap:break-word; }
+    table { width:100%; max-width:100%; border-collapse:collapse; margin-bottom:16px; font-size:10px; }
+    th { background:#f0f2f5; text-align:left; padding:5px 6px; font-size:0.82em; text-transform:uppercase; letter-spacing:0.2px; color:#555; border-bottom:2px solid #dee2e6; font-weight:600; word-wrap:break-word; overflow-wrap:break-word; }
+    td { padding:4px 6px; border-bottom:1px solid #eee; font-size:1em; vertical-align:top; word-wrap:break-word; overflow-wrap:break-word; }
     tr:last-child td { border-bottom:none; }
-    .mono  { font-family:'DM Mono',monospace; }
+    .mono  { font-family:'DM Mono',monospace; white-space:nowrap; }
     .right { text-align:right; }
     .muted { color:#666; }
     .bold  { font-weight:700; }
@@ -9008,6 +9008,28 @@ function imprimirAba(nomeAba, filtros) {
       <button onclick="window.close()" style="padding:10px 20px;background:#eee;color:#333;border:none;border-radius:8px;font-size:14px;cursor:pointer;margin-left:10px">Fechar</button>
     </div>`;
 
+  const autoFitScript = `
+    <script>
+      function _ajustarTabelas() {
+        document.querySelectorAll('table').forEach(function(t){
+          var container = t.parentElement;
+          if (!container) return;
+          var maxW = container.clientWidth;
+          if (!maxW) return;
+          var fs = parseFloat(getComputedStyle(t).fontSize) || 10;
+          var guard = 0;
+          while (t.scrollWidth > maxW && fs > 6.5 && guard < 40) {
+            fs -= 0.25;
+            t.style.fontSize = fs + 'px';
+            guard++;
+          }
+        });
+      }
+      if (document.readyState === 'complete') { _ajustarTabelas(); }
+      else { window.addEventListener('load', _ajustarTabelas); }
+      window.addEventListener('beforeprint', _ajustarTabelas);
+    <\/script>`;
+
   const wrapDoc = (titulo, subtitulo, corpo) => `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
     <title>${titulo} — ${escola}</title>
     <style>${CSS}</style></head><body>
@@ -9015,6 +9037,7 @@ function imprimirAba(nomeAba, filtros) {
     ${corpo}
     ${docFooter}
     ${docBotoes}
+    ${autoFitScript}
     </body></html>`;
 
   // ════════════════════════════════════════════════════════════════
