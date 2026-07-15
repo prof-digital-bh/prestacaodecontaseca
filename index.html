@@ -8967,10 +8967,10 @@ function imprimirAba(nomeAba, filtros) {
     .badge-orange { background:#fff3cd; color:#856404; }
     .badge-blue   { background:#d1ecf1; color:#0c5460; }
     .badge-gray   { background:#e9ecef; color:#555; }
-    .info-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:18px; }
-    .info-box  { background:#f8f9fa; border:1px solid #dee2e6; border-radius:7px; padding:10px 14px; }
+    .info-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
+    .info-box  { background:#f8f9fa; border:1px solid #dee2e6; border-radius:7px; padding:10px 14px; min-width:0; overflow:hidden; }
     .info-box .lbl { font-size:10px; text-transform:uppercase; letter-spacing:0.7px; color:#888; margin-bottom:3px; }
-    .info-box .val { font-size:14px; font-weight:700; color:#1a1a2e; }
+    .info-box .val { font-size:14px; font-weight:700; color:#1a1a2e; overflow-wrap:break-word; word-break:break-word; }
     .info-box .sub { font-size:11px; color:#666; margin-top:2px; }
     .section-card { border:1px solid #dee2e6; border-radius:8px; padding:14px 16px; margin-bottom:14px; background:#fff; }
     .section-card.warn  { border-left:4px solid #c0392b; }
@@ -9157,7 +9157,7 @@ function imprimirAba(nomeAba, filtros) {
       : `<span style="font-size:18px;font-weight:700;color:${saldoGeral<0?'#c0392b':'#155724'}">${totalPrevisto>0?_fmt(saldoGeral):'—'}</span>`;
 
     const cardsHtml = `
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:20px">
         <div class="info-box">
           <div class="lbl">Previsto (Parcela)</div>
           <div class="val mono">${totalPrevisto>0?_fmt(totalPrevisto):'Não configurado'}</div>
@@ -9446,7 +9446,7 @@ function imprimirAba(nomeAba, filtros) {
             </div>
             <span class="badge ${statusBadge[st]||'badge-gray'}" style="font-size:11px">${statusLabel[st]||st}</span>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px">
             <div class="info-box"><div class="lbl">Vigência Início</div><div class="val" style="font-size:13px">${_dt(tc.inicio)||'—'}</div></div>
             <div class="info-box"><div class="lbl">Vigência Fim</div><div class="val" style="font-size:13px">${_dt(tc.fim)||'—'}</div></div>
             <div class="info-box"><div class="lbl">${filtroParcela ? 'Gasto na Parcela' : 'Total Gasto'}</div><div class="val mono" style="font-size:13px;color:#c0392b">${_fmt(gastoTC)}</div></div>
