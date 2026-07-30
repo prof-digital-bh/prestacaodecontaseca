@@ -1649,7 +1649,7 @@
     }
   }
 
-  /* ── MÓDULO VERBAS FEDERAIS (FMDE/PDDE) ─────────────────── */
+  /* ── MÓDULO VERBAS FEDERAIS (FNDE/PDDE) ─────────────────── */
   .fed-panel { display: none; }
   .fed-panel.active { display: block; }
   .fed-prog-card { padding: 0; overflow: hidden; }
@@ -1760,7 +1760,7 @@
     <nav class="nav-section">
       <div class="nav-label">Verbas Federais</div>
       <div class="nav-item" onclick="showSection('federal')">
-        <span class="nav-icon">🏛</span> FMDE / PDDE
+        <span class="nav-icon">🏛</span> FNDE / PDDE
       </div>
     </nav>
 
@@ -5289,11 +5289,11 @@ init();
 
     </section>
 
-    <!-- VERBAS FEDERAIS (FMDE / PDDE) -->
+    <!-- VERBAS FEDERAIS (FNDE / PDDE) -->
     <section class="section" id="section-federal">
       <div class="page-header">
         <div>
-          <div class="page-title">Verbas Federais — FMDE / PDDE</div>
+          <div class="page-title">Verbas Federais — FNDE / PDDE</div>
           <div class="page-subtitle">Rampa de gastos federais: contas do PDDE Básico, Qualidade e Equidade, lançamentos mensais a partir de notas fiscais e espelho de conta.</div>
         </div>
         <button class="btn btn-primary" onclick="fedOpenModal()">+ Novo lançamento</button>
@@ -5306,6 +5306,7 @@ init();
         <div class="parcela-tab" onclick="fedShowTab('fed-mensal',this)">Rampa mensal</div>
         <div class="parcela-tab" onclick="fedShowTab('fed-extrato',this)">Extrato / espelho</div>
         <div class="parcela-tab" onclick="fedShowTab('fed-invest',this)">Investimentos</div>
+        <div class="parcela-tab" onclick="fedShowTab('fed-resumo',this)">Resumo detalhado</div>
       </div>
 
       <!-- PLANO GERAL -->
@@ -5411,6 +5412,32 @@ init();
           <div class="empty-icon">▲</div>
           <div class="empty-title">Nenhum investimento de capital lançado ainda</div>
           <div class="empty-sub">Despesas lançadas com categoria "Capital" aparecem aqui automaticamente.</div>
+        </div>
+      </div>
+
+      <!-- RESUMO DETALHADO -->
+      <div class="fed-panel" id="fed-resumo">
+        <div class="form-grid" style="margin-bottom:16px">
+          <div class="field">
+            <label>Programa</label>
+            <select id="fed-r-programa" onchange="fedRenderResumo()"><option value="">Todos os programas</option></select>
+          </div>
+          <div class="field">
+            <label>Ano</label>
+            <select id="fed-r-ano" onchange="fedRenderResumo()"></select>
+          </div>
+        </div>
+        <div class="stats-grid" id="fed-resumo-stats" style="margin-bottom:20px"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Programa</th><th>Subprograma</th><th>Conta corrente</th><th class="text-right">Custeio disponível</th><th class="text-right">Gasto custeio</th><th class="text-right">Capital disponível</th><th class="text-right">Gasto capital</th><th class="text-right">Rendimento</th><th class="text-right">Total disponível</th></tr></thead>
+            <tbody id="fed-tbl-resumo"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="fed-resumo-empty" style="display:none">
+          <div class="empty-icon">Σ</div>
+          <div class="empty-title">Nenhum saldo de origem cadastrado para este filtro</div>
+          <div class="empty-sub">Cadastre o saldo reprogramado em "Contas &amp; programas" para este programa/ano.</div>
         </div>
       </div>
     </section>
@@ -13234,7 +13261,7 @@ function preencherDadosParcelaForcado(anexo) {
 }
 
 // ═══════════════════════════════════════════════════════════
-//   MÓDULO: VERBAS FEDERAIS (FMDE / PDDE)
+//   MÓDULO: VERBAS FEDERAIS (FNDE / PDDE)
 //   Todas as funções prefixadas com "fed" para evitar conflitos.
 //   Tabelas Supabase: fed_contas, fed_saldos_anuais, fed_lancamentos
 // ═══════════════════════════════════════════════════════════
@@ -13279,6 +13306,7 @@ function fedRenderTudo() {
   fedRenderMensal();
   fedRenderExtrato();
   fedRenderInvestimentos();
+  fedRenderResumo();
 }
 
 // ── Helpers de dados ──────────────────────────────────────
@@ -13331,6 +13359,11 @@ function fedFillAnoSelect(sel, incluirTodos) {
   const anos = fedAnosDisponiveis();
   sel.innerHTML = (incluirTodos ? '<option value="">Todos os anos</option>' : '') +
     anos.map(a => `<option value="${a}">${a}</option>`).join('');
+}
+function fedFillProgramaSelect(sel) {
+  const programas = [...new Set(fedContas.map(c => c.programa))].sort();
+  sel.innerHTML = '<option value="">Todos os programas</option>' +
+    programas.map(p => `<option value="${p.replace(/"/g, '&quot;')}">${p}</option>`).join('');
 }
 
 // ── PLANO GERAL ───────────────────────────────────────────
@@ -13615,6 +13648,61 @@ function fedRenderInvestimentos() {
       <td class="text-right mono" style="color:var(--capital)">${fmtMoney(Number(l.valor) || 0)}</td></tr>`;
   }).join('');
   document.getElementById('fed-invest-empty').style.display = list.length ? 'none' : 'block';
+}
+
+// ── RESUMO DETALHADO (saldo disponível por categoria/programa/subprograma) ──
+function fedRenderResumo() {
+  const selP = document.getElementById('fed-r-programa'), selA = document.getElementById('fed-r-ano');
+  if (!selP.options.length) fedFillProgramaSelect(selP);
+  if (!selA.options.length) fedFillAnoSelect(selA, false);
+  if (!fedContas.length) return;
+  const anos = fedAnosDisponiveis();
+  const ano = Number(selA.value || anos[anos.length - 2] || anos[0]); selA.value = ano;
+  const programaFiltro = selP.value;
+
+  let contasFiltradas = fedContas;
+  if (programaFiltro) contasFiltradas = contasFiltradas.filter(c => c.programa === programaFiltro);
+
+  let tCust = 0, tCap = 0, tRend = 0, tGastoCust = 0, tGastoCap = 0;
+  const rows = [];
+  contasFiltradas.forEach(c => {
+    const s = fedCalcSaldo(c.id, ano);
+    if (!s) return;
+    let gastoCust = 0, gastoCap = 0;
+    fedLancDe(c.id, ano).filter(l => l.tipo === 'despesa').forEach(l => {
+      const v = Number(l.valor) || 0;
+      if (l.categoria === 'custeio') gastoCust += v;
+      else if (l.categoria === 'capital') gastoCap += v;
+    });
+    tCust += s.custeio; tCap += s.capital; tRend += s.rendimento;
+    tGastoCust += gastoCust; tGastoCap += gastoCap;
+    rows.push(`<tr onclick="fedIrParaExtrato('${c.id}',${ano})" style="cursor:pointer">
+      <td>${c.programa}</td><td>${c.subprograma}</td><td class="mono">${c.conta_corrente || '—'}</td>
+      <td class="text-right mono" style="color:var(--custeio)">${fmtMoney(s.custeio)}</td>
+      <td class="text-right mono" style="color:var(--accent-red)">${gastoCust ? fmtMoney(gastoCust) : '—'}</td>
+      <td class="text-right mono" style="color:var(--capital)">${fmtMoney(s.capital)}</td>
+      <td class="text-right mono" style="color:var(--accent-red)">${gastoCap ? fmtMoney(gastoCap) : '—'}</td>
+      <td class="text-right mono" style="color:var(--accent3)">${fmtMoney(s.rendimento)}</td>
+      <td class="text-right mono" style="font-weight:600;color:var(--accent2)">${fmtMoney(s.total)}</td>
+    </tr>`);
+  });
+
+  document.getElementById('fed-resumo-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Custeio disponível</div>
+      <div class="stat-value" style="color:var(--custeio)">${fmtMoney(tCust)}</div>
+      <div class="stat-meta">Gasto em custeio no ano: ${fmtMoney(tGastoCust)}</div></div>
+    <div class="stat-card"><div class="stat-label">Capital disponível</div>
+      <div class="stat-value" style="color:var(--capital)">${fmtMoney(tCap)}</div>
+      <div class="stat-meta">Gasto em capital no ano: ${fmtMoney(tGastoCap)}</div></div>
+    <div class="stat-card"><div class="stat-label">Rendimento acumulado</div>
+      <div class="stat-value" style="color:var(--accent3)">${fmtMoney(tRend)}</div>
+      <div class="stat-meta">Entradas de rendimento − despesas do fundo próprio</div></div>
+    <div class="stat-card"><div class="stat-label">Total disponível</div>
+      <div class="stat-value" style="color:var(--accent2)">${fmtMoney(tCust + tCap + tRend)}</div>
+      <div class="stat-meta">${ano}${programaFiltro ? ' · ' + programaFiltro : ''}</div></div>`;
+
+  document.getElementById('fed-tbl-resumo').innerHTML = rows.join('');
+  document.getElementById('fed-resumo-empty').style.display = rows.length ? 'none' : 'block';
 }
 
 </script>
