@@ -1648,6 +1648,32 @@
       font-family: 'Segoe UI', Arial, sans-serif;
     }
   }
+
+  /* ── MÓDULO VERBAS FEDERAIS (FMDE/PDDE) ─────────────────── */
+  .fed-panel { display: none; }
+  .fed-panel.active { display: block; }
+  .fed-prog-card { padding: 0; overflow: hidden; }
+  .fed-prog-head { padding: 14px 16px; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+  .fed-prog-name { font-weight: 600; font-size: 14px; }
+  .fed-prog-total { font-family: 'DM Mono', monospace; font-size: 14px; color: var(--accent2); }
+  .fed-sub-row { display:flex; justify-content:space-between; align-items:center; padding: 9px 16px; border-bottom: 1px solid var(--border); font-size: 12.5px; cursor:pointer; transition:.15s; }
+  .fed-sub-row:last-child { border-bottom: none; }
+  .fed-sub-row:hover { background: var(--surface2); }
+  .fed-sub-row .fsc { color: var(--text-dim); font-family:'DM Mono',monospace; font-size: 10.5px; }
+  .fed-sub-row .fsv { font-family:'DM Mono',monospace; color: var(--text-muted); }
+  .fed-bar-mini { height: 5px; border-radius: 3px; background: var(--surface3); overflow: hidden; margin-top: 6px; display:flex; width: 120px; }
+  .fed-bar-mini .c { background: var(--custeio); }
+  .fed-bar-mini .k { background: var(--capital); }
+  .fed-month-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+  @media (max-width: 900px) { .fed-month-grid { grid-template-columns: repeat(2,1fr); } }
+  .fed-month-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 11px 13px; }
+  .fed-month-card.hasmove { border-color: rgba(79,142,247,0.35); }
+  .fed-month-card .mname { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .fed-month-card .mrow { display:flex; justify-content:space-between; font-size: 11.5px; padding: 2px 0; }
+  .fed-month-card .mrow .lbl { color: var(--text-muted); }
+  .fed-month-card .mrow .val { font-family: 'DM Mono', monospace; }
+  .fed-month-card .saldo-line { border-top: 1px dashed var(--border); margin-top: 5px; padding-top: 5px; font-weight: 600; }
+  .badge-rendimento { background: rgba(246,166,35,0.12); color: var(--accent3); border-color: rgba(246,166,35,0.3); }
 </style>
 <script>
   // ── Anti-flash: aplica tema antes do render ──
@@ -1728,6 +1754,13 @@
       </div>
       <div class="nav-item" onclick="showSection('paginacao')">
         <span class="nav-icon">📄</span> Paginação de Prestações
+      </div>
+    </nav>
+
+    <nav class="nav-section">
+      <div class="nav-label">Verbas Federais</div>
+      <div class="nav-item" onclick="showSection('federal')">
+        <span class="nav-icon">🏛</span> FMDE / PDDE
       </div>
     </nav>
 
@@ -5256,6 +5289,132 @@ init();
 
     </section>
 
+    <!-- VERBAS FEDERAIS (FMDE / PDDE) -->
+    <section class="section" id="section-federal">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Verbas Federais — FMDE / PDDE</div>
+          <div class="page-subtitle">Rampa de gastos federais: contas do PDDE Básico, Qualidade e Equidade, lançamentos mensais a partir de notas fiscais e espelho de conta.</div>
+        </div>
+        <button class="btn btn-primary" onclick="fedOpenModal()">+ Novo lançamento</button>
+      </div>
+
+      <div class="parcela-tabs" id="fed-tabs">
+        <div class="parcela-tab active" onclick="fedShowTab('fed-dash',this)">Plano geral</div>
+        <div class="parcela-tab" onclick="fedShowTab('fed-contas',this)">Contas &amp; programas</div>
+        <div class="parcela-tab" onclick="fedShowTab('fed-lanc',this)">Lançamentos</div>
+        <div class="parcela-tab" onclick="fedShowTab('fed-mensal',this)">Rampa mensal</div>
+        <div class="parcela-tab" onclick="fedShowTab('fed-extrato',this)">Extrato / espelho</div>
+        <div class="parcela-tab" onclick="fedShowTab('fed-invest',this)">Investimentos</div>
+      </div>
+
+      <!-- PLANO GERAL -->
+      <div class="fed-panel active" id="fed-dash">
+        <div class="field" style="max-width:160px;margin-bottom:16px">
+          <label>Ano</label>
+          <select id="fed-dash-ano" onchange="fedRenderDashboard()"></select>
+        </div>
+        <div class="stats-grid" id="fed-dash-stats"></div>
+        <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)" id="fed-dash-programas"></div>
+      </div>
+
+      <!-- CONTAS & PROGRAMAS -->
+      <div class="fed-panel" id="fed-contas">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Programa</th><th>Subprograma</th><th>Conta corrente</th><th>Ano</th><th class="text-right">Reprog. custeio</th><th class="text-right">Reprog. capital</th><th class="text-right">Total origem</th></tr></thead>
+            <tbody id="fed-tbl-contas"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LANÇAMENTOS -->
+      <div class="fed-panel" id="fed-lanc">
+        <div class="form-grid form-grid-3" style="margin-bottom:16px">
+          <div class="field">
+            <label>Conta / programa</label>
+            <select id="fed-f-conta" onchange="fedRenderLancamentos()"><option value="">Todas as contas</option></select>
+          </div>
+          <div class="field">
+            <label>Ano</label>
+            <select id="fed-f-ano" onchange="fedRenderLancamentos()"><option value="">Todos os anos</option></select>
+          </div>
+          <div class="field">
+            <label>Tipo</label>
+            <select id="fed-f-tipo" onchange="fedRenderLancamentos()">
+              <option value="">Todos os tipos</option>
+              <option value="entrada">Entrada FNDE</option>
+              <option value="rendimento">Rendimento</option>
+              <option value="despesa">Despesa (NF)</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Programa / conta</th><th>Tipo</th><th>Categoria</th><th>Nº NF</th><th>Histórico</th><th class="text-right">Valor</th><th></th></tr></thead>
+            <tbody id="fed-tbl-lanc"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="fed-lanc-empty" style="display:none">
+          <div class="empty-icon">✎</div>
+          <div class="empty-title">Nenhum lançamento neste filtro</div>
+          <div class="empty-sub">Use "+ Novo lançamento" para registrar uma entrada, rendimento ou despesa.</div>
+        </div>
+      </div>
+
+      <!-- RAMPA MENSAL -->
+      <div class="fed-panel" id="fed-mensal">
+        <div class="form-grid" style="margin-bottom:10px">
+          <div class="field">
+            <label>Conta / programa</label>
+            <select id="fed-m-conta" onchange="fedRenderMensal()"></select>
+          </div>
+          <div class="field">
+            <label>Ano</label>
+            <select id="fed-m-ano" onchange="fedRenderMensal()"></select>
+          </div>
+        </div>
+        <div class="alert alert-info" id="fed-mensal-head" style="margin-bottom:14px"></div>
+        <div class="fed-month-grid" id="fed-mensal-grid"></div>
+      </div>
+
+      <!-- EXTRATO / ESPELHO -->
+      <div class="fed-panel" id="fed-extrato">
+        <div class="form-grid" style="margin-bottom:16px">
+          <div class="field">
+            <label>Conta / programa</label>
+            <select id="fed-e-conta" onchange="fedRenderExtrato()"></select>
+          </div>
+          <div class="field">
+            <label>Ano</label>
+            <select id="fed-e-ano" onchange="fedRenderExtrato()"></select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Histórico</th><th>Nº NF</th><th class="text-right">Entrada</th><th class="text-right">Saída</th><th class="text-right">Saldo</th></tr></thead>
+            <tbody id="fed-tbl-extrato"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- INVESTIMENTOS -->
+      <div class="fed-panel" id="fed-invest">
+        <div class="stats-grid" id="fed-invest-stats"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Programa / conta</th><th>Nº NF</th><th>Descrição do bem</th><th class="text-right">Valor</th></tr></thead>
+            <tbody id="fed-tbl-invest"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="fed-invest-empty" style="display:none">
+          <div class="empty-icon">▲</div>
+          <div class="empty-title">Nenhum investimento de capital lançado ainda</div>
+          <div class="empty-sub">Despesas lançadas com categoria "Capital" aparecem aqui automaticamente.</div>
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
@@ -6779,6 +6938,7 @@ function showSection(id) {
   if (id === 'alertas') renderAlertas();
   if (id === 'anexos') { popularAnx6ComCapital(); popularTodosAnexosTCSelects(); }
   if (id === 'links') renderLinks();
+  if (id === 'federal') fedAbrirModulo();
 }
 
 // ==================== MODALS ====================
@@ -13073,6 +13233,389 @@ function preencherDadosParcelaForcado(anexo) {
   _aplicarAutofill(anexo, true);
 }
 
+// ═══════════════════════════════════════════════════════════
+//   MÓDULO: VERBAS FEDERAIS (FMDE / PDDE)
+//   Todas as funções prefixadas com "fed" para evitar conflitos.
+//   Tabelas Supabase: fed_contas, fed_saldos_anuais, fed_lancamentos
+// ═══════════════════════════════════════════════════════════
+let fedContas = [];
+let fedSaldos = [];
+let fedLanc = [];
+let fedLoaded = false;
+
+async function fedCarregarDados() {
+  const [{ data: contasData, error: e1 }, { data: saldosData, error: e2 }, { data: lancData, error: e3 }] = await Promise.all([
+    supa.from('fed_contas').select('*').order('ordem'),
+    supa.from('fed_saldos_anuais').select('*'),
+    supa.from('fed_lancamentos').select('*').order('data')
+  ]);
+  if (e1 || e2 || e3) {
+    console.error('Erro ao carregar dados federais', e1 || e2 || e3);
+    const msg = (e1 || e2 || e3).message || '';
+    document.getElementById('fed-dash-stats').innerHTML =
+      `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">⚠</div>
+       <div class="empty-title">Não foi possível carregar as tabelas de verbas federais</div>
+       <div class="empty-sub">Confira se o SQL de criação das tabelas (fed_contas, fed_saldos_anuais, fed_lancamentos) já foi executado no Supabase.${msg ? '<br>Detalhe: ' + msg : ''}</div></div>`;
+    return;
+  }
+  fedContas = contasData || [];
+  fedSaldos = saldosData || [];
+  fedLanc = lancData || [];
+  fedLoaded = true;
+}
+
+function fedAbrirModulo() {
+  if (!fedLoaded) {
+    fedCarregarDados().then(() => fedRenderTudo());
+  } else {
+    fedRenderTudo();
+  }
+}
+
+function fedRenderTudo() {
+  fedRenderDashboard();
+  fedRenderContas();
+  fedRenderLancamentos();
+  fedRenderMensal();
+  fedRenderExtrato();
+  fedRenderInvestimentos();
+}
+
+// ── Helpers de dados ──────────────────────────────────────
+function fedContaById(id) { return fedContas.find(c => String(c.id) === String(id)); }
+function fedContaLabel(c) { return c ? (c.programa + ' — ' + c.subprograma) : '—'; }
+function fedAnosDisponiveis() {
+  const anos = new Set(fedSaldos.map(s => Number(s.ano)));
+  [2025, 2026, 2027].forEach(a => anos.add(a));
+  return [...anos].sort();
+}
+function fedSaldoOrigem(contaId, ano) {
+  const s = fedSaldos.find(s => String(s.conta_id) === String(contaId) && Number(s.ano) === Number(ano));
+  return s ? { custeio: Number(s.reprogramado_custeio) || 0, capital: Number(s.reprogramado_capital) || 0 } : null;
+}
+function fedLancDe(contaId, ano) {
+  return fedLanc.filter(l => String(l.conta_id) === String(contaId) && Number(l.ano) === Number(ano))
+                .sort((a, b) => a.data < b.data ? -1 : (a.data > b.data ? 1 : 0));
+}
+function fedCalcSaldo(contaId, ano) {
+  const origem = fedSaldoOrigem(contaId, ano);
+  if (!origem) return null;
+  let custeio = origem.custeio, capital = origem.capital, rendimento = 0;
+  fedLancDe(contaId, ano).forEach(l => {
+    const v = Number(l.valor) || 0;
+    if (l.tipo === 'entrada') { if (l.categoria === 'custeio') custeio += v; else capital += v; }
+    else if (l.tipo === 'rendimento') { rendimento += v; }
+    else if (l.tipo === 'despesa') {
+      if (l.categoria === 'custeio') custeio -= v;
+      else if (l.categoria === 'capital') capital -= v;
+      else rendimento -= v;
+    }
+  });
+  return { custeio, capital, rendimento, total: custeio + capital + rendimento, origem };
+}
+
+// ── Navegação por abas internas ──────────────────────────
+function fedShowTab(id, el) {
+  document.querySelectorAll('#section-federal .fed-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('#fed-tabs .parcela-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function fedFillContaSelect(sel, incluirTodas) {
+  let opts = incluirTodas ? '<option value="">Todas as contas</option>' : '';
+  opts += fedContas.map(c => `<option value="${c.id}">${fedContaLabel(c)} (${c.conta_corrente || '—'})</option>`).join('');
+  sel.innerHTML = opts;
+}
+function fedFillAnoSelect(sel, incluirTodos) {
+  const anos = fedAnosDisponiveis();
+  sel.innerHTML = (incluirTodos ? '<option value="">Todos os anos</option>' : '') +
+    anos.map(a => `<option value="${a}">${a}</option>`).join('');
+}
+
+// ── PLANO GERAL ───────────────────────────────────────────
+function fedRenderDashboard() {
+  if (!fedContas.length) return;
+  const selAno = document.getElementById('fed-dash-ano');
+  if (!selAno.options.length) fedFillAnoSelect(selAno, false);
+  const anos = fedAnosDisponiveis();
+  const ano = Number(selAno.value || anos[anos.length - 2] || anos[0]);
+  selAno.value = ano;
+
+  let tCust = 0, tCap = 0, tRend = 0, tDesp = 0;
+  const porPrograma = {};
+  fedContas.forEach(c => {
+    const s = fedCalcSaldo(c.id, ano);
+    if (!s) return;
+    tCust += s.custeio; tCap += s.capital; tRend += s.rendimento;
+    fedLancDe(c.id, ano).filter(l => l.tipo === 'despesa').forEach(l => tDesp += Number(l.valor) || 0);
+    (porPrograma[c.programa] = porPrograma[c.programa] || []).push({ conta: c, saldo: s });
+  });
+
+  document.getElementById('fed-dash-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Saldo total em contas</div>
+      <div class="stat-value" style="color:var(--accent2)">${fmtMoney(tCust + tCap + tRend)}</div>
+      <div class="stat-meta">Custeio + capital + rendimentos · ${ano}</div></div>
+    <div class="stat-card"><div class="stat-label">Custeio disponível</div>
+      <div class="stat-value" style="color:var(--custeio)">${fmtMoney(tCust)}</div>
+      <div class="stat-meta">Manutenção e consumo</div></div>
+    <div class="stat-card"><div class="stat-label">Capital disponível</div>
+      <div class="stat-value" style="color:var(--capital)">${fmtMoney(tCap)}</div>
+      <div class="stat-meta">Bens e investimentos</div></div>
+    <div class="stat-card"><div class="stat-label">Despesas lançadas no ano</div>
+      <div class="stat-value" style="color:var(--accent-red)">${fmtMoney(tDesp)}</div>
+      <div class="stat-meta">Rendimento acumulado: ${fmtMoney(tRend)}</div></div>`;
+
+  const progHtml = Object.keys(porPrograma).map(prog => {
+    const items = porPrograma[prog];
+    const totalPrograma = items.reduce((s, i) => s + i.saldo.total, 0);
+    return `<div class="card fed-prog-card">
+      <div class="fed-prog-head"><div class="fed-prog-name">${prog}</div><div class="fed-prog-total">${fmtMoney(totalPrograma)}</div></div>
+      ${items.map(i => {
+        const base = (i.saldo.custeio + i.saldo.capital) || 1;
+        const pctC = Math.max(0, Math.min(100, Math.round((i.saldo.custeio / base) * 100)));
+        return `<div class="fed-sub-row" onclick="fedIrParaExtrato('${i.conta.id}',${ano})">
+          <div>
+            <div>${i.conta.subprograma}</div>
+            <div class="fsc">Conta ${i.conta.conta_corrente || '—'}</div>
+            <div class="fed-bar-mini"><div class="c" style="width:${pctC}%"></div><div class="k" style="width:${100 - pctC}%"></div></div>
+          </div>
+          <div class="fsv">${fmtMoney(i.saldo.total)}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+  document.getElementById('fed-dash-programas').innerHTML = progHtml ||
+    `<div class="empty-state" style="grid-column:1/-1"><div class="empty-title">Nenhum dado para ${ano}</div></div>`;
+}
+function fedIrParaExtrato(contaId, ano) {
+  showSection('federal');
+  fedShowTab('fed-extrato', document.querySelectorAll('#fed-tabs .parcela-tab')[4]);
+  const selC = document.getElementById('fed-e-conta'), selA = document.getElementById('fed-e-ano');
+  if (!selC.options.length) fedFillContaSelect(selC, false);
+  if (!selA.options.length) fedFillAnoSelect(selA, false);
+  selC.value = contaId; selA.value = ano;
+  fedRenderExtrato();
+}
+
+// ── CONTAS & PROGRAMAS ───────────────────────────────────
+function fedRenderContas() {
+  const rows = [];
+  fedContas.forEach(c => {
+    fedSaldos.filter(s => String(s.conta_id) === String(c.id)).sort((a, b) => a.ano - b.ano).forEach(s => {
+      const cu = Number(s.reprogramado_custeio) || 0, ca = Number(s.reprogramado_capital) || 0;
+      rows.push(`<tr>
+        <td>${c.programa}</td><td>${c.subprograma}</td><td class="mono">${c.conta_corrente || '—'}</td><td>${s.ano}</td>
+        <td class="text-right mono">${fmtMoney(cu)}</td><td class="text-right mono">${fmtMoney(ca)}</td>
+        <td class="text-right mono" style="color:var(--accent2)">${fmtMoney(cu + ca)}</td>
+      </tr>`);
+    });
+  });
+  document.getElementById('fed-tbl-contas').innerHTML = rows.join('') || `<tr><td colspan="7" class="text-center" style="text-align:center;color:var(--text-dim);padding:24px">Nenhuma conta cadastrada.</td></tr>`;
+}
+
+// ── LANÇAMENTOS (lista) ──────────────────────────────────
+function fedRenderLancamentos() {
+  const selC = document.getElementById('fed-f-conta'), selA = document.getElementById('fed-f-ano');
+  if (selC.options.length <= 1) fedFillContaSelect(selC, true);
+  if (selA.options.length <= 1) fedFillAnoSelect(selA, true);
+
+  const fc = selC.value, fa = selA.value, ft = document.getElementById('fed-f-tipo').value;
+  let list = [...fedLanc];
+  if (fc) list = list.filter(l => String(l.conta_id) === String(fc));
+  if (fa) list = list.filter(l => Number(l.ano) === Number(fa));
+  if (ft) list = list.filter(l => l.tipo === ft);
+  list.sort((a, b) => b.data < a.data ? -1 : (b.data > a.data ? 1 : 0));
+
+  const tipoLabel = { entrada: 'Entrada FNDE', rendimento: 'Rendimento', despesa: 'Despesa' };
+  const tipoBadge = { entrada: 'badge-green', rendimento: 'badge-orange', despesa: 'badge-red' };
+  const catLabel = { custeio: 'Custeio', capital: 'Capital', rendimento: 'Rendimento' };
+
+  document.getElementById('fed-tbl-lanc').innerHTML = list.map(l => {
+    const c = fedContaById(l.conta_id);
+    return `<tr>
+      <td class="mono">${fmtDate(l.data)}</td>
+      <td>${fedContaLabel(c)}<div style="font-size:11px;color:var(--text-dim)">Conta ${c ? (c.conta_corrente || '—') : '—'} · ${l.ano}</div></td>
+      <td><span class="badge ${tipoBadge[l.tipo]}">${tipoLabel[l.tipo]}</span></td>
+      <td>${l.categoria ? `<span class="badge tipo-${l.categoria.toUpperCase()}">${catLabel[l.categoria]}</span>` : '<span style="color:var(--text-dim)">—</span>'}</td>
+      <td class="mono">${l.nf_num || '—'}</td>
+      <td>${l.descricao || '—'}</td>
+      <td class="text-right mono" style="color:${l.tipo === 'despesa' ? 'var(--accent-red)' : 'var(--accent2)'}">${l.tipo === 'despesa' ? '-' : '+'} ${fmtMoney(Number(l.valor) || 0)}</td>
+      <td><span style="color:var(--text-dim);cursor:pointer;font-size:12px" onclick="fedExcluirLancamento(${l.id})">Excluir</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('fed-lanc-empty').style.display = list.length ? 'none' : 'block';
+}
+async function fedExcluirLancamento(id) {
+  if (!confirm('Excluir este lançamento?')) return;
+  const { error } = await supa.from('fed_lancamentos').delete().eq('id', id);
+  if (error) { alert('Erro ao excluir: ' + error.message); return; }
+  fedLanc = fedLanc.filter(l => l.id != id);
+  fedRenderTudo();
+}
+
+// ── MODAL NOVO LANÇAMENTO ────────────────────────────────
+function fedOpenModal() {
+  if (!fedLoaded) { alert('Aguarde o carregamento dos dados de verbas federais e tente novamente.'); return; }
+  fedFillContaSelect(document.getElementById('fl-conta'), false);
+  document.getElementById('fl-data').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('fl-tipo').value = 'entrada';
+  document.getElementById('fl-valor').value = '';
+  document.getElementById('fl-nf').value = '';
+  document.getElementById('fl-desc').value = '';
+  fedOnTipoChange();
+  document.getElementById('modal-fed-lancamento').classList.add('open');
+}
+function fedCloseModal() { document.getElementById('modal-fed-lancamento').classList.remove('open'); }
+function fedOnTipoChange() {
+  const tipo = document.getElementById('fl-tipo').value;
+  document.getElementById('fl-categoria-wrap').style.display = tipo === 'rendimento' ? 'none' : 'block';
+  document.getElementById('fl-nf-wrap').style.display = tipo === 'despesa' ? 'block' : 'none';
+  const catSel = document.getElementById('fl-categoria');
+  catSel.innerHTML = tipo === 'despesa'
+    ? `<option value="custeio">Custeio</option><option value="capital">Capital</option><option value="rendimento">Rendimento (fundo próprio)</option>`
+    : `<option value="custeio">Custeio</option><option value="capital">Capital</option>`;
+}
+async function fedSalvarLancamento() {
+  const contaId = document.getElementById('fl-conta').value;
+  const data = document.getElementById('fl-data').value;
+  const tipo = document.getElementById('fl-tipo').value;
+  const categoria = tipo === 'rendimento' ? null : document.getElementById('fl-categoria').value;
+  const valor = parseFloat(document.getElementById('fl-valor').value);
+  const nf = document.getElementById('fl-nf').value.trim();
+  const desc = document.getElementById('fl-desc').value.trim();
+
+  if (!contaId) { alert('Selecione o programa / conta.'); return; }
+  if (!data) { alert('Informe a data do lançamento.'); return; }
+  if (!valor || valor <= 0) { alert('Informe um valor válido.'); return; }
+  if (tipo === 'despesa' && !nf) { if (!confirm('Nenhum número de nota fiscal informado. Deseja continuar mesmo assim?')) return; }
+
+  const ano = Number(data.slice(0, 4));
+  const row = { id: Date.now(), conta_id: contaId, ano, data, tipo, categoria, valor, nf_num: nf || null, descricao: desc || null };
+  const { error } = await supa.from('fed_lancamentos').insert(row);
+  if (error) { alert('Erro ao salvar lançamento: ' + error.message); return; }
+  fedLanc.push(row);
+  fedCloseModal();
+  fedRenderTudo();
+}
+
+// ── RAMPA MENSAL ──────────────────────────────────────────
+const FED_MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+function fedRenderMensal() {
+  const selC = document.getElementById('fed-m-conta'), selA = document.getElementById('fed-m-ano');
+  if (!selC.options.length) fedFillContaSelect(selC, false);
+  if (!selA.options.length) fedFillAnoSelect(selA, false);
+  if (!fedContas.length) return;
+  const contaId = selC.value || fedContas[0].id; selC.value = contaId;
+  const anos = fedAnosDisponiveis();
+  const ano = Number(selA.value || anos[anos.length - 2] || anos[0]); selA.value = ano;
+
+  const c = fedContaById(contaId);
+  const origem = fedSaldoOrigem(contaId, ano);
+  if (!origem) {
+    document.getElementById('fed-mensal-head').innerHTML = `Este subprograma não possui saldo de origem cadastrado para ${ano}.`;
+    document.getElementById('fed-mensal-grid').innerHTML = '';
+    return;
+  }
+  document.getElementById('fed-mensal-head').innerHTML =
+    `<strong>${fedContaLabel(c)}</strong> · Conta ${c.conta_corrente || '—'} — saldo de origem (${ano}): ${fmtMoney(origem.custeio + origem.capital)}`;
+
+  let custeio = origem.custeio, capital = origem.capital, rendAcum = 0;
+  const lancs = fedLancDe(contaId, ano);
+
+  const cards = FED_MESES.map((nome, idx) => {
+    const mm = String(idx + 1).padStart(2, '0');
+    const doMes = lancs.filter(l => l.data.slice(5, 7) === mm);
+    let entC = 0, entK = 0, rend = 0, despC = 0, despK = 0, despR = 0;
+    doMes.forEach(l => {
+      const v = Number(l.valor) || 0;
+      if (l.tipo === 'entrada') { if (l.categoria === 'custeio') entC += v; else entK += v; }
+      else if (l.tipo === 'rendimento') { rend += v; }
+      else if (l.tipo === 'despesa') {
+        if (l.categoria === 'custeio') despC += v; else if (l.categoria === 'capital') despK += v; else despR += v;
+      }
+    });
+    const saldoInicial = custeio + capital;
+    custeio += entC - despC; capital += entK - despK; rendAcum += rend - despR;
+    const saldoFinal = custeio + capital + rendAcum;
+    return `<div class="fed-month-card ${doMes.length ? 'hasmove' : ''}">
+      <div class="mname">${nome} / ${ano}</div>
+      <div class="mrow"><span class="lbl">Saldo inicial</span><span class="val">${fmtMoney(saldoInicial)}</span></div>
+      <div class="mrow"><span class="lbl" style="color:var(--capital)">+ Entradas</span><span class="val">${fmtMoney(entC + entK)}</span></div>
+      <div class="mrow"><span class="lbl" style="color:var(--accent3)">+ Rendimento</span><span class="val">${fmtMoney(rend)}</span></div>
+      <div class="mrow"><span class="lbl" style="color:var(--accent-red)">− Desp. custeio</span><span class="val">${fmtMoney(despC)}</span></div>
+      <div class="mrow"><span class="lbl" style="color:var(--accent-red)">− Desp. capital</span><span class="val">${fmtMoney(despK)}</span></div>
+      <div class="mrow saldo-line"><span class="lbl">Saldo final</span><span class="val" style="color:var(--accent2)">${fmtMoney(saldoFinal)}</span></div>
+    </div>`;
+  });
+  document.getElementById('fed-mensal-grid').innerHTML = cards.join('');
+}
+
+// ── EXTRATO / ESPELHO ────────────────────────────────────
+function fedRenderExtrato() {
+  const selC = document.getElementById('fed-e-conta'), selA = document.getElementById('fed-e-ano');
+  if (!selC.options.length) fedFillContaSelect(selC, false);
+  if (!selA.options.length) fedFillAnoSelect(selA, false);
+  if (!fedContas.length) return;
+  const contaId = selC.value || fedContas[0].id; selC.value = contaId;
+  const anos = fedAnosDisponiveis();
+  const ano = Number(selA.value || anos[anos.length - 2] || anos[0]); selA.value = ano;
+
+  const origem = fedSaldoOrigem(contaId, ano);
+  if (!origem) { document.getElementById('fed-tbl-extrato').innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Sem saldo de origem para ${ano}.</td></tr>`; return; }
+
+  let saldo = origem.custeio + origem.capital;
+  const rows = [`<tr>
+      <td class="mono">01/01/${ano}</td>
+      <td>Saldo reprogramado (origem) — custeio ${fmtMoney(origem.custeio)} / capital ${fmtMoney(origem.capital)}</td>
+      <td>—</td><td class="text-right">—</td><td class="text-right">—</td>
+      <td class="text-right mono" style="font-weight:600">${fmtMoney(saldo)}</td>
+    </tr>`];
+
+  fedLancDe(contaId, ano).forEach(l => {
+    const v = Number(l.valor) || 0;
+    const entrada = (l.tipo === 'entrada' || l.tipo === 'rendimento') ? v : 0;
+    const saida = l.tipo === 'despesa' ? v : 0;
+    saldo += entrada - saida;
+    const catLabel = { custeio: 'Custeio', capital: 'Capital', rendimento: 'Rendimento' };
+    const hist = l.tipo === 'entrada' ? `Transferência FNDE — ${catLabel[l.categoria]}${l.descricao ? ': ' + l.descricao : ''}`
+      : l.tipo === 'rendimento' ? `Rendimento da conta${l.descricao ? ': ' + l.descricao : ''}`
+        : `Despesa — ${catLabel[l.categoria]}${l.descricao ? ': ' + l.descricao : ''}`;
+    rows.push(`<tr>
+      <td class="mono">${fmtDate(l.data)}</td>
+      <td>${hist}</td>
+      <td class="mono">${l.nf_num || '—'}</td>
+      <td class="text-right mono" style="color:var(--accent2)">${entrada ? fmtMoney(entrada) : '—'}</td>
+      <td class="text-right mono" style="color:var(--accent-red)">${saida ? fmtMoney(saida) : '—'}</td>
+      <td class="text-right mono" style="font-weight:600">${fmtMoney(saldo)}</td>
+    </tr>`);
+  });
+  document.getElementById('fed-tbl-extrato').innerHTML = rows.join('');
+}
+
+// ── INVESTIMENTOS (capital) ──────────────────────────────
+function fedRenderInvestimentos() {
+  const list = fedLanc.filter(l => l.tipo === 'despesa' && l.categoria === 'capital')
+                       .sort((a, b) => b.data < a.data ? -1 : (b.data > a.data ? 1 : 0));
+  const total = list.reduce((s, l) => s + (Number(l.valor) || 0), 0);
+  const porPrograma = {};
+  list.forEach(l => {
+    const c = fedContaById(l.conta_id);
+    const key = c ? c.programa : '—';
+    porPrograma[key] = (porPrograma[key] || 0) + (Number(l.valor) || 0);
+  });
+
+  document.getElementById('fed-invest-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total investido (capital)</div><div class="stat-value" style="color:var(--capital)">${fmtMoney(total)}</div></div>
+    ${Object.keys(porPrograma).map(p => `<div class="stat-card"><div class="stat-label">${p}</div><div class="stat-value">${fmtMoney(porPrograma[p])}</div></div>`).join('')}
+  `;
+  document.getElementById('fed-tbl-invest').innerHTML = list.map(l => {
+    const c = fedContaById(l.conta_id);
+    return `<tr><td class="mono">${fmtDate(l.data)}</td><td>${fedContaLabel(c)}</td><td class="mono">${l.nf_num || '—'}</td><td>${l.descricao || '—'}</td>
+      <td class="text-right mono" style="color:var(--capital)">${fmtMoney(Number(l.valor) || 0)}</td></tr>`;
+  }).join('');
+  document.getElementById('fed-invest-empty').style.display = list.length ? 'none' : 'block';
+}
 
 </script>
 
@@ -13964,6 +14507,59 @@ function pgMostrarToast(msg) {
         <button class="btn btn-ghost" onclick="document.getElementById('modal-filtro-impressao').classList.remove('open')">Cancelar</button>
         <button class="btn btn-primary" onclick="confirmarFiltroImpressao()">🖨 Gerar Impressão</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NOVO LANÇAMENTO FEDERAL -->
+<div class="modal-overlay" id="modal-fed-lancamento">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <div class="modal-title">Novo lançamento — Verbas Federais</div>
+      <span class="modal-close" onclick="fedCloseModal()">×</span>
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label>Programa / conta</label>
+      <select id="fl-conta" style="width:100%"></select>
+    </div>
+    <div class="form-grid" style="margin-bottom:14px">
+      <div class="field">
+        <label>Data</label>
+        <input type="date" id="fl-data" style="width:100%">
+      </div>
+      <div class="field">
+        <label>Tipo de lançamento</label>
+        <select id="fl-tipo" style="width:100%" onchange="fedOnTipoChange()">
+          <option value="entrada">Entrada FNDE (transferência)</option>
+          <option value="rendimento">Rendimento da conta</option>
+          <option value="despesa">Despesa (nota fiscal)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid" style="margin-bottom:14px">
+      <div class="field" id="fl-categoria-wrap">
+        <label>Categoria</label>
+        <select id="fl-categoria" style="width:100%">
+          <option value="custeio">Custeio</option>
+          <option value="capital">Capital</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Valor (R$)</label>
+        <input type="number" step="0.01" id="fl-valor" style="width:100%" placeholder="0,00">
+      </div>
+    </div>
+    <div class="field" id="fl-nf-wrap" style="margin-bottom:14px">
+      <label>Nº da nota fiscal</label>
+      <input type="text" id="fl-nf" style="width:100%" placeholder="Ex: 4521">
+    </div>
+    <div class="field" style="margin-bottom:6px">
+      <label>Histórico / fornecedor / descrição</label>
+      <input type="text" id="fl-desc" style="width:100%" placeholder="Ex: Compra de material pedagógico — Fornecedor XYZ">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fedCloseModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="fedSalvarLancamento()">Salvar lançamento</button>
     </div>
   </div>
 </div>
