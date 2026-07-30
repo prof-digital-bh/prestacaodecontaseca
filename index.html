@@ -13653,7 +13653,7 @@ function fedRenderInvestimentos() {
 // ── RESUMO DETALHADO (saldo disponível por categoria/programa/subprograma) ──
 function fedRenderResumo() {
   const selP = document.getElementById('fed-r-programa'), selA = document.getElementById('fed-r-ano');
-  if (!selP.options.length) fedFillProgramaSelect(selP);
+  if (selP.options.length <= 1) fedFillProgramaSelect(selP);
   if (!selA.options.length) fedFillAnoSelect(selA, false);
   if (!fedContas.length) return;
   const anos = fedAnosDisponiveis();
