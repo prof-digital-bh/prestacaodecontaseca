@@ -5430,7 +5430,7 @@ init();
         <div class="stats-grid" id="fed-resumo-stats" style="margin-bottom:20px"></div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Programa</th><th>Subprograma</th><th>Conta corrente</th><th class="text-right">Custeio disponível</th><th class="text-right">Gasto custeio</th><th class="text-right">Capital disponível</th><th class="text-right">Gasto capital</th><th class="text-right">Rendimento</th><th class="text-right">Total disponível</th></tr></thead>
+            <thead><tr><th>Programa</th><th>Subprograma</th><th>Conta corrente</th><th class="text-right">Reprog. custeio</th><th class="text-right">Reprog. capital</th><th class="text-right">Custeio disponível</th><th class="text-right">Gasto custeio</th><th class="text-right">Capital disponível</th><th class="text-right">Gasto capital</th><th class="text-right">Rendimento</th><th class="text-right">Total disponível</th></tr></thead>
             <tbody id="fed-tbl-resumo"></tbody>
           </table>
         </div>
@@ -13663,7 +13663,7 @@ function fedRenderResumo() {
   let contasFiltradas = fedContas;
   if (programaFiltro) contasFiltradas = contasFiltradas.filter(c => c.programa === programaFiltro);
 
-  let tCust = 0, tCap = 0, tRend = 0, tGastoCust = 0, tGastoCap = 0;
+  let tCust = 0, tCap = 0, tRend = 0, tGastoCust = 0, tGastoCap = 0, tOrigCust = 0, tOrigCap = 0;
   const rows = [];
   contasFiltradas.forEach(c => {
     const s = fedCalcSaldo(c.id, ano);
@@ -13676,8 +13676,11 @@ function fedRenderResumo() {
     });
     tCust += s.custeio; tCap += s.capital; tRend += s.rendimento;
     tGastoCust += gastoCust; tGastoCap += gastoCap;
+    tOrigCust += s.origem.custeio; tOrigCap += s.origem.capital;
     rows.push(`<tr onclick="fedIrParaExtrato('${c.id}',${ano})" style="cursor:pointer">
       <td>${c.programa}</td><td>${c.subprograma}</td><td class="mono">${c.conta_corrente || '—'}</td>
+      <td class="text-right mono" style="color:var(--text-dim)">${fmtMoney(s.origem.custeio)}</td>
+      <td class="text-right mono" style="color:var(--text-dim)">${fmtMoney(s.origem.capital)}</td>
       <td class="text-right mono" style="color:var(--custeio)">${fmtMoney(s.custeio)}</td>
       <td class="text-right mono" style="color:var(--accent-red)">${gastoCust ? fmtMoney(gastoCust) : '—'}</td>
       <td class="text-right mono" style="color:var(--capital)">${fmtMoney(s.capital)}</td>
@@ -13690,10 +13693,10 @@ function fedRenderResumo() {
   document.getElementById('fed-resumo-stats').innerHTML = `
     <div class="stat-card"><div class="stat-label">Custeio disponível</div>
       <div class="stat-value" style="color:var(--custeio)">${fmtMoney(tCust)}</div>
-      <div class="stat-meta">Gasto em custeio no ano: ${fmtMoney(tGastoCust)}</div></div>
+      <div class="stat-meta">Reprogramado ${ano}: ${fmtMoney(tOrigCust)} · Gasto: ${fmtMoney(tGastoCust)}</div></div>
     <div class="stat-card"><div class="stat-label">Capital disponível</div>
       <div class="stat-value" style="color:var(--capital)">${fmtMoney(tCap)}</div>
-      <div class="stat-meta">Gasto em capital no ano: ${fmtMoney(tGastoCap)}</div></div>
+      <div class="stat-meta">Reprogramado ${ano}: ${fmtMoney(tOrigCap)} · Gasto: ${fmtMoney(tGastoCap)}</div></div>
     <div class="stat-card"><div class="stat-label">Rendimento acumulado</div>
       <div class="stat-value" style="color:var(--accent3)">${fmtMoney(tRend)}</div>
       <div class="stat-meta">Entradas de rendimento − despesas do fundo próprio</div></div>
