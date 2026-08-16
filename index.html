@@ -6791,6 +6791,7 @@ async function salvarDespesa() {
   state.despesas.push(d);
   addParcelaTab(d.parcela);
   closeModal('modal-despesa');
+  resetFormDespesa();
   renderDespesas();
   renderDashboard();
   renderChecklist();
@@ -7103,9 +7104,54 @@ function showSection(id) {
 }
 
 // ==================== MODALS ====================
+function resetFormDespesa() {
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  const hide   = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
+
+  setVal('d-cnpj-busca', '');
+  setVal('d-cnpj', '');
+  setVal('d-credor', '');
+  setVal('d-tc-vinculo', '');
+  setVal('d-tipo', 'CUSTEIO');
+  setVal('d-subtipo', 'servicos');
+  setVal('d-parcela', '03');
+  setVal('d-nf-num', '');
+  setVal('d-nf-data', '');
+  setVal('d-valor', '');
+  setVal('d-modalidade-pgto', '');
+  setVal('d-descricao', '');
+  setVal('d-orcamentos', 'sim');
+  setVal('d-orcamentos-pend', '');
+  setVal('d-certidoes', 'sim');
+  setVal('d-certidoes-pend', '');
+  setVal('d-cartao-cnpj', 'sim');
+  setVal('d-cartao-cnpj-pend', '');
+  setVal('d-comprovante-pgto', 'sim');
+  setVal('d-comprovante-pgto-pend', '');
+  setVal('d-contrato-nf', 'sim');
+  setVal('d-contrato-nf-pend', '');
+  setVal('d-justificativa', 'sim');
+  setVal('d-justificativa-pend', '');
+  setVal('d-confirmacao-patrimonio', 'sim');
+
+  hide('field-orcamentos-pend');
+  hide('field-certidoes-pend');
+  hide('field-cartao-cnpj-pend');
+  hide('field-comprovante-pgto-pend');
+  hide('field-contrato-nf-pend');
+  hide('field-justificativa-pend');
+  hide('field-confirmacao-patrimonio');
+  hide('field-subtipo');
+  hide('aviso-pgto-especie');
+
+  const dropdown = document.getElementById('cnpj-dropdown');
+  if (dropdown) { dropdown.style.display = 'none'; dropdown.innerHTML = ''; }
+}
+
 function openModal(id) {
   document.getElementById(id).classList.add('open');
   if (id === 'modal-despesa') {
+    resetFormDespesa();
     populateTCDropdown();
     togglePendenciaField('orcamentos');
     togglePendenciaField('certidoes');
