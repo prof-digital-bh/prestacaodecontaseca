@@ -1820,12 +1820,10 @@
       <!-- ═══════════════════════════════════════════════════════
            SUB-ABAS DO DASHBOARD
            ═══════════════════════════════════════════════════════ -->
-      <div class="parcela-tabs" id="dash-tabs" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div style="display:flex;gap:0">
-          <div class="parcela-tab active" onclick="dashShowTab('dash-panel-geral',this)">Visão Geral</div>
-          <div class="parcela-tab" onclick="dashShowTab('dash-panel-resumo',this)">Quadro Resumo</div>
-        </div>
-        <button class="btn btn-secondary" style="font-size:12px;padding:7px 12px;border-color:rgba(181,123,238,0.3);color:var(--alem)" onclick="openModal('modal-acomp-parcela')">🔍 Acompanhar Parcela</button>
+      <div class="parcela-tabs" id="dash-tabs">
+        <div class="parcela-tab active" onclick="dashShowTab('dash-panel-geral',this)">Visão Geral</div>
+        <div class="parcela-tab" onclick="dashShowTab('dash-panel-resumo',this)">Quadro Resumo</div>
+        <div class="parcela-tab" onclick="dashShowTab('dash-panel-acomp',this)">🔍 Acompanhar Parcela</div>
       </div>
 
       <!-- PAINEL: VISÃO GERAL -->
@@ -1893,6 +1891,56 @@
         </div>
       </div>
       <!-- fim PAINEL: QUADRO RESUMO -->
+
+      <!-- PAINEL: ACOMPANHAMENTO DE PARCELA -->
+      <div class="dash-panel" id="dash-panel-acomp">
+        <div class="card mb-20" style="border-color:rgba(181,123,238,0.25)">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="card-title-icon" style="background:rgba(181,123,238,0.15);color:var(--alem)">🔍</div>
+              Acompanhamento de Parcela
+              <span style="font-size:10px;background:rgba(181,123,238,0.12);color:var(--alem);border:1px solid rgba(181,123,238,0.3);border-radius:10px;padding:2px 8px;font-weight:500">Filtro preciso por TC + Parcela</span>
+            </div>
+            <div class="gap-8">
+              <button class="btn btn-secondary" style="font-size:11px;padding:6px 12px" onclick="imprimirAba('dashboard',{tcId:document.getElementById('dash-acomp-tc')?.value||'',parcela:document.getElementById('dash-acomp-parcela')?.value||'',tipo:document.getElementById('dash-acomp-tipo')?.value||''})">🖨 Imprimir</button>
+            </div>
+          </div>
+
+          <!-- Filtros vinculados -->
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;padding:12px 20px 16px;border-bottom:1px solid var(--border)">
+            <div class="field" style="margin:0;flex:1;min-width:220px">
+              <label style="font-size:11px;color:var(--alem)">Termo / Aditivo</label>
+              <select id="dash-acomp-tc" onchange="onDashAcompTCChange()" style="font-size:12px;padding:7px 10px">
+                <option value="">— Selecione o TC ou Aditivo —</option>
+              </select>
+            </div>
+            <div class="field" style="margin:0;min-width:170px">
+              <label style="font-size:11px;color:var(--alem)">Parcela</label>
+              <select id="dash-acomp-parcela" onchange="renderDashAcomp()" style="font-size:12px;padding:7px 10px">
+                <option value="">— Selecione a Parcela —</option>
+              </select>
+            </div>
+            <div class="field" style="margin:0;min-width:160px">
+              <label style="font-size:11px;color:var(--text-dim)">Tipo (opcional)</label>
+              <select id="dash-acomp-tipo" onchange="renderDashAcomp()" style="font-size:12px;padding:7px 10px">
+                <option value="">Todos os Tipos</option>
+                <option value="CUSTEIO">Custeio</option>
+                <option value="CAPITAL">Capital</option>
+                <option value="ALEM_MUROS">Além dos Muros</option>
+                <option value="OBRAS">Obras</option>
+                <option value="CAPINA">Capina / Roçamento</option>
+              </select>
+            </div>
+            <button class="btn btn-ghost" style="font-size:12px;padding:7px 12px;margin-bottom:1px" onclick="limparDashAcomp()">✕ Limpar</button>
+          </div>
+
+          <!-- Resultado do acompanhamento -->
+          <div id="dash-acomp-resultado" style="margin:16px 20px 20px">
+            <div style="font-size:12px;color:var(--text-dim);text-align:center;padding:20px 0">Selecione um Termo e uma Parcela para acompanhar os gastos</div>
+          </div>
+        </div>
+      </div>
+      <!-- fim PAINEL: ACOMPANHAMENTO DE PARCELA -->
 
       <!-- compat: elementos usados internamente pelo renderDashboard -->
       <div style="display:none">
@@ -5612,57 +5660,6 @@ init();
 </div>
 
 <!-- MODAL: DISTRIBUIÇÃO DE VALORES POR PARCELA -->
-<!-- MODAL: ACOMPANHAMENTO DE PARCELA -->
-<div class="modal-overlay" id="modal-acomp-parcela">
-  <div class="modal" style="width:900px;max-width:95vw">
-    <div class="modal-header">
-      <div class="modal-title" style="display:flex;align-items:center;gap:8px">
-        <span>🔍</span> Acompanhamento de Parcela
-        <span style="font-size:10px;background:rgba(181,123,238,0.12);color:var(--alem);border:1px solid rgba(181,123,238,0.3);border-radius:10px;padding:2px 8px;font-weight:500">Filtro preciso por TC + Parcela</span>
-      </div>
-      <button class="modal-close" onclick="closeModal('modal-acomp-parcela')">×</button>
-    </div>
-
-    <!-- Filtros vinculados -->
-    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;padding:12px 0 16px;border-bottom:1px solid var(--border)">
-      <div class="field" style="margin:0;flex:1;min-width:220px">
-        <label style="font-size:11px;color:var(--alem)">Termo / Aditivo</label>
-        <select id="dash-acomp-tc" onchange="onDashAcompTCChange()" style="font-size:12px;padding:7px 10px">
-          <option value="">— Selecione o TC ou Aditivo —</option>
-        </select>
-      </div>
-      <div class="field" style="margin:0;min-width:170px">
-        <label style="font-size:11px;color:var(--alem)">Parcela</label>
-        <select id="dash-acomp-parcela" onchange="renderDashAcomp()" style="font-size:12px;padding:7px 10px">
-          <option value="">— Selecione a Parcela —</option>
-        </select>
-      </div>
-      <div class="field" style="margin:0;min-width:160px">
-        <label style="font-size:11px;color:var(--text-dim)">Tipo (opcional)</label>
-        <select id="dash-acomp-tipo" onchange="renderDashAcomp()" style="font-size:12px;padding:7px 10px">
-          <option value="">Todos os Tipos</option>
-          <option value="CUSTEIO">Custeio</option>
-          <option value="CAPITAL">Capital</option>
-          <option value="ALEM_MUROS">Além dos Muros</option>
-          <option value="OBRAS">Obras</option>
-          <option value="CAPINA">Capina / Roçamento</option>
-        </select>
-      </div>
-      <button class="btn btn-ghost" style="font-size:12px;padding:7px 12px;margin-bottom:1px" onclick="limparDashAcomp()">✕ Limpar</button>
-    </div>
-
-    <!-- Resultado do acompanhamento -->
-    <div id="dash-acomp-resultado" style="margin-top:16px">
-      <div style="font-size:12px;color:var(--text-dim);text-align:center;padding:20px 0">Selecione um Termo e uma Parcela para acompanhar os gastos</div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('modal-acomp-parcela')">Fechar</button>
-      <button class="btn btn-primary" onclick="imprimirAba('dashboard',{tcId:document.getElementById('dash-acomp-tc')?.value||'',parcela:document.getElementById('dash-acomp-parcela')?.value||'',tipo:document.getElementById('dash-acomp-tipo')?.value||''})">🖨 Imprimir</button>
-    </div>
-  </div>
-</div>
-
 <div class="modal-overlay" id="modal-parcela-valores">
   <div class="modal" style="width:780px">
     <div class="modal-header">
@@ -10614,6 +10611,7 @@ function dashShowTab(id, el) {
   document.querySelectorAll('#dash-tabs .parcela-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   if (id === 'dash-panel-resumo') renderQuadroResumo();
+  if (id === 'dash-panel-acomp') populateDashAcompTCFilter();
 }
 
 // ── Populate filtro de TC do Quadro Resumo ──
