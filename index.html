@@ -13357,6 +13357,15 @@ function renderBtnComprobatorio(tcId, parcela, sit, stopProp) {
   if (!SITS_COM_COMPROBATORIO.includes(sit)) return '<span style="font-size:11px;color:var(--text-dim)">—</span>';
   const url = getComprobatorio(tcId, parcela);
   const sp  = stopProp ? 'event.stopPropagation();' : '';
+
+  // Perfil presidente: somente visualização — sem inserir/alterar link
+  if (state.role === 'presidente') {
+    if (url) {
+      return `<button class="btn-comprobatorio has-link" onclick="${sp}verComprobatorio('${tcId}','${parcela}',event)" title="Ver documento comprobatório">📄 Ver Comprobatório</button>`;
+    }
+    return '<span style="font-size:11px;color:var(--text-dim)">—</span>';
+  }
+
   if (url) {
     return `<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
       <button class="btn-comprobatorio has-link" onclick="${sp}verComprobatorio('${tcId}','${parcela}',event)" title="Ver documento comprobatório">📄 Ver Comprobatório</button>
