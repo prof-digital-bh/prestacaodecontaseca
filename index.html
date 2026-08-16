@@ -6079,6 +6079,7 @@ init();
           <div><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px">Já Gasto</div><div style="font-family:'DM Mono',monospace;font-size:14px;color:var(--accent-red)" id="saldo-tc-gasto">—</div></div>
           <div><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px">Saldo Disponível</div><div style="font-family:'DM Mono',monospace;font-size:14px;color:var(--accent2)" id="saldo-tc-disp">—</div></div>
         </div>
+        <div id="saldo-tc-vinculo-aviso" style="display:none;margin-top:8px;font-size:12px;color:var(--text-muted);background:rgba(246,166,35,0.08);border:1px solid rgba(246,166,35,0.3);border-radius:7px;padding:6px 10px"></div>
       </div>
 
       <div class="field">
@@ -6491,7 +6492,11 @@ function populateTCDropdown() {
     (state.tcs||[]).filter(a => a.tcPaiId === tc.id).forEach(adit => {
       const optA = document.createElement('option');
       optA.value = adit.id;
-      optA.textContent = `  └ Aditivo ${adit.numero} (TC ${tc.numero})`;
+      // Se este aditivo tem alguma parcela vinculada (complementada) a outro
+      // TC/Aditivo, sinaliza com 🔗 para ficar visível já na hora de lançar a despesa
+      const temVinculo = (state.parcelaValores||[]).some(v => String(v.tcId) === String(adit.id) && v.vinculoTcId)
+        || (state.parcelaValores||[]).some(v => String(v.vinculoTcId||'') === String(adit.id));
+      optA.textContent = `  └ Aditivo ${adit.numero} (TC ${tc.numero})${temVinculo ? ' 🔗 vinculado' : ''}`;
       sel.appendChild(optA);
     });
   });
@@ -6500,18 +6505,57 @@ function populateTCDropdown() {
   sel.onchange = function() { mostrarSaldoTC(this.value); };
 }
 
+// Retorna a lista de tcIds parceiros (vinculados) a um TC/Aditivo, considerando
+// TODAS as parcelas dele — ou seja, todo TC/Aditivo com o qual ele tenha algum
+// vínculo de complemento de valor em qualquer parcela.
+function getParceirosVinculados(tcId) {
+  const rows = state.parcelaValores || [];
+  const parceiros = new Set();
+  rows.forEach(v => {
+    if (String(v.tcId) === String(tcId) && v.vinculoTcId) parceiros.add(String(v.vinculoTcId));
+    if (String(v.vinculoTcId||'') === String(tcId)) parceiros.add(String(v.tcId));
+  });
+  return Array.from(parceiros);
+}
+
 function mostrarSaldoTC(tcId) {
   const el = document.getElementById('field-saldo-tc');
   if (!tcId) { el.style.display = 'none'; return; }
   const tc = (state.tcs||[]).find(t => String(t.id) === String(tcId));
   if (!tc) { el.style.display = 'none'; return; }
-  const valorTC = parseMoney(tc.valor);
-  const gasto = state.despesas.filter(d => String(d.tcVinculo) === String(tcId)).reduce((s,d) => s + parseMoney(d.valor), 0);
+
+  // Se este TC/Aditivo tem parceiro(s) vinculado(s) (em qualquer parcela), o
+  // valor total e o gasto somam os dois lados — clicar em qualquer um dos dois
+  // já traz o valor somado, para o lançamento nunca ultrapassar o total unido.
+  const parceiros = getParceirosVinculados(tcId);
+  const idsGrupo = [String(tcId), ...parceiros];
+
+  const valorTC = idsGrupo.reduce((s,id) => {
+    const t = (state.tcs||[]).find(x => String(x.id) === id);
+    return s + (t ? parseMoney(t.valor) : 0);
+  }, 0);
+  const gasto = state.despesas.filter(d => idsGrupo.includes(String(d.tcVinculo))).reduce((s,d) => s + parseMoney(d.valor), 0);
   const saldo = valorTC - gasto;
   document.getElementById('saldo-tc-total').textContent = fmtMoney(valorTC);
   document.getElementById('saldo-tc-gasto').textContent = fmtMoney(gasto);
   document.getElementById('saldo-tc-disp').textContent = fmtMoney(saldo);
   document.getElementById('saldo-tc-disp').style.color = saldo < 0 ? 'var(--accent-red)' : 'var(--accent2)';
+
+  // Aviso de vínculo, com os nomes dos parceiros somados
+  const avisoEl = document.getElementById('saldo-tc-vinculo-aviso');
+  if (avisoEl) {
+    if (parceiros.length) {
+      const nomes = parceiros.map(id => {
+        const t = (state.tcs||[]).find(x => String(x.id) === id);
+        return t ? `${t.ehAditivo?'Aditivo':'TC'} ${t.numero}` : '';
+      }).filter(Boolean).join(', ');
+      avisoEl.innerHTML = `🔗 Valor somado com: <strong style="color:var(--accent3)">${nomes}</strong>`;
+      avisoEl.style.display = '';
+    } else {
+      avisoEl.style.display = 'none';
+    }
+  }
+
   el.style.display = '';
   // Atualiza também o saldo da parcela se já estiver selecionada
   const parcelaEl = document.getElementById('d-parcela');
@@ -6543,12 +6587,15 @@ function mostrarSaldoParcela(tcId, parcela) {
   const saldoAnterior    = cr ? cr.saldoAnterior : 0;
   const valorDistrib     = cr ? cr.credito : 0;
 
-  // Já gasto nesta parcela+tipo+tcId
-  const gastoParc = (state.despesas||[])
-    .filter(d => String(d.tcVinculo) === String(tcId) && d.parcela === parcela && d.tipo === tipo)
-    .reduce((s,d) => s + parseMoney(d.valor), 0);
+  // Já gasto nesta parcela+tipo — somado com o parceiro vinculado, quando houver
+  // (as duas entradas formam uma bolsa única de dinheiro)
+  const gastoParc = getGastoCombinado(tcId, parcela, tipo);
 
   const saldoParc = valorDistrib - gastoParc;
+
+  // TC/Aditivo vinculado a esta parcela (se houver), para exibir no aviso
+  const parceiroIdParc = cr ? cr.parceiroId : getVinculoParceiro(tcId, parcela);
+  const parceiroTcParc = parceiroIdParc ? (state.tcs||[]).find(t => String(t.id) === parceiroIdParc) : null;
 
   // Labels dos tipos
   const tipoLabels = { CUSTEIO:'Custeio', CAPITAL:'Capital', ALEM_MUROS:'Além Muros', OBRAS:'Obras', CAPINA:'Capina' };
@@ -6569,9 +6616,7 @@ function mostrarSaldoParcela(tcId, parcela) {
     const vDist  = crCat ? crCat.credito : vDistBase;
     const vRend  = crCat ? crCat.rendimentos : 0;
     const vAnt   = crCat ? crCat.saldoAnterior : 0;
-    const vGasto = (state.despesas||[])
-      .filter(d => String(d.tcVinculo)===String(tcId) && d.parcela===parcela && d.tipo===c.key)
-      .reduce((s,d)=>s+parseMoney(d.valor),0);
+    const vGasto = getGastoCombinado(tcId, parcela, c.key);
     const vSaldo = vDist - vGasto;
     const ativo = c.key === tipo;
     const extras = [];
@@ -6590,6 +6635,11 @@ function mostrarSaldoParcela(tcId, parcela) {
       <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.7px;color:var(--accent3);font-weight:700;margin-bottom:8px">
         📦 ${parNomes[parcela]||('Parcela '+parcela)} — Saldo por Categoria
       </div>
+      ${parceiroTcParc ? `
+      <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;background:rgba(246,166,35,0.08);border:1px solid rgba(246,166,35,0.3);font-size:12px;color:var(--text-muted)">
+        <span style="font-size:13px">🔗</span>
+        <span>Parcela <strong>vinculada</strong> ao <strong>${parceiroTcParc.ehAditivo?'Aditivo':'TC'} ${parceiroTcParc.numero}</strong> — os valores das duas entradas foram <strong style="color:var(--accent3)">unidos</strong> para compor o crédito e o saldo desta parcela.</span>
+      </div>` : ''}
       ${cats.length > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:6px">${resumoCats}</div>` :
         `<div style="font-size:12px;color:var(--text-dim)">Nenhum valor distribuído para esta parcela.</div>`}
       ${rendimentosParc > 0 ? `
@@ -6700,14 +6750,21 @@ async function salvarDespesa() {
       }
     }
   }
-  // Validar saldo da parcela por tipo
+  // Validar saldo da parcela por tipo — se esta parcela estiver VINCULADA a outro
+  // TC/Aditivo (mesmo nº de parcela), o valor das duas entradas é somado e o
+  // já-gasto de ambas conta contra o mesmo saldo, pois foram unidas.
   const pvCheck = (state.parcelaValores||[]).find(r => String(r.tcId)===String(d.tcVinculo) && r.parcela===d.parcela);
   if (pvCheck) {
     const tipoMap = { CUSTEIO:'custeio', CAPITAL:'capital', ALEM_MUROS:'alem', OBRAS:'obras', CAPINA:'capina' };
     const campo = tipoMap[d.tipo];
     if (campo) {
-      const valorDist = parseMoney(pvCheck[campo]||'0,00');
-      const jaGasto = (state.despesas||[]).filter(x => String(x.tcVinculo)===String(d.tcVinculo) && x.parcela===d.parcela && x.tipo===d.tipo).reduce((s,x)=>s+parseMoney(x.valor),0);
+      let valorDist = parseMoney(pvCheck[campo]||'0,00');
+      const parceiroIdCheck = getVinculoParceiro(d.tcVinculo, d.parcela);
+      if (parceiroIdCheck) {
+        const pvParceiroCheck = (state.parcelaValores||[]).find(r => String(r.tcId)===parceiroIdCheck && r.parcela===d.parcela);
+        if (pvParceiroCheck) valorDist += parseMoney(pvParceiroCheck[campo]||'0,00');
+      }
+      const jaGasto = getGastoCombinado(d.tcVinculo, d.parcela, d.tipo);
       const saldoDisp = valorDist - jaGasto;
       const valorLancar = parseMoney(d.valor);
       if (valorDist > 0 && valorLancar > saldoDisp) {
@@ -12808,6 +12865,30 @@ const PARCELA_ORDER = ['01','02','03','04','05','U'];
  *
  * Retorna { credito, base, rendimentos, saldoAnterior } ou null se sem pvRow.
  */
+// Retorna o tcId do TC/Aditivo vinculado (parceiro) a este tcId+parcela, se houver.
+// Segue o MESMO vínculo explícito indicado na coluna "Vínculo (complementa)" da
+// Distribuição de Valores por Parcela — funciona nos dois sentidos (quem aponta
+// o vínculo e quem é apontado).
+function getVinculoParceiro(tcId, parcela) {
+  const rows = state.parcelaValores || [];
+  const meuRow = rows.find(v => String(v.tcId) === String(tcId) && v.parcela === parcela);
+  if (meuRow && meuRow.vinculoTcId) return String(meuRow.vinculoTcId);
+  const outro = rows.find(v => v.parcela === parcela && String(v.vinculoTcId||'') === String(tcId));
+  if (outro) return String(outro.tcId);
+  return null;
+}
+
+// Soma o já gasto (despesas lançadas) de um tcId+parcela+tipo JUNTO com o do
+// parceiro vinculado (quando houver), já que os dois formam uma única bolsa de
+// dinheiro para fins de saldo disponível.
+function getGastoCombinado(tcId, parcela, tipo) {
+  const parceiroId = getVinculoParceiro(tcId, parcela);
+  const ids = parceiroId ? [String(tcId), parceiroId] : [String(tcId)];
+  return (state.despesas||[])
+    .filter(d => ids.includes(String(d.tcVinculo)) && d.parcela === parcela && d.tipo === tipo)
+    .reduce((s,d) => s + parseMoney(d.valor), 0);
+}
+
 function getCreditoReal(tcId, parcela, tipo) {
   const tipoMap = { CUSTEIO:'custeio', CAPITAL:'capital', ALEM_MUROS:'alem', OBRAS:'obras', CAPINA:'capina' };
   const campo = tipoMap[tipo];
@@ -12817,11 +12898,24 @@ function getCreditoReal(tcId, parcela, tipo) {
   if (!pvRow) return null;
 
   // 1. Base distribuída para este tipo nesta parcela
-  const base = parseMoney(pvRow[campo]||'0,00');
+  let base = parseMoney(pvRow[campo]||'0,00');
 
   // 2. Rendimentos: SOMENTE para CUSTEIO, SOMENTE na parcela onde foram inseridos
   //    Capital, Além Muros, Obras e Capina NÃO recebem rendimentos
-  const rendimentos = (tipo === 'CUSTEIO') ? parseMoney(pvRow.rendimentos||'0,00') : 0;
+  let rendimentos = (tipo === 'CUSTEIO') ? parseMoney(pvRow.rendimentos||'0,00') : 0;
+
+  // 2b. Se esta parcela está VINCULADA a outro TC/Aditivo (mesmo nº de parcela,
+  //     apontado na coluna "Vínculo (complementa)"), o valor do parceiro entra
+  //     somado — as duas entradas foram unidas para compor o crédito real desta
+  //     parcela, e é esse valor unido que deve valer no lançamento de despesa.
+  const parceiroId = getVinculoParceiro(tcId, parcela);
+  if (parceiroId) {
+    const pvParceiro = (state.parcelaValores||[]).find(v => String(v.tcId) === parceiroId && v.parcela === parcela);
+    if (pvParceiro) {
+      base += parseMoney(pvParceiro[campo]||'0,00');
+      if (tipo === 'CUSTEIO') rendimentos += parseMoney(pvParceiro.rendimentos||'0,00');
+    }
+  }
 
   // 3. Carry-over de saldo: EXCLUSIVO para CUSTEIO, MESMO tcId, parcelas anteriores
   //    Não cruza entre TC pai e aditivo — cada um é isolado pelo seu tcId
@@ -12852,7 +12946,7 @@ function getCreditoReal(tcId, parcela, tipo) {
   }
 
   const credito = base + rendimentos + saldoAnterior;
-  return { credito, base, rendimentos, saldoAnterior };
+  return { credito, base, rendimentos, saldoAnterior, parceiroId };
 }
 
 /**
