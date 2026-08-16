@@ -9276,24 +9276,45 @@ function imprimirAba(nomeAba, filtros) {
           }
         });
       }
+      function _fitOnePage() {
+        var page = document.querySelector('#print-page.fit-one-page');
+        if (!page) return;
+        page.style.zoom = 1;
+        var orientEl = document.getElementById('_pageOrient');
+        var landscape = orientEl && /landscape/.test(orientEl.textContent);
+        var mm = 3.7795275591;
+        var pageWmm = landscape ? 297 : 210;
+        var pageHmm = landscape ? 210 : 297;
+        var availW = (pageWmm - 28) * mm;
+        var availH = (pageHmm - 32) * mm;
+        var contentW = page.scrollWidth;
+        var contentH = page.scrollHeight;
+        if (!contentW || !contentH) return;
+        var scale = Math.min(1, availW / contentW, availH / contentH);
+        if (scale < 1) page.style.zoom = scale;
+      }
       function _imprimirOrientado(orient) {
         var st = document.getElementById('_pageOrient');
         if (!st) { st = document.createElement('style'); st.id = '_pageOrient'; document.head.appendChild(st); }
         st.textContent = '@page { size: A4 ' + orient + '; margin: 16mm 14mm; }';
         document.querySelectorAll('table').forEach(function(t){ t.style.fontSize = ''; });
-        setTimeout(function(){ _ajustarTabelas(); window.print(); }, 30);
+        var page = document.querySelector('#print-page.fit-one-page');
+        if (page) page.style.zoom = 1;
+        setTimeout(function(){ _ajustarTabelas(); _fitOnePage(); window.print(); }, 30);
       }
-      if (document.readyState === 'complete') { _ajustarTabelas(); }
-      else { window.addEventListener('load', _ajustarTabelas); }
-      window.addEventListener('beforeprint', _ajustarTabelas);
+      if (document.readyState === 'complete') { _ajustarTabelas(); _fitOnePage(); }
+      else { window.addEventListener('load', function(){ _ajustarTabelas(); _fitOnePage(); }); }
+      window.addEventListener('beforeprint', function(){ _ajustarTabelas(); _fitOnePage(); });
     <\/script>`;
 
   const wrapDoc = (titulo, subtitulo, corpo) => `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
     <title>${titulo} — ${escola}</title>
     <style>${CSS}</style></head><body>
+    <div id="print-page"${nomeAba === 'dashboard' ? ' class="fit-one-page"' : ''}>
     ${docHeader(titulo, subtitulo)}
     ${corpo}
     ${docFooter}
+    </div>
     ${docBotoes}
     ${autoFitScript}
     </body></html>`;
