@@ -13178,10 +13178,11 @@ function aplicarPerfil() {
 // ── HELPERS DE CIÊNCIA ─────────────────────────────────────────────────────
 
 function _ativarColunaCiencia() {
-  // Mostra o <th> e todas as células td-ciencia
+  // Mostra o <th> e as células td-ciencia apenas se houver despesa pendente de ciência
+  const temPendente = (state.despesas || []).some(d => !d.ciencia);
   const th = document.getElementById('th-ciencia');
-  if (th) th.style.display = '';
-  document.querySelectorAll('.td-ciencia').forEach(td => td.style.display = '');
+  if (th) th.style.display = temPendente ? '' : 'none';
+  document.querySelectorAll('.td-ciencia').forEach(td => td.style.display = temPendente ? '' : 'none');
 }
 
 function renderCienciaCelula(d) {
@@ -13248,20 +13249,23 @@ function _atualizarBadgeCiencia() {
 
 function _patchRenderDespesasPresidente() {
   // Esconde a coluna "Ações" inteira (cabeçalho + células) para o presidente
-  const _origRender = window.renderDespesas;
-  window.renderDespesas = function() {
-    _origRender();
+  const _esconderAcoes = function() {
     const th = document.getElementById('th-acoes-despesas');
     if (th) th.style.display = 'none';
     document.querySelectorAll('#despesas-tbody tr').forEach(tr => {
       const lastTd = tr.children[tr.children.length - 1];
       if (lastTd && lastTd !== tr.querySelector('.td-ciencia')) lastTd.style.display = 'none';
     });
+  };
+  const _origRender = window.renderDespesas;
+  window.renderDespesas = function() {
+    _origRender();
+    _esconderAcoes();
     // Reativar coluna ciência que o re-render reseta
     _ativarColunaCiencia();
   };
-  const th = document.getElementById('th-acoes-despesas');
-  if (th) th.style.display = 'none';
+  // Corrige o que já foi renderizado antes deste patch ser aplicado
+  _esconderAcoes();
 }
 
 function _patchChecklistReadOnly() {
