@@ -5782,8 +5782,8 @@ init();
               <th style="min-width:180px">Situação da Prestação</th>
               <th style="min-width:110px">Mês/Ano Início</th>
               <th style="min-width:120px">Data do Crédito</th>
-              <th style="min-width:120px">Data Limite</th>
               <th style="min-width:120px">Término da Execução</th>
+              <th style="min-width:120px">Data Limite</th>
               <th></th>
             </tr>
           </thead>
@@ -6823,6 +6823,17 @@ async function salvarDespesa() {
         if (nfDate > limite) {
           alert(`⛔ Data da NF (${nfDate.toLocaleDateString('pt-BR')}) é posterior à data limite da parcela (${limite.toLocaleDateString('pt-BR')}).\n\nNão é permitido lançar despesas após o prazo desta parcela.`);
           return;
+        }
+      }
+      // Aviso (não bloqueante): gasto lançado após o Término da Execução, mas ainda
+      // dentro da Data Limite — dentro do prazo de prestação, porém fora do prazo
+      // de execução, o que pode sujeitar a Caixa Escolar a sanções.
+      if (pvPeriodo.dataTermino) {
+        const termino = new Date(pvPeriodo.dataTermino + 'T00:00:00');
+        if (nfDate > termino) {
+          const terminoFmt = termino.toLocaleDateString('pt-BR');
+          const limiteFmt = pvPeriodo.dataLimite ? new Date(pvPeriodo.dataLimite + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+          if (!confirm(`⚠ ATENÇÃO: Despesa lançada após o Término da Execução (${terminoFmt}).\n\nEmbora a data ainda esteja dentro do prazo de prestação de contas (até ${limiteFmt}), o gasto deveria ter ocorrido até o Término da Execução. Lançamentos fora desse período podem sujeitar a Caixa Escolar a sanções.\n\nDeseja continuar mesmo assim?`)) return;
         }
       }
     }
@@ -12794,33 +12805,28 @@ function abrirModalParcelaValores(tcId) {
   openModal('modal-parcela-valores');
 }
 
-// Calcula data limite = mês/ano de início + 1 mês (30 dias de prazo para prestação)
-function calcLimitePV(mesAno) {
-  if (!mesAno) return '<span style="color:var(--text-dim)">—</span>';
+// Calcula a Data Limite = último dia do mês subsequente ao mês do Término da Execução.
+// Ex.: término em 15/03/2026 → data limite = 30/04/2026 (último dia de abril).
+function calcDataLimiteFromTermino(dataTerminoISO) {
+  if (!dataTerminoISO) return '';
   try {
-    const [ano, mes] = mesAno.split('-').map(Number);
-    // Data de término = fim do mês de início
-    const fimMes = new Date(ano, mes, 0); // último dia do mês
-    // Data limite = término + 30 dias
-    const limite = new Date(fimMes);
-    limite.setDate(limite.getDate() + 30);
-    const dd = String(limite.getDate()).padStart(2,'0');
-    const mm = String(limite.getMonth()+1).padStart(2,'0');
-    const yyyy = limite.getFullYear();
-    // Alerta visual se próxima
-    const hoje = new Date(); hoje.setHours(0,0,0,0);
-    const diff = Math.round((limite - hoje)/(1000*60*60*24));
-    let color = 'var(--accent3)';
-    if (diff < 0) color = 'var(--accent-red)';
-    else if (diff <= 15) color = 'var(--accent-red)';
-    else if (diff <= 30) color = '#f9c96a';
-    return `<span style="color:${color}">${dd}/${mm}/${yyyy}</span>`;
-  } catch(e) { return '<span style="color:var(--text-dim)">—</span>'; }
+    const d = new Date(dataTerminoISO + 'T00:00:00');
+    const ultimoDiaMesSubsequente = new Date(d.getFullYear(), d.getMonth() + 2, 0);
+    const yyyy = ultimoDiaMesSubsequente.getFullYear();
+    const mm = String(ultimoDiaMesSubsequente.getMonth() + 1).padStart(2, '0');
+    const dd = String(ultimoDiaMesSubsequente.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  } catch (e) { return ''; }
 }
 
-function atualizarDataLimitePV(i) {
-  const cell = document.getElementById(`pv-limite-${i}`);
-  if (cell) cell.innerHTML = calcLimitePV(_pvRows[i].mesAnoInicio);
+// Ao alterar o Término da Execução, recalcula automaticamente a Data Limite.
+function autoCalcDataLimitePV(i) {
+  const termino = _pvRows[i].dataTermino;
+  const calc = calcDataLimiteFromTermino(termino);
+  if (calc) {
+    _pvRows[i].dataLimite = calc;
+    renderPVTable();
+  }
 }
 
 // Opções de vínculo: qualquer TC/Aditivo do sistema (fora dele mesmo) — o vínculo
@@ -12884,10 +12890,10 @@ function renderPVTable() {
         <input type="date" value="${r.dataCredito||''}" oninput="_pvRows[${i}].dataCredito=this.value" title="Data do crédito na conta da escola" style="background:var(--surface3);border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-size:12px;color:var(--accent2);width:130px">
       </td>
       <td>
-        <input type="date" value="${r.dataLimite||''}" oninput="_pvRows[${i}].dataLimite=this.value" title="Último dia para gastar o valor desta parcela" style="background:var(--surface3);border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-size:12px;color:var(--accent-red);width:130px">
+        <input type="date" value="${r.dataTermino||''}" oninput="_pvRows[${i}].dataTermino=this.value" onchange="autoCalcDataLimitePV(${i})" title="Data de término da execução da parcela (a Data Limite é recalculada automaticamente)" style="background:var(--surface3);border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-size:12px;color:var(--text-muted);width:130px">
       </td>
       <td>
-        <input type="date" value="${r.dataTermino||''}" oninput="_pvRows[${i}].dataTermino=this.value" title="Data de término da execução da parcela" style="background:var(--surface3);border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-size:12px;color:var(--text-muted);width:130px">
+        <input type="date" value="${r.dataLimite||''}" oninput="_pvRows[${i}].dataLimite=this.value" title="Último dia para gastar o valor desta parcela — calculado automaticamente a partir do Término da Execução (último dia do mês seguinte), mas pode ser ajustado manualmente" style="background:var(--surface3);border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-size:12px;color:var(--accent-red);width:130px">
       </td>
       <td><button class="action-btn del" onclick="removerLinhaPV(${i})" title="Remover linha">✕</button></td>
     </tr>
