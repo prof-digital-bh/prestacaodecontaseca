@@ -1868,7 +1868,21 @@
                   <option value="">Todos os TCs / Aditivos</option>
                 </select>
               </div>
-              <button class="btn btn-secondary" style="font-size:11px;padding:6px 12px" onclick="imprimirAba('dashboard',{modo:'resumo',tcId:document.getElementById('dash-resumo-tc')?.value||''})">🖨 Imprimir</button>
+              <div class="field" style="margin:0;min-width:190px">
+                <select id="dash-resumo-sit" onchange="renderQuadroResumo()" style="font-size:12px;padding:6px 10px">
+                  <option value="">Todas as situações</option>
+                  <option value="sem">— Sem situação —</option>
+                  <option value="nao_creditada">🟠 Não creditada</option>
+                  <option value="montagem">🗂️ Montagem em andamento</option>
+                  <option value="gasto_andamento">💸 Gasto em andamento</option>
+                  <option value="analise">🔍 Em Análise</option>
+                  <option value="aprovada">✅ Aprovada</option>
+                  <option value="ajuste">✏️ Em Ajuste</option>
+                  <option value="ressalvas">⚠️ Aprovada com Ressalvas</option>
+                  <option value="reprovada">❌ Reprovada</option>
+                </select>
+              </div>
+              <button class="btn btn-secondary" style="font-size:11px;padding:6px 12px" onclick="imprimirAba('dashboard',{modo:'resumo',tcId:document.getElementById('dash-resumo-tc')?.value||'',sit:document.getElementById('dash-resumo-sit')?.value||''})">🖨 Imprimir</button>
             </div>
           </div>
           <div style="font-size:12px;color:var(--text-dim);padding:0 20px 12px">Todas as parcelas de todos os Termos/Aditivos, ordenadas das mais atuais para as mais antigas.</div>
@@ -9332,6 +9346,7 @@ function imprimirAba(nomeAba, filtros) {
     const filtroTcId    = filtros.tcId    || '';
     const filtroParcela = filtros.parcela || '';
     const filtroTipo    = filtros.tipo    || '';
+    const filtroSitR    = filtros.sit     || '';
     const modo          = filtros.modo    || '';
 
     // ── Modo Quadro Resumo: tabela de todas as parcelas ──
@@ -9351,6 +9366,12 @@ function imprimirAba(nomeAba, filtros) {
       }).filter(Boolean);
 
       if (filtroTcId) linhas = linhas.filter(l => String(l.tc.id) === String(filtroTcId));
+      if (filtroSitR) {
+        linhas = linhas.filter(l => {
+          const sitV = (typeof getSituacao==='function') ? getSituacao(l.tc.id, l.pv.parcela) : '';
+          return filtroSitR === 'sem' ? !sitV : sitV === filtroSitR;
+        });
+      }
 
       linhas.sort((a, b) => {
         if (a.pv.mesAnoInicio && b.pv.mesAnoInicio) return b.pv.mesAnoInicio.localeCompare(a.pv.mesAnoInicio);
@@ -9371,25 +9392,19 @@ function imprimirAba(nomeAba, filtros) {
           .filter(d => String(d.tcVinculo) === String(tcId) && d.parcela === parcela)
           .reduce((s,d) => s + _pm(d.valor), 0);
         const sit = (typeof getSituacao==='function') ? getSituacao(tcId, parcela) : '';
-        const comprobUrl = (typeof getComprobatorio==='function') ? getComprobatorio(String(tcId), parcela) : '';
-        const SITS_COM_COMPROBATORIO = ['aprovada', 'ajuste'];
-        const comprobHtml = !SITS_COM_COMPROBATORIO.includes(sit)
-          ? '—'
-          : (comprobUrl ? '<span class="badge badge-green">Anexado</span>' : '<span class="badge badge-orange">Pendente</span>');
         return `<tr>
           <td class="bold">${tcLabel}</td>
-          <td>${parNomes[parcela]||parcela}${pv.mesAnoInicio?`<div class="muted" style="font-size:10px">${pv.mesAnoInicio.split('-').reverse().join('/')}</div>`:''}</td>
-          <td style="font-size:10.5px">${distribuicao}</td>
+          <td>${parNomes[parcela]||parcela}${pv.mesAnoInicio?`<div class="muted" style="font-size:11px">${pv.mesAnoInicio.split('-').reverse().join('/')}</div>`:''}</td>
+          <td style="font-size:12.5px">${distribuicao}</td>
           <td class="right mono">${totalPrevisto>0?_fmt(totalPrevisto):'—'} / ${_fmt(totalGasto)}</td>
           <td>${sit ? `<span class="badge badge-blue">${sitLabelsR[sit]||sit}</span>` : '—'}</td>
-          <td>${comprobHtml}</td>
         </tr>`;
-      }).join('') : `<tr><td colspan="6" class="no-data">Nenhuma parcela cadastrada</td></tr>`;
+      }).join('') : `<tr><td colspan="5" class="no-data">Nenhuma parcela cadastrada</td></tr>`;
 
       const corpo = `
         <h2>Quadro Resumo — Parcelas</h2>
-        <table>
-          <thead><tr><th>TC / Adit.</th><th>Parcela</th><th>Distribuição por Tipo</th><th class="right">Valor / Utilização</th><th>Situação</th><th>Comprobatório</th></tr></thead>
+        <table style="font-size:13px">
+          <thead><tr><th>TC / Adit.</th><th>Parcela</th><th>Distribuição por Tipo</th><th class="right">Valor / Utilização</th><th>Situação</th></tr></thead>
           <tbody>${linhasHtml}</tbody>
         </table>`;
       const subt = filtroTcId ? _tcLabel(filtroTcId) : 'Todos os TCs / Aditivos';
@@ -10721,7 +10736,8 @@ function renderQuadroResumo() {
   const tbody = document.getElementById('dash-resumo-tbody');
   if (!tbody) return;
 
-  const filtroTC = document.getElementById('dash-resumo-tc')?.value || '';
+  const filtroTC  = document.getElementById('dash-resumo-tc')?.value || '';
+  const filtroSit = document.getElementById('dash-resumo-sit')?.value || '';
   const parNomes = {'01':'1ª Parcela','02':'2ª Parcela','03':'3ª Parcela','04':'4ª Parcela','05':'5ª Parcela','U':'Parcela Única'};
   const tipoKey  = { CUSTEIO:'custeio', CAPITAL:'capital', ALEM_MUROS:'alem', OBRAS:'obras', CAPINA:'capina' };
   const TIPOS = ['CUSTEIO','CAPITAL','ALEM_MUROS','OBRAS','CAPINA'];
@@ -10734,6 +10750,12 @@ function renderQuadroResumo() {
   }).filter(Boolean);
 
   if (filtroTC) linhas = linhas.filter(l => String(l.tc.id) === String(filtroTC));
+  if (filtroSit) {
+    linhas = linhas.filter(l => {
+      const sit = getSituacao(l.tc.id, l.pv.parcela);
+      return filtroSit === 'sem' ? !sit : sit === filtroSit;
+    });
+  }
 
   // Ordena das parcelas mais atuais para as mais antigas:
   // 1º critério: mês/ano de início da parcela (YYYY-MM, ordena bem como string)
@@ -10747,7 +10769,8 @@ function renderQuadroResumo() {
   });
 
   if (!linhas.length) {
-    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:20px"><div class="empty-sub">Nenhuma parcela cadastrada</div></div></td></tr>';
+    const msgVazio = (filtroTC || filtroSit) ? 'Nenhuma parcela encontrada para o filtro selecionado' : 'Nenhuma parcela cadastrada';
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state" style="padding:20px"><div class="empty-sub">${msgVazio}</div></div></td></tr>`;
     return;
   }
 
