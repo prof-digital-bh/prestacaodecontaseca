@@ -7497,8 +7497,8 @@ function reconstruirParcelaTabs() {
     if (tcId) {
       const tcObj = (state.tcs||[]).find(t => String(t.id) === String(tcId));
       if (tcObj) {
-        const prefixo = tcObj.tcPaiId ? `Adit. ${tcObj.numero}` : `TC ${tcObj.numero}`;
-        label = prefixo + ' · ' + label;
+        const sufixo = tcObj.tcPaiId ? `Adit. ${tcObj.numero}` : `TC ${tcObj.numero}`;
+        label = label + ' · ' + sufixo;
       }
     }
     const tiposPresentes = [...new Set(
@@ -7602,7 +7602,7 @@ function renderDespesas() {
   const list = [...listRaw].sort((a, b) => {
     const da = a.nfData ? new Date(a.nfData) : new Date(0);
     const db = b.nfData ? new Date(b.nfData) : new Date(0);
-    return da - db;
+    return db - da; // mais recente primeiro
   });
 
   const expandBar  = document.getElementById('desp-expand-bar');
@@ -7619,7 +7619,7 @@ function renderDespesas() {
   }
 
   // Decide quais linhas mostrar
-  const displayList = (!isExpanded && list.length > PREVIEW) ? list.slice(-PREVIEW) : list;
+  const displayList = (!isExpanded && list.length > PREVIEW) ? list.slice(0, PREVIEW) : list;
   const hidden = list.length - displayList.length;
 
   let total = 0;
@@ -13069,9 +13069,9 @@ function aplicarPerfil() {
       if (!visibleItems.length) nav.style.display = 'none';
     });
 
-    // Desabilitar apenas botões de escrita que NÃO sejam o lançamento de nova despesa
-    // (presidente pode lançar novas despesas, mas não editar/remover nem outras ações administrativas)
-    const btnTextsProibidos = ['Novo Fornecedor', 'Exportar CSV'];
+    // Desabilitar todos os botões de escrita para o presidente
+    // (presidente não pode lançar, editar nem remover despesas, nem outras ações administrativas)
+    const btnTextsProibidos = ['Novo Fornecedor', 'Exportar CSV', 'Lançar Despesa', '+ Despesa'];
     document.querySelectorAll('button').forEach(btn => {
       const txt = btn.textContent.trim();
       if (btnTextsProibidos.some(p => txt.includes(p))) {
