@@ -2212,6 +2212,8 @@
               <option value="">Todas as categorias</option>
               <option value="RECEITA_FME">Receita — Fundo Municipal de Educação</option>
               <option value="CUSTEIO">Custeio</option>
+              <option value="CUSTEIO_GEA">Custeio / GEA</option>
+              <option value="CUSTEIO_MANUTENCAO">Custeio / Manutenção</option>
               <option value="CAPITAL">Capital / Investimento</option>
               <option value="RENDIMENTO">Rendimento Financeiro</option>
               <option value="PREFEITURA">Pagamento à Prefeitura</option>
@@ -14568,11 +14570,13 @@ let cefLoaded = false;
 
 const CEF_CAT_LABEL = {
   RECEITA_FME: 'Receita FME', CUSTEIO: 'Custeio', CAPITAL: 'Capital / Investimento',
+  CUSTEIO_GEA: 'Custeio / GEA', CUSTEIO_MANUTENCAO: 'Custeio / Manutenção',
   RENDIMENTO: 'Rendimento Financeiro',
   PREFEITURA: 'Pagto. Prefeitura', TAXA: 'Tarifa bancária', ESTORNO: 'Estorno', OUTROS: 'Outros'
 };
 const CEF_CAT_BADGE = {
   RECEITA_FME: 'badge-green', CUSTEIO: 'badge-blue', CAPITAL: 'tipo-CAPITAL',
+  CUSTEIO_GEA: 'badge-blue', CUSTEIO_MANUTENCAO: 'badge-blue',
   RENDIMENTO: 'chip-extrato',
   PREFEITURA: 'badge-purple', TAXA: 'badge-orange', ESTORNO: 'badge-orange', OUTROS: 'badge-gray'
 };
@@ -16020,6 +16024,8 @@ function pgMostrarToast(msg) {
         <select id="cl-categoria" style="width:100%">
           <option value="RECEITA_FME">Receita — Fundo Municipal de Educação</option>
           <option value="CUSTEIO">Custeio</option>
+          <option value="CUSTEIO_GEA">Custeio / GEA</option>
+          <option value="CUSTEIO_MANUTENCAO">Custeio / Manutenção</option>
           <option value="CAPITAL">Capital / Investimento</option>
           <option value="RENDIMENTO">Rendimento Financeiro</option>
           <option value="PREFEITURA">Pagamento à Prefeitura</option>
