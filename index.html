@@ -1219,6 +1219,75 @@
   .parcela-dist-table input[type=text]:focus { border-color:var(--accent); outline:none; }
   .parcela-dist-table select { background:var(--surface3); border:1px solid var(--border); border-radius:5px; padding:4px 7px; font-size:11px; color:var(--text); width:100%; }
 
+  /* ===== MODAL: DISTRIBUIÇÃO DE VALORES POR PARCELA — layout maior, cabeçalho fixo, coluna fixa ===== */
+  #modal-parcela-valores .modal {
+    width: 1180px;
+    max-width: 96vw;
+    max-height: 88vh;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #modal-parcela-valores .modal-header {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+    padding: 24px 28px 16px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  #modal-parcela-valores .modal-body-scroll {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px 28px 4px 28px;
+  }
+  #modal-parcela-valores .modal-footer {
+    flex: 0 0 auto;
+    margin-top: 0;
+    padding: 14px 28px 22px 28px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+  /* área da tabela: rolagem própria nos dois eixos, com cabeçalho e 1ª coluna fixos */
+  #modal-parcela-valores .pv-table-scroll {
+    overflow: auto;
+    max-height: 46vh;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-light) var(--surface2);
+  }
+  #modal-parcela-valores .pv-table-scroll::-webkit-scrollbar { width:10px; height:10px; }
+  #modal-parcela-valores .pv-table-scroll::-webkit-scrollbar-track { background: var(--surface2); }
+  #modal-parcela-valores .pv-table-scroll::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 6px; }
+  #modal-parcela-valores .pv-table-scroll::-webkit-scrollbar-corner { background: var(--surface2); }
+  #modal-parcela-valores .parcela-dist-table { margin-top: 0; }
+  #modal-parcela-valores .parcela-dist-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
+  #modal-parcela-valores .parcela-dist-table th:first-child,
+  #modal-parcela-valores .parcela-dist-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--surface3);
+    box-shadow: 2px 0 4px rgba(0,0,0,0.25);
+  }
+  #modal-parcela-valores .parcela-dist-table td:first-child {
+    background: var(--surface);
+    z-index: 1;
+  }
+  #modal-parcela-valores .parcela-dist-table thead th:first-child {
+    z-index: 4;
+  }
+  @media (max-width: 768px) {
+    #modal-parcela-valores .parcela-dist-table th:first-child,
+    #modal-parcela-valores .parcela-dist-table td:first-child { position: static; box-shadow: none; }
+  }
+
   /* PARCELAS COLAPSÁVEIS */
   .parcelas-toggle-btn {
     display: inline-flex;
@@ -1365,6 +1434,11 @@
     .modal { padding: 18px 16px; max-height: 92vh; }
     .modal-overlay.open { align-items: flex-end; }
     .modal { border-radius: 16px 16px 0 0; width: 100% !important; max-width: 100% !important; }
+    #modal-parcela-valores .modal { padding: 0; max-height: 92vh; }
+    #modal-parcela-valores .modal-header { padding: 18px 16px 14px 16px; }
+    #modal-parcela-valores .modal-body-scroll { padding: 14px 16px 4px 16px; }
+    #modal-parcela-valores .modal-footer { padding: 12px 16px 18px 16px; }
+    #modal-parcela-valores .pv-table-scroll { max-height: 42vh; }
     .alerta-card { gap: 10px; padding: 12px 14px; }
     /* Dashboard: cards empilhados no mobile */
     #section-dashboard .card { padding: 16px; }
@@ -5676,49 +5750,52 @@ init();
 
 <!-- MODAL: DISTRIBUIÇÃO DE VALORES POR PARCELA -->
 <div class="modal-overlay" id="modal-parcela-valores">
-  <div class="modal" style="width:780px">
+  <div class="modal">
     <div class="modal-header">
       <div class="modal-title">📊 Distribuição de Valores por Parcela</div>
       <button class="modal-close" onclick="closeModal('modal-parcela-valores')">×</button>
     </div>
-    <div class="alert alert-info" style="margin-bottom:16px"><span>ℹ</span><span>Registre o valor disponível em cada parcela e categoria para que o dashboard calcule os saldos corretamente. Sem isso, o saldo exibido será sempre o valor total do TC.</span></div>
-    <div class="alert alert-info" style="margin-bottom:16px;border-color:rgba(246,166,35,.3);background:rgba(246,166,35,.06)"><span>🔗</span><span>Se o valor de uma parcela foi complementado com dinheiro de <strong>outro TC ou Aditivo</strong> (mesmo número de parcela), use a coluna <strong>Vínculo</strong> para apontar de onde veio o complemento. As duas entradas aparecerão juntas no Quadro Resumo, com a origem de cada valor indicada.</span></div>
-    <input type="hidden" id="pv-tc-id">
-    <div id="pv-tc-label" style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:14px"></div>
 
-    <!-- Resumo de valores do TC e aditivos -->
-    <div id="pv-resumo-tcs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px"></div>
+    <div class="modal-body-scroll">
+      <div class="alert alert-info" style="margin-bottom:16px"><span>ℹ</span><span>Registre o valor disponível em cada parcela e categoria para que o dashboard calcule os saldos corretamente. Sem isso, o saldo exibido será sempre o valor total do TC.</span></div>
+      <div class="alert alert-info" style="margin-bottom:16px;border-color:rgba(246,166,35,.3);background:rgba(246,166,35,.06)"><span>🔗</span><span>Se o valor de uma parcela foi complementado com dinheiro de <strong>outro TC ou Aditivo</strong> (mesmo número de parcela), use a coluna <strong>Vínculo</strong> para apontar de onde veio o complemento. As duas entradas aparecerão juntas no Quadro Resumo, com a origem de cada valor indicada.</span></div>
+      <input type="hidden" id="pv-tc-id">
+      <div id="pv-tc-label" style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:14px"></div>
 
-    <!-- Tabela de distribuição -->
-    <div style="overflow-x:auto">
-      <table class="parcela-dist-table" id="pv-table">
-        <thead>
-          <tr>
-            <th style="min-width:160px">Pertence a</th>
-            <th style="min-width:170px;color:var(--accent3)">Vínculo (complementa)</th>
-            <th style="min-width:100px">Parcela</th>
-            <th>Custeio (R$)</th>
-            <th>Capital (R$)</th>
-            <th>Além Muros (R$)</th>
-            <th>Obras (R$)</th>
-            <th>Capina (R$)</th>
-            <th style="color:var(--accent2)">Rendimentos (R$)</th>
-            <th style="min-width:180px">Situação da Prestação</th>
-            <th style="min-width:110px">Mês/Ano Início</th>
-            <th style="min-width:120px">Data do Crédito</th>
-            <th style="min-width:120px">Data Limite</th>
-            <th style="min-width:120px">Término da Execução</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="pv-tbody">
-        </tbody>
-      </table>
-    </div>
+      <!-- Resumo de valores do TC e aditivos -->
+      <div id="pv-resumo-tcs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px"></div>
 
-    <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
-      <button class="btn btn-ghost" style="font-size:12px" onclick="adicionarLinhaPV()">+ Adicionar Parcela</button>
-      <span style="font-size:11px;color:var(--text-dim)">Informe a qual TC ou Aditivo cada parcela pertence antes de salvar.</span>
+      <!-- Tabela de distribuição -->
+      <div class="pv-table-scroll">
+        <table class="parcela-dist-table" id="pv-table">
+          <thead>
+            <tr>
+              <th style="min-width:160px">Pertence a</th>
+              <th style="min-width:170px;color:var(--accent3)">Vínculo (complementa)</th>
+              <th style="min-width:100px">Parcela</th>
+              <th>Custeio (R$)</th>
+              <th>Capital (R$)</th>
+              <th>Além Muros (R$)</th>
+              <th>Obras (R$)</th>
+              <th>Capina (R$)</th>
+              <th style="color:var(--accent2)">Rendimentos (R$)</th>
+              <th style="min-width:180px">Situação da Prestação</th>
+              <th style="min-width:110px">Mês/Ano Início</th>
+              <th style="min-width:120px">Data do Crédito</th>
+              <th style="min-width:120px">Data Limite</th>
+              <th style="min-width:120px">Término da Execução</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="pv-tbody">
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost" style="font-size:12px" onclick="adicionarLinhaPV()">+ Adicionar Parcela</button>
+        <span style="font-size:11px;color:var(--text-dim)">Informe a qual TC ou Aditivo cada parcela pertence antes de salvar.</span>
+      </div>
     </div>
 
     <div class="modal-footer">
