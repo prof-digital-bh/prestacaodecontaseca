@@ -13053,12 +13053,12 @@ function aplicarPerfil() {
         '</span>';
     }
 
-    // Seções permitidas: tudo exceto gerador de documentos e fornecedores
-    const sectionsHidden = ['gerador', 'fornecedores'];
+    // Seções permitidas: apenas Dashboard, Despesas e Links
+    const sectionsPermitidasPres = ['dashboard', 'despesas', 'links'];
     document.querySelectorAll('.nav-item').forEach(item => {
       const oc = item.getAttribute('onclick') || '';
       const match = oc.match(/showSection\('([^']+)'\)/);
-      if (match && sectionsHidden.includes(match[1])) item.style.display = 'none';
+      if (match && !sectionsPermitidasPres.includes(match[1])) item.style.display = 'none';
     });
 
     // Esconder labels de seções sem itens
@@ -13069,8 +13069,9 @@ function aplicarPerfil() {
       if (!visibleItems.length) nav.style.display = 'none';
     });
 
-    // Desabilitar botões de ação de escrita (lançar, editar, remover, cadastrar)
-    const btnTextsProibidos = ['Lançar Despesa', 'Novo Fornecedor', 'Exportar CSV', '+ Lançar'];
+    // Desabilitar apenas botões de escrita que NÃO sejam o lançamento de nova despesa
+    // (presidente pode lançar novas despesas, mas não editar/remover nem outras ações administrativas)
+    const btnTextsProibidos = ['Novo Fornecedor', 'Exportar CSV'];
     document.querySelectorAll('button').forEach(btn => {
       const txt = btn.textContent.trim();
       if (btnTextsProibidos.some(p => txt.includes(p))) {
@@ -13084,13 +13085,13 @@ function aplicarPerfil() {
 
     // Bloquear showSection para seções não permitidas
     const _origShow = window.showSection;
-    const permitidasPres = ['dashboard', 'tc', 'despesas', 'alertas', 'checklist', 'links', 'anexos'];
+    const permitidasPres = ['dashboard', 'despesas', 'links'];
     window.showSection = function(id) {
       if (!permitidasPres.includes(id)) return;
       _origShow(id);
       closeMobileNav && closeMobileNav();
       const titleEl = document.getElementById('mobile-topbar-title');
-      const titles  = { dashboard:'Dashboard', tc:'Termos de Compromisso', despesas:'Despesas', alertas:'Alertas e Prazos', checklist:'Checklist', links:'Links Rápidos', anexos:'Gerar Anexos' };
+      const titles  = { dashboard:'Dashboard', despesas:'Despesas', links:'Links Rápidos' };
       if (titleEl && titles[id]) titleEl.textContent = titles[id];
     };
 
@@ -13102,6 +13103,20 @@ function aplicarPerfil() {
 
     // Patch: checklist somente leitura para o presidente
     _patchChecklistReadOnly();
+
+    // Patch: Links Rápidos somente leitura para o presidente
+    const _rlOrigPres = window.renderLinks;
+    window.renderLinks = function() {
+      _rlOrigPres && _rlOrigPres();
+      document.querySelectorAll('#section-links button').forEach(btn => {
+        if (btn.textContent.includes('Adicionar Link')) btn.style.display = 'none';
+      });
+      document.querySelectorAll('#section-links .link-card button').forEach(btn => btn.style.display = 'none');
+    };
+    document.querySelectorAll('#section-links button').forEach(btn => {
+      if (btn.textContent.includes('Adicionar Link')) btn.style.display = 'none';
+    });
+    document.querySelectorAll('#section-links .link-card button').forEach(btn => btn.style.display = 'none');
 
     return;
   }
