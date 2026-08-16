@@ -5682,6 +5682,7 @@ init();
       <button class="modal-close" onclick="closeModal('modal-parcela-valores')">×</button>
     </div>
     <div class="alert alert-info" style="margin-bottom:16px"><span>ℹ</span><span>Registre o valor disponível em cada parcela e categoria para que o dashboard calcule os saldos corretamente. Sem isso, o saldo exibido será sempre o valor total do TC.</span></div>
+    <div class="alert alert-info" style="margin-bottom:16px;border-color:rgba(246,166,35,.3);background:rgba(246,166,35,.06)"><span>🔗</span><span>Se o valor de uma parcela foi complementado com dinheiro de <strong>outro TC ou Aditivo</strong> (mesmo número de parcela), use a coluna <strong>Vínculo</strong> para apontar de onde veio o complemento. As duas entradas aparecerão juntas no Quadro Resumo, com a origem de cada valor indicada.</span></div>
     <input type="hidden" id="pv-tc-id">
     <div id="pv-tc-label" style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:14px"></div>
 
@@ -5694,6 +5695,7 @@ init();
         <thead>
           <tr>
             <th style="min-width:160px">Pertence a</th>
+            <th style="min-width:170px;color:var(--accent3)">Vínculo (complementa)</th>
             <th style="min-width:100px">Parcela</th>
             <th>Custeio (R$)</th>
             <th>Capital (R$)</th>
@@ -6941,7 +6943,8 @@ async function carregarDados() {
     mesAnoInicio: r.mes_ano_inicio || '',
     dataCredito: r.data_credito || '',
     dataLimite: r.data_limite || '',
-    dataTermino: r.data_termino || ''
+    dataTermino: r.data_termino || '',
+    vinculoTcId: r.vinculo_tc_id || null
   }));
   state.parcelaSituacoes = (psData || []).map(r => ({
     id: r.id,
@@ -9359,45 +9362,62 @@ function imprimirAba(nomeAba, filtros) {
         analise:'Em Análise',aprovada:'Aprovada',liquidada:'Liquidada',ajuste:'Em Ajuste',
         ressalvas:'Aprovada com Ressalvas',reprovada:'Reprovada'};
 
-      let linhas = (state.parcelaValores||[]).map(pv => {
+      let membrosR = (state.parcelaValores||[]).map(pv => {
         const tc = (state.tcs||[]).find(t => String(t.id) === String(pv.tcId));
         if (!tc) return null;
         return { pv, tc };
       }).filter(Boolean);
 
-      if (filtroTcId) linhas = linhas.filter(l => String(l.tc.id) === String(filtroTcId));
+      // Mesma lógica de agrupamento por vínculo explícito usada na tela
+      let linhas = (typeof agruparParcelasPorVinculo === 'function') ? agruparParcelasPorVinculo(membrosR) : membrosR.map(m => [m]);
+
+      if (filtroTcId) linhas = linhas.filter(mems => mems.some(m => String(m.tc.id) === String(filtroTcId)));
       if (filtroSitR) {
-        linhas = linhas.filter(l => {
-          const sitV = (typeof getSituacao==='function') ? getSituacao(l.tc.id, l.pv.parcela) : '';
+        linhas = linhas.filter(mems => mems.some(m => {
+          const sitV = (typeof getSituacao==='function') ? getSituacao(m.tc.id, m.pv.parcela) : '';
           return filtroSitR === 'sem' ? !sitV : sitV === filtroSitR;
-        });
+        }));
       }
 
       linhas.sort((a, b) => {
-        if (a.pv.mesAnoInicio && b.pv.mesAnoInicio) return b.pv.mesAnoInicio.localeCompare(a.pv.mesAnoInicio);
-        if (a.pv.mesAnoInicio && !b.pv.mesAnoInicio) return -1;
-        if (!a.pv.mesAnoInicio && b.pv.mesAnoInicio) return 1;
-        const ia = (typeof PARCELA_ORDER!=='undefined'?PARCELA_ORDER:[]).indexOf(a.pv.parcela);
-        const ib = (typeof PARCELA_ORDER!=='undefined'?PARCELA_ORDER:[]).indexOf(b.pv.parcela);
+        const amais = a.reduce((best,m) => (!best || (m.pv.mesAnoInicio||'') > best) ? (m.pv.mesAnoInicio||'') : best, '');
+        const bmais = b.reduce((best,m) => (!best || (m.pv.mesAnoInicio||'') > best) ? (m.pv.mesAnoInicio||'') : best, '');
+        if (amais && bmais) return bmais.localeCompare(amais);
+        if (amais && !bmais) return -1;
+        if (!amais && bmais) return 1;
+        const ia = (typeof PARCELA_ORDER!=='undefined'?PARCELA_ORDER:[]).indexOf(a[0].pv.parcela);
+        const ib = (typeof PARCELA_ORDER!=='undefined'?PARCELA_ORDER:[]).indexOf(b[0].pv.parcela);
         return (ib === -1 ? 99 : ib) - (ia === -1 ? 99 : ia);
       });
 
-      const linhasHtml = linhas.length ? linhas.map(({ pv, tc }) => {
-        const tcId = tc.id, parcela = pv.parcela;
-        const tcLabel = tc.ehAditivo ? `Aditivo ${tc.numero}` : `TC ${tc.numero}`;
-        const distribuicao = TIPOS_R.filter(t2 => _pm(pv[tipoKeyR[t2]]||'0') > 0)
-          .map(t2 => `${_tl(t2)} ${_fmt(_pm(pv[tipoKeyR[t2]]||'0'))}`).join(' · ') || '—';
-        const totalPrevisto = TIPOS_R.reduce((s,t2) => s + _pm(pv[tipoKeyR[t2]]||'0'), 0);
+      const linhasHtml = linhas.length ? linhas.map(mems => {
+        const parcela = mems[0].pv.parcela;
+        const multi = mems.length > 1;
+        const principal = mems[0];
+        const tcLabel = principal.tc.ehAditivo ? `Aditivo ${principal.tc.numero}` : `TC ${principal.tc.numero}`;
+        const origensExtra = mems.slice(1).map(m => {
+          const lbl = m.tc.ehAditivo ? `Aditivo ${m.tc.numero}` : `TC ${m.tc.numero}`;
+          const v = TIPOS_R.reduce((s,t2) => s + _pm(m.pv[tipoKeyR[t2]]||'0'), 0);
+          return `<div class="muted" style="font-size:10px">+ ${lbl} · ${_fmt(v)}</div>`;
+        }).join('');
+        const distribuicao = TIPOS_R.filter(t2 => mems.reduce((s,m)=>s+_pm(m.pv[tipoKeyR[t2]]||'0'),0) > 0)
+          .map(t2 => `${_tl(t2)} ${_fmt(mems.reduce((s,m)=>s+_pm(m.pv[tipoKeyR[t2]]||'0'),0))}`).join(' · ') || '—';
+        const totalPrevisto = TIPOS_R.reduce((s,t2) => s + mems.reduce((s2,m)=>s2+_pm(m.pv[tipoKeyR[t2]]||'0'),0), 0);
+        const tcIdsGrupo = mems.map(m => String(m.tc.id));
         const totalGasto = (state.despesas||[])
-          .filter(d => String(d.tcVinculo) === String(tcId) && d.parcela === parcela)
+          .filter(d => tcIdsGrupo.includes(String(d.tcVinculo)) && d.parcela === parcela)
           .reduce((s,d) => s + _pm(d.valor), 0);
-        const sit = (typeof getSituacao==='function') ? getSituacao(tcId, parcela) : '';
+        const situacoes = mems.map(m => ({ label: m.tc.ehAditivo ? `Adit. ${m.tc.numero}` : `TC ${m.tc.numero}`, sit: (typeof getSituacao==='function') ? getSituacao(m.tc.id, m.pv.parcela) : '' }));
+        const divergente = multi && new Set(situacoes.map(s=>s.sit)).size > 1;
+        const sitHtml = !divergente
+          ? (situacoes[0].sit ? `<span class="badge badge-blue">${sitLabelsR[situacoes[0].sit]||situacoes[0].sit}</span>` : '—')
+          : situacoes.map(s => `<div style="font-size:10px">${s.label}: ${s.sit ? `<span class="badge badge-blue">${sitLabelsR[s.sit]||s.sit}</span>` : '—'}</div>`).join('');
         return `<tr>
-          <td class="bold">${tcLabel}</td>
-          <td>${parNomes[parcela]||parcela}${pv.mesAnoInicio?`<div class="muted" style="font-size:11px">${pv.mesAnoInicio.split('-').reverse().join('/')}</div>`:''}</td>
+          <td class="bold">${tcLabel}${origensExtra}</td>
+          <td>${parNomes[parcela]||parcela}${mems[0].pv.mesAnoInicio?`<div class="muted" style="font-size:11px">${mems[0].pv.mesAnoInicio.split('-').reverse().join('/')}</div>`:''}</td>
           <td style="font-size:12.5px">${distribuicao}</td>
           <td class="right mono">${totalPrevisto>0?_fmt(totalPrevisto):'—'} / ${_fmt(totalGasto)}</td>
-          <td>${sit ? `<span class="badge badge-blue">${sitLabelsR[sit]||sit}</span>` : '—'}</td>
+          <td>${sitHtml}</td>
         </tr>`;
       }).join('') : `<tr><td colspan="5" class="no-data">Nenhuma parcela cadastrada</td></tr>`;
 
@@ -10730,7 +10750,44 @@ function populateDashResumoTCFilter() {
   if (cur) sel.value = cur;
 }
 
+// ── Agrupa registros de parcela por VÍNCULO EXPLÍCITO (não por TC/Aditivo automaticamente) ──
+// Um registro só entra no mesmo grupo de outro se um deles apontar vinculoTcId para o outro
+// (mesmo número de parcela). Sem vínculo explícito, cada TC/Aditivo fica na sua própria linha,
+// mesmo que pertença à mesma família (TC + seus Aditivos).
+function agruparParcelasPorVinculo(membros) {
+  const keyOf = m => String(m.tc.id) + '::' + m.pv.parcela;
+  const indexByKey = new Map(membros.map(m => [keyOf(m), m]));
+  const parent = new Map(membros.map(m => [keyOf(m), keyOf(m)]));
+  function find(k) { while (parent.get(k) !== k) { parent.set(k, parent.get(parent.get(k))); k = parent.get(k); } return k; }
+  function union(a, b) { const ra = find(a), rb = find(b); if (ra !== rb) parent.set(ra, rb); }
+  membros.forEach(m => {
+    if (m.pv.vinculoTcId) {
+      const alvoKey = String(m.pv.vinculoTcId) + '::' + m.pv.parcela;
+      if (indexByKey.has(alvoKey)) union(keyOf(m), alvoKey);
+    }
+  });
+  const gruposMap = new Map();
+  membros.forEach(m => {
+    const raiz = find(keyOf(m));
+    if (!gruposMap.has(raiz)) gruposMap.set(raiz, []);
+    gruposMap.get(raiz).push(m);
+  });
+  return Array.from(gruposMap.values()).map(mems => {
+    // Membros sem vínculo (a origem "base") primeiro; membros com vínculo (complementos) depois
+    mems.sort((a, b) => {
+      const aTemVinc = !!a.pv.vinculoTcId, bTemVinc = !!b.pv.vinculoTcId;
+      if (aTemVinc !== bTemVinc) return aTemVinc ? 1 : -1;
+      return (a.tc.ehAditivo === b.tc.ehAditivo) ? 0 : (a.tc.ehAditivo ? 1 : -1);
+    });
+    return mems;
+  });
+}
+
 // ── Quadro Resumo: tabela de parcelas (atuais → antigas) ──
+// As linhas só aparecem juntas quando há um VÍNCULO EXPLÍCITO cadastrado (ver
+// "Vínculo (complementa)" no formulário de Distribuição de Valores). TC e seus
+// Aditivos com a mesma numeração de parcela, mas SEM vínculo indicado, continuam
+// aparecendo em linhas separadas.
 function renderQuadroResumo() {
   populateDashResumoTCFilter();
   const tbody = document.getElementById('dash-resumo-tbody');
@@ -10741,30 +10798,35 @@ function renderQuadroResumo() {
   const parNomes = {'01':'1ª Parcela','02':'2ª Parcela','03':'3ª Parcela','04':'4ª Parcela','05':'5ª Parcela','U':'Parcela Única'};
   const tipoKey  = { CUSTEIO:'custeio', CAPITAL:'capital', ALEM_MUROS:'alem', OBRAS:'obras', CAPINA:'capina' };
   const TIPOS = ['CUSTEIO','CAPITAL','ALEM_MUROS','OBRAS','CAPINA'];
+  const SITS_COM_COMPROBATORIO = ['aprovada', 'ajuste'];
 
-  // Monta uma linha para cada combinação TC+Parcela que tenha valores distribuídos
-  let linhas = (state.parcelaValores||[]).map(pv => {
+  // Monta um membro para cada combinação TC+Parcela que tenha valores distribuídos
+  const membros = (state.parcelaValores||[]).map(pv => {
     const tc = (state.tcs||[]).find(t => String(t.id) === String(pv.tcId));
     if (!tc) return null;
     return { pv, tc };
   }).filter(Boolean);
 
-  if (filtroTC) linhas = linhas.filter(l => String(l.tc.id) === String(filtroTC));
+  let linhas = agruparParcelasPorVinculo(membros);
+
+  if (filtroTC) linhas = linhas.filter(mems => mems.some(m => String(m.tc.id) === String(filtroTC)));
   if (filtroSit) {
-    linhas = linhas.filter(l => {
-      const sit = getSituacao(l.tc.id, l.pv.parcela);
+    linhas = linhas.filter(mems => mems.some(m => {
+      const sit = getSituacao(m.tc.id, m.pv.parcela);
       return filtroSit === 'sem' ? !sit : sit === filtroSit;
-    });
+    }));
   }
 
   // Ordena das parcelas mais atuais para as mais antigas:
-  // 1º critério: mês/ano de início da parcela (YYYY-MM, ordena bem como string)
-  // 2º critério (fallback, quando não houver mês/ano): ordem da parcela (05,04,03,02,01,U)
+  // 1º critério: mês/ano de início mais recente entre as origens do grupo
+  // 2º critério (fallback): ordem da parcela (05,04,03,02,01,U)
   linhas.sort((a, b) => {
-    if (a.pv.mesAnoInicio && b.pv.mesAnoInicio) return b.pv.mesAnoInicio.localeCompare(a.pv.mesAnoInicio);
-    if (a.pv.mesAnoInicio && !b.pv.mesAnoInicio) return -1;
-    if (!a.pv.mesAnoInicio && b.pv.mesAnoInicio) return 1;
-    const ia = PARCELA_ORDER.indexOf(a.pv.parcela), ib = PARCELA_ORDER.indexOf(b.pv.parcela);
+    const amais = a.reduce((best,m) => (!best || (m.pv.mesAnoInicio||'') > best) ? (m.pv.mesAnoInicio||'') : best, '');
+    const bmais = b.reduce((best,m) => (!best || (m.pv.mesAnoInicio||'') > best) ? (m.pv.mesAnoInicio||'') : best, '');
+    if (amais && bmais) return bmais.localeCompare(amais);
+    if (amais && !bmais) return -1;
+    if (!amais && bmais) return 1;
+    const ia = PARCELA_ORDER.indexOf(a[0].pv.parcela), ib = PARCELA_ORDER.indexOf(b[0].pv.parcela);
     return (ib === -1 ? 99 : ib) - (ia === -1 ? 99 : ia);
   });
 
@@ -10774,29 +10836,59 @@ function renderQuadroResumo() {
     return;
   }
 
-  tbody.innerHTML = linhas.map(({ pv, tc }) => {
-    const tcId = tc.id, parcela = pv.parcela;
-    const tcLabel = tc.ehAditivo ? `Aditivo ${tc.numero}` : `TC ${tc.numero}`;
+  tbody.innerHTML = linhas.map(mems => {
+    const parcela = mems[0].pv.parcela;
+    const multi = mems.length > 1;
+    const principal = mems[0];
+    const tcLabelPrincipal = principal.tc.ehAditivo ? `Aditivo ${principal.tc.numero}` : `TC ${principal.tc.numero}`;
 
-    // Distribuição por tipo: badges com os valores > 0
-    const distribuicao = TIPOS.filter(t2 => parseMoney(pv[tipoKey[t2]]||'0') > 0).map(t2 => {
-      const v = parseMoney(pv[tipoKey[t2]]||'0');
+    // Origens adicionais (quando a parcela foi complementada por outro TC/Aditivo)
+    const origensExtra = mems.slice(1).map(m => {
+      const lbl = m.tc.ehAditivo ? `Aditivo ${m.tc.numero}` : `TC ${m.tc.numero}`;
+      const v = TIPOS.reduce((s,t2) => s + parseMoney(m.pv[tipoKey[t2]]||'0'), 0);
+      return `<span class="badge" style="font-size:9.5px;background:rgba(246,166,35,.12);color:var(--accent3);border-color:rgba(246,166,35,.3)" title="Valor complementar vindo de ${lbl}">+ ${lbl} · ${fmtMoney(v)}</span>`;
+    }).join(' ');
+
+    // Distribuição por tipo somada de todas as origens do grupo
+    const distribuicao = TIPOS.filter(t2 => mems.reduce((s,m)=>s+parseMoney(m.pv[tipoKey[t2]]||'0'),0) > 0).map(t2 => {
+      const v = mems.reduce((s,m)=>s+parseMoney(m.pv[tipoKey[t2]]||'0'),0);
       return `<span class="tipo-pill tipo-${t2}" style="font-size:10px;white-space:nowrap">${tipoLabel(t2)} · ${fmtMoney(v)}</span>`;
     }).join(' ');
 
-    // Valor / Utilização: valor exato registrado nesta parcela (sem somar
-    // rendimentos nem saldo repassado de outras parcelas) x total gasto
-    const totalPrevisto = TIPOS.reduce((s,t2) => s + parseMoney(pv[tipoKey[t2]]||'0'), 0);
+    // Valor / Utilização: soma dos valores registrados por todas as origens da parcela
+    const totalPrevisto = TIPOS.reduce((s,t2) => s + mems.reduce((s2,m)=>s2+parseMoney(m.pv[tipoKey[t2]]||'0'),0), 0);
+    const tcIdsGrupo = mems.map(m => String(m.tc.id));
     const totalGasto = (state.despesas||[])
-      .filter(d => String(d.tcVinculo) === String(tcId) && d.parcela === parcela)
+      .filter(d => tcIdsGrupo.includes(String(d.tcVinculo)) && d.parcela === parcela)
       .reduce((s,d) => s + parseMoney(d.valor), 0);
     const pct = totalPrevisto > 0 ? Math.min(totalGasto/totalPrevisto*100, 100) : 0;
 
-    const sit = getSituacao(tcId, parcela);
+    // Situação: exibe a do TC/Aditivo principal; se as origens divergirem, mostra uma por origem
+    const situacoes = mems.map(m => ({ label: m.tc.ehAditivo ? `Adit. ${m.tc.numero}` : `TC ${m.tc.numero}`, sit: getSituacao(m.tc.id, m.pv.parcela) }));
+    const sitPrincipal = situacoes[0].sit;
+    const divergente = multi && new Set(situacoes.map(s=>s.sit)).size > 1;
+    const sitHtml = !divergente
+      ? `<span class="sit-pill ${sitCls(sitPrincipal)}" style="font-size:10px;white-space:nowrap">${sitLabel(sitPrincipal)}</span>`
+      : situacoes.map(s => `<div style="margin-bottom:3px"><span style="font-size:9px;color:var(--text-dim)">${s.label}:</span> <span class="sit-pill ${sitCls(s.sit)}" style="font-size:9.5px;white-space:nowrap">${sitLabel(s.sit)}</span></div>`).join('');
+
+    // Comprobatório: um botão por origem elegível (aprovada/ajuste)
+    let comprobHtml;
+    if (!multi) {
+      comprobHtml = renderBtnComprobatorio(String(principal.tc.id), parcela, sitPrincipal, true);
+    } else {
+      const elegiveis = mems.filter(m => SITS_COM_COMPROBATORIO.includes(getSituacao(m.tc.id, parcela)));
+      comprobHtml = !elegiveis.length ? '<span style="font-size:11px;color:var(--text-dim)">—</span>' : elegiveis.map(m => {
+        const lbl = m.tc.ehAditivo ? `Adit. ${m.tc.numero}` : `TC ${m.tc.numero}`;
+        return `<div style="margin-bottom:5px"><div style="font-size:9px;color:var(--text-dim);margin-bottom:2px">${lbl}</div>${renderBtnComprobatorio(String(m.tc.id), parcela, getSituacao(m.tc.id, parcela), true)}</div>`;
+      }).join('');
+    }
 
     return `<tr>
-      <td><span style="font-size:12px;font-weight:600;color:${tc.ehAditivo?'var(--accent3)':'var(--accent)'}">${tcLabel}</span></td>
-      <td><span style="font-size:12px;color:var(--text)">${parNomes[parcela]||parcela}</span>${pv.mesAnoInicio?`<div style="font-size:10px;color:var(--text-dim)">${pv.mesAnoInicio.split('-').reverse().join('/')}</div>`:''}</td>
+      <td>
+        <span style="font-size:12px;font-weight:600;color:${principal.tc.ehAditivo?'var(--accent3)':'var(--accent)'}">${tcLabelPrincipal}</span>
+        ${origensExtra ? `<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">${origensExtra}</div>` : ''}
+      </td>
+      <td><span style="font-size:12px;color:var(--text)">${parNomes[parcela]||parcela}</span>${mems[0].pv.mesAnoInicio?`<div style="font-size:10px;color:var(--text-dim)">${mems[0].pv.mesAnoInicio.split('-').reverse().join('/')}</div>`:''}</td>
       <td>${distribuicao || '<span style="font-size:11px;color:var(--text-dim)">— não configurado —</span>'}</td>
       <td style="text-align:right;min-width:150px">
         <div style="font-family:'DM Mono',monospace;font-size:12px">
@@ -10808,8 +10900,8 @@ function renderQuadroResumo() {
           <div style="height:100%;border-radius:20px;background:${pct>90?'var(--accent-red)':'linear-gradient(90deg,var(--accent),var(--accent2))'};width:${pct}%"></div>
         </div>`:''}
       </td>
-      <td><span class="sit-pill ${sitCls(sit)}" style="font-size:10px;white-space:nowrap">${sitLabel(sit)}</span></td>
-      <td>${renderBtnComprobatorio(String(tcId), parcela, sit, true)}</td>
+      <td>${sitHtml}</td>
+      <td>${comprobHtml}</td>
     </tr>`;
   }).join('');
 }
@@ -12489,7 +12581,8 @@ function abrirModalParcelaValores(tcId) {
       mesAnoInicio: v.mesAnoInicio || '',
       dataCredito: v.dataCredito || '',
       dataLimite: v.dataLimite || '',
-      dataTermino: v.dataTermino || ''
+      dataTermino: v.dataTermino || '',
+      vinculoTcId: v.vinculoTcId || ''
     });
   });
   // Adiciona linhas para despesas ainda sem distribuição registrada
@@ -12501,7 +12594,7 @@ function abrirModalParcelaValores(tcId) {
           tcItemId: String(id),
           parcela: p,
           custeio: '0,00', capital: '0,00', alem: '0,00', obras: '0,00', capina: '0,00', rendimentos: '0,00',
-          situacao: '', mesAnoInicio: '', dataCredito: '', dataLimite: '', dataTermino: ''
+          situacao: '', mesAnoInicio: '', dataCredito: '', dataLimite: '', dataTermino: '', vinculoTcId: ''
         });
       }
     });
@@ -12514,7 +12607,7 @@ function abrirModalParcelaValores(tcId) {
 
   // Se não há nenhuma linha ainda, começa com uma em branco para o TC original
   if (!_pvRows.length) {
-    _pvRows.push({ tcItemId: String(tc.id), parcela: '01', custeio:'0,00', capital:'0,00', alem:'0,00', obras:'0,00', capina:'0,00', rendimentos:'0,00', situacao:'', mesAnoInicio:'', dataCredito:'', dataLimite:'', dataTermino:'' });
+    _pvRows.push({ tcItemId: String(tc.id), parcela: '01', custeio:'0,00', capital:'0,00', alem:'0,00', obras:'0,00', capina:'0,00', rendimentos:'0,00', situacao:'', mesAnoInicio:'', dataCredito:'', dataLimite:'', dataTermino:'', vinculoTcId:'' });
   }
 
   renderPVTable();
@@ -12550,6 +12643,19 @@ function atualizarDataLimitePV(i) {
   if (cell) cell.innerHTML = calcLimitePV(_pvRows[i].mesAnoInicio);
 }
 
+// Opções de vínculo: qualquer TC/Aditivo do sistema (fora dele mesmo) — o vínculo
+// não fica preso ao "guarda-chuva" do TC aberto no modal, pode apontar para qualquer outro.
+function pvVinculoOptions(excludeId) {
+  const opts = [{ id: '', label: '— Nenhum vínculo —' }];
+  (state.tcs||[]).filter(t => !t.tcPaiId).forEach(tc => {
+    if (String(tc.id) !== String(excludeId)) opts.push({ id: tc.id, label: `TC ${tc.numero}` });
+    (state.tcs||[]).filter(a => a.tcPaiId === tc.id).forEach(a => {
+      if (String(a.id) !== String(excludeId)) opts.push({ id: a.id, label: `↳ Aditivo ${a.numero} (TC ${tc.numero})` });
+    });
+  });
+  return opts;
+}
+
 function renderPVTable() {
   const tbody = document.getElementById('pv-tbody');
   const parcelaNomes = { '01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única','UI':'Única(i)','UII':'Única(ii)','ALI':'Alimentação','SVC':'Serviços','MAT':'Materialidade' };
@@ -12568,6 +12674,11 @@ function renderPVTable() {
               ${it.isAdit ? '↳ ' : ''}${it.label}
             </option>
           `).join('')}
+        </select>
+      </td>
+      <td>
+        <select onchange="_pvRows[${i}].vinculoTcId=this.value" title="Aponta que o valor desta linha complementa a parcela de mesmo número de outro TC/Aditivo" style="background:var(--surface3);border:1px solid ${r.vinculoTcId?'rgba(246,166,35,.5)':'var(--border)'};border-radius:5px;padding:4px 7px;font-size:11px;color:${r.vinculoTcId?'var(--accent3)':'var(--text-muted)'};width:165px">
+          ${pvVinculoOptions(r.tcItemId).map(o => `<option value="${o.id}" ${String(r.vinculoTcId||'')===String(o.id)?'selected':''}>${o.label}</option>`).join('')}
         </select>
       </td>
       <td>
@@ -12609,7 +12720,7 @@ function renderPVTable() {
 function adicionarLinhaPV() {
   // Nova linha aponta por padrão para o TC original
   const defaultId = _pvAllItems.length ? String(_pvAllItems[0].id) : '';
-  _pvRows.push({ tcItemId: defaultId, parcela:'01', custeio:'0,00', capital:'0,00', alem:'0,00', obras:'0,00', capina:'0,00', rendimentos:'0,00', situacao:'', mesAnoInicio:'', dataCredito:'', dataLimite:'', dataTermino:'' });
+  _pvRows.push({ tcItemId: defaultId, parcela:'01', custeio:'0,00', capital:'0,00', alem:'0,00', obras:'0,00', capina:'0,00', rendimentos:'0,00', situacao:'', mesAnoInicio:'', dataCredito:'', dataLimite:'', dataTermino:'', vinculoTcId:'' });
   renderPVTable();
 }
 
@@ -12645,7 +12756,8 @@ async function salvarParcelaValores() {
     mes_ano_inicio: r.mesAnoInicio || null,
     data_credito:   r.dataCredito  || null,
     data_limite:    r.dataLimite   || null,
-    data_termino:   r.dataTermino  || null
+    data_termino:   r.dataTermino  || null,
+    vinculo_tc_id:  r.vinculoTcId ? Number(r.vinculoTcId) : null
   }));
   const psInserts = _pvRows.filter(r => r.situacao).map(r => ({
     tc_id:    Number(r.tcItemId),
@@ -12666,7 +12778,8 @@ async function salvarParcelaValores() {
       tcId: Number(r.tcItemId), parcela: r.parcela,
       custeio: r.custeio, capital: r.capital, alem: r.alem, obras: r.obras, capina: r.capina, rendimentos: r.rendimentos||'0,00',
       rendimentos: r.rendimentos || '0,00',
-      mesAnoInicio: r.mesAnoInicio, dataCredito: r.dataCredito, dataLimite: r.dataLimite, dataTermino: r.dataTermino
+      mesAnoInicio: r.mesAnoInicio, dataCredito: r.dataCredito, dataLimite: r.dataLimite, dataTermino: r.dataTermino,
+      vinculoTcId: r.vinculoTcId ? Number(r.vinculoTcId) : null
     });
     if (r.situacao) state.parcelaSituacoes.push({ tcId: Number(r.tcItemId), parcela: r.parcela, situacao: r.situacao });
   });
