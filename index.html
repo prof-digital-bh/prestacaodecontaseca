@@ -2170,6 +2170,7 @@
         <div class="parcela-tab" onclick="cefShowTab('cef-mensal',this)">Rampa mensal</div>
         <div class="parcela-tab" onclick="cefShowTab('cef-extrato',this)">Extrato / Conciliação</div>
         <div class="parcela-tab" onclick="cefShowTab('cef-invest',this)">Investimentos</div>
+        <div class="parcela-tab" onclick="cefShowTab('cef-rend',this)">Rendimentos</div>
         <div class="parcela-tab" onclick="cefShowTab('cef-import',this)">Importar extrato</div>
       </div>
 
@@ -2212,6 +2213,7 @@
               <option value="RECEITA_FME">Receita — Fundo Municipal de Educação</option>
               <option value="CUSTEIO">Custeio</option>
               <option value="CAPITAL">Capital / Investimento</option>
+              <option value="RENDIMENTO">Rendimento Financeiro</option>
               <option value="PREFEITURA">Pagamento à Prefeitura</option>
               <option value="TAXA">Tarifa / Taxa bancária</option>
               <option value="ESTORNO">Estorno</option>
@@ -2273,7 +2275,7 @@
         <div class="stats-grid" id="cef-invest-stats"></div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Data</th><th>Conta CEF</th><th>Nº Doc</th><th>Fornecedor / descrição</th><th class="text-right">Valor</th></tr></thead>
+            <thead><tr><th>Data</th><th>Conta CEF</th><th>Nº Doc</th><th>Fornecedor / descrição</th><th class="text-right">Valor</th><th></th></tr></thead>
             <tbody id="cef-tbl-invest"></tbody>
           </table>
         </div>
@@ -2281,6 +2283,24 @@
           <div class="empty-icon">▲</div>
           <div class="empty-title">Nenhum investimento de capital lançado ainda</div>
           <div class="empty-sub">Lançamentos com categoria "Capital / Investimento" aparecem aqui automaticamente.</div>
+        </div>
+      </div>
+
+      <!-- RENDIMENTOS -->
+      <div class="fed-panel" id="cef-rend">
+        <div class="alert alert-info" style="margin-bottom:16px"><span>ℹ</span><span>Rendimentos da aplicação financeira são receita do TC. Quando é preciso usar parte do rendimento para cobrir déficit gerado por gastos de custeio/capital, lance a saída aqui como categoria "Rendimento Financeiro" (tipo Débito).</span></div>
+        <div style="margin-bottom:16px"><button class="btn btn-primary" onclick="cefOpenModal(null,'RENDIMENTO')">+ Lançamento de Rendimento</button></div>
+        <div class="stats-grid" id="cef-rend-stats"></div>
+        <div class="table-wrap" style="margin-top:16px">
+          <table>
+            <thead><tr><th>Data</th><th>Conta CEF</th><th>Nº Doc</th><th>Histórico / descrição</th><th>Tipo</th><th class="text-right">Valor</th><th></th></tr></thead>
+            <tbody id="cef-tbl-rend"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="cef-rend-empty" style="display:none">
+          <div class="empty-icon">📊</div>
+          <div class="empty-title">Nenhum rendimento lançado ainda</div>
+          <div class="empty-sub">Lançamentos com categoria "Rendimento Financeiro" aparecem aqui automaticamente.</div>
         </div>
       </div>
 
@@ -14548,10 +14568,12 @@ let cefLoaded = false;
 
 const CEF_CAT_LABEL = {
   RECEITA_FME: 'Receita FME', CUSTEIO: 'Custeio', CAPITAL: 'Capital / Investimento',
+  RENDIMENTO: 'Rendimento Financeiro',
   PREFEITURA: 'Pagto. Prefeitura', TAXA: 'Tarifa bancária', ESTORNO: 'Estorno', OUTROS: 'Outros'
 };
 const CEF_CAT_BADGE = {
   RECEITA_FME: 'badge-green', CUSTEIO: 'badge-blue', CAPITAL: 'tipo-CAPITAL',
+  RENDIMENTO: 'chip-extrato',
   PREFEITURA: 'badge-purple', TAXA: 'badge-orange', ESTORNO: 'badge-orange', OUTROS: 'badge-gray'
 };
 const CEF_MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -14590,6 +14612,7 @@ function cefRenderTudo() {
   cefRenderMensal();
   cefRenderExtrato();
   cefRenderInvestimentos();
+  cefRenderRendimentos();
 }
 
 // ── Navegação por abas internas ──────────────────────────
@@ -14728,7 +14751,7 @@ function cefRenderLancamentos() {
       <td>${l.contraparte_nome || '—'}${l.contraparte_doc ? '<div style="font-size:11px;color:var(--text-dim)">' + l.contraparte_doc + '</div>' : ''}</td>
       <td><span class="badge ${CEF_CAT_BADGE[cat] || 'badge-gray'}">${CEF_CAT_LABEL[cat] || cat}</span></td>
       <td class="text-right mono" style="color:${l.tipo === 'D' ? 'var(--accent-red)' : 'var(--accent2)'}">${l.tipo === 'D' ? '-' : '+'} ${fmtMoney(Number(l.valor) || 0)}</td>
-      <td><span style="color:var(--text-dim);cursor:pointer;font-size:12px" onclick="cefExcluirLancamento(${l.id})">Excluir</span></td>
+      <td><span style="color:var(--text-dim);cursor:pointer;font-size:12px;margin-right:8px" onclick="cefEditarLancamento(${l.id})">Editar</span><span style="color:var(--text-dim);cursor:pointer;font-size:12px" onclick="cefExcluirLancamento(${l.id})">Excluir</span></td>
     </tr>`;
   }).join('');
   document.getElementById('cef-lanc-empty').style.display = list.length ? 'none' : 'block';
@@ -14754,23 +14777,46 @@ function cefExportarCSV() {
   a.click();
 }
 
-// ── MODAL NOVO LANÇAMENTO ────────────────────────────────
-function cefOpenModal() {
+// ── MODAL NOVO / EDITAR LANÇAMENTO ───────────────────────
+let cefEditId = null;
+function cefOpenModal(id, presetCategoria) {
   if (!cefLoaded) { alert('Aguarde o carregamento dos dados do Extrato CEF e tente novamente.'); return; }
   if (!cefContas.length) { alert('Nenhuma conta CEF cadastrada. Execute o SQL de criação/seed antes de lançar movimentos.'); return; }
   cefFillContaSelect(document.getElementById('cl-conta'), false);
-  document.getElementById('cl-data').value = new Date().toISOString().slice(0, 10);
-  document.getElementById('cl-tipo').value = 'D';
-  document.getElementById('cl-categoria').value = 'CUSTEIO';
-  document.getElementById('cl-valor').value = '';
-  document.getElementById('cl-nrdoc').value = '';
-  document.getElementById('cl-contraparte-doc').value = '';
-  document.getElementById('cl-contraparte-nome').value = '';
-  document.getElementById('cl-historico').value = '';
-  document.getElementById('cl-saldo-extrato').value = '';
+
+  const editando = id != null;
+  cefEditId = editando ? id : null;
+  const l = editando ? cefLanc.find(x => String(x.id) === String(id)) : null;
+
+  document.getElementById('cef-modal-title').textContent = editando ? 'Editar lançamento — Extrato CEF' : 'Novo lançamento — Extrato CEF';
+  document.getElementById('cef-modal-salvar-btn').textContent = editando ? 'Salvar alterações' : 'Salvar lançamento';
+
+  if (editando && l) {
+    document.getElementById('cl-conta').value = l.conta_id;
+    document.getElementById('cl-data').value = l.data_mov;
+    document.getElementById('cl-tipo').value = l.tipo;
+    document.getElementById('cl-categoria').value = l.categoria || 'CUSTEIO';
+    document.getElementById('cl-valor').value = l.valor;
+    document.getElementById('cl-nrdoc').value = l.nr_doc || '';
+    document.getElementById('cl-contraparte-doc').value = l.contraparte_doc || '';
+    document.getElementById('cl-contraparte-nome').value = l.contraparte_nome || '';
+    document.getElementById('cl-historico').value = l.historico || '';
+    document.getElementById('cl-saldo-extrato').value = l.saldo_extrato != null ? l.saldo_extrato : '';
+  } else {
+    document.getElementById('cl-data').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('cl-tipo').value = 'D';
+    document.getElementById('cl-categoria').value = presetCategoria || 'CUSTEIO';
+    document.getElementById('cl-valor').value = '';
+    document.getElementById('cl-nrdoc').value = '';
+    document.getElementById('cl-contraparte-doc').value = '';
+    document.getElementById('cl-contraparte-nome').value = '';
+    document.getElementById('cl-historico').value = '';
+    document.getElementById('cl-saldo-extrato').value = '';
+  }
   document.getElementById('modal-cef-lancamento').classList.add('open');
 }
-function cefCloseModal() { document.getElementById('modal-cef-lancamento').classList.remove('open'); }
+function cefEditarLancamento(id) { cefOpenModal(id); }
+function cefCloseModal() { document.getElementById('modal-cef-lancamento').classList.remove('open'); cefEditId = null; }
 async function cefSalvarLancamento() {
   const contaId = document.getElementById('cl-conta').value;
   const data = document.getElementById('cl-data').value;
@@ -14787,6 +14833,21 @@ async function cefSalvarLancamento() {
   if (!data) { alert('Informe a data do movimento.'); return; }
   if (!valor || valor <= 0) { alert('Informe um valor válido.'); return; }
   if (!historico) { alert('Informe o histórico do lançamento.'); return; }
+
+  if (cefEditId != null) {
+    const updates = {
+      conta_id: contaId, data_mov: data, tipo, categoria, valor,
+      nr_doc: nrdoc || null, contraparte_doc: cDoc || null, contraparte_nome: cNome || null,
+      historico, saldo_extrato: saldoExtrato !== '' ? parseFloat(saldoExtrato) : null
+    };
+    const { error } = await supa.from('cef_lancamentos').update(updates).eq('id', cefEditId);
+    if (error) { alert('Erro ao salvar alterações: ' + error.message); return; }
+    const idx = cefLanc.findIndex(x => String(x.id) === String(cefEditId));
+    if (idx !== -1) cefLanc[idx] = { ...cefLanc[idx], ...updates };
+    cefCloseModal();
+    cefRenderTudo();
+    return;
+  }
 
   const row = {
     id: Date.now(), conta_id: contaId, data_mov: data, tipo, categoria, valor,
@@ -14890,9 +14951,31 @@ function cefRenderInvestimentos() {
     const c = cefContaById(l.conta_id);
     return `<tr><td class="mono">${fmtDate(l.data_mov)}</td><td>${cefContaLabel(c)}</td><td class="mono">${l.nr_doc || '—'}</td>
       <td>${l.contraparte_nome || l.historico || '—'}</td>
-      <td class="text-right mono" style="color:var(--capital)">${fmtMoney(Number(l.valor) || 0)}</td></tr>`;
+      <td class="text-right mono" style="color:var(--capital)">${fmtMoney(Number(l.valor) || 0)}</td>
+      <td><span style="color:var(--text-dim);cursor:pointer;font-size:12px" onclick="cefEditarLancamento(${l.id})">Editar</span></td></tr>`;
   }).join('');
   document.getElementById('cef-invest-empty').style.display = list.length ? 'none' : 'block';
+}
+
+// ── RENDIMENTOS (categoria RENDIMENTO) ───────────────────
+function cefRenderRendimentos() {
+  const list = cefLanc.filter(l => l.categoria === 'RENDIMENTO')
+    .sort((a, b) => b.data_mov < a.data_mov ? -1 : 1);
+  const entradas = list.filter(l => l.tipo === 'C').reduce((s, l) => s + (Number(l.valor) || 0), 0);
+  const saidas = list.filter(l => l.tipo === 'D').reduce((s, l) => s + (Number(l.valor) || 0), 0);
+  document.getElementById('cef-rend-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total de rendimentos creditados</div><div class="stat-value" style="color:var(--accent2)">${fmtMoney(entradas)}</div></div>
+    <div class="stat-card"><div class="stat-label">Usado do rendimento p/ cobrir déficits</div><div class="stat-value" style="color:var(--accent-red)">${fmtMoney(saidas)}</div></div>
+    <div class="stat-card"><div class="stat-label">Saldo de rendimento disponível</div><div class="stat-value" style="color:${entradas - saidas >= 0 ? 'var(--accent2)' : 'var(--accent-red)'}">${fmtMoney(entradas - saidas)}</div></div>`;
+  document.getElementById('cef-tbl-rend').innerHTML = list.map(l => {
+    const c = cefContaById(l.conta_id);
+    return `<tr><td class="mono">${fmtDate(l.data_mov)}</td><td>${cefContaLabel(c)}</td><td class="mono">${l.nr_doc || '—'}</td>
+      <td>${l.historico || l.contraparte_nome || '—'}</td>
+      <td><span class="badge ${l.tipo === 'D' ? 'badge-orange' : 'badge-green'}">${l.tipo === 'D' ? 'Uso p/ déficit' : 'Crédito'}</span></td>
+      <td class="text-right mono" style="color:${l.tipo === 'D' ? 'var(--accent-red)' : 'var(--accent2)'}">${l.tipo === 'D' ? '-' : '+'} ${fmtMoney(Number(l.valor) || 0)}</td>
+      <td><span style="color:var(--text-dim);cursor:pointer;font-size:12px;margin-right:8px" onclick="cefEditarLancamento(${l.id})">Editar</span><span style="color:var(--text-dim);cursor:pointer;font-size:12px" onclick="cefExcluirLancamento(${l.id})">Excluir</span></td></tr>`;
+  }).join('');
+  document.getElementById('cef-rend-empty').style.display = list.length ? 'none' : 'block';
 }
 
 // ── IMPORTAR EXTRATO EM LOTE ──────────────────────────────
@@ -14901,6 +14984,7 @@ function cefSugerirCategoria(historico, contraparte) {
   const s = (historico + ' ' + contraparte).toUpperCase();
   if (/FUNDO MUNICIPAL|FME|RECEBIMENTO TED|RECEBIMENTO DOC/.test(s)) return 'RECEITA_FME';
   if (/PREFEITURA/.test(s)) return 'PREFEITURA';
+  if (/RENDIMENTO|APLICA[ÇC][ÃA]O AUTOM[ÁA]TICA|RESGATE/.test(s)) return 'RENDIMENTO';
   if (/TARIFA|TAXA|MANUTEN[ÇC][ÃA]O DE CONTA|IOF/.test(s)) return 'TAXA';
   if (/M[ÓO]VEIS|EQUIPAMENTO|MAQUINA|M[ÁA]QUINA|COPIADORA|MOBILI[ÁA]RIO/.test(s)) return 'CAPITAL';
   if (/ESTORNO/.test(s)) return 'ESTORNO';
@@ -15910,7 +15994,7 @@ function pgMostrarToast(msg) {
 <div class="modal-overlay" id="modal-cef-lancamento">
   <div class="modal" style="width:560px">
     <div class="modal-header">
-      <div class="modal-title">Novo lançamento — Extrato CEF</div>
+      <div class="modal-title" id="cef-modal-title">Novo lançamento — Extrato CEF</div>
       <span class="modal-close" onclick="cefCloseModal()">×</span>
     </div>
     <div class="field" style="margin-bottom:14px">
@@ -15937,6 +16021,7 @@ function pgMostrarToast(msg) {
           <option value="RECEITA_FME">Receita — Fundo Municipal de Educação</option>
           <option value="CUSTEIO">Custeio</option>
           <option value="CAPITAL">Capital / Investimento</option>
+          <option value="RENDIMENTO">Rendimento Financeiro</option>
           <option value="PREFEITURA">Pagamento à Prefeitura</option>
           <option value="TAXA">Tarifa / Taxa bancária</option>
           <option value="ESTORNO">Estorno</option>
@@ -15974,7 +16059,7 @@ function pgMostrarToast(msg) {
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cefCloseModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="cefSalvarLancamento()">Salvar lançamento</button>
+      <button class="btn btn-primary" id="cef-modal-salvar-btn" onclick="cefSalvarLancamento()">Salvar lançamento</button>
     </div>
   </div>
 </div>
