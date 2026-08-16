@@ -6168,7 +6168,7 @@ init();
           <option value="04">4ª Parcela</option>
           <option value="05">5ª Parcela</option>
           <option value="U">Única</option>
-          <option value="UI">Única(i)</option>
+          <option value="UI">Única Capina</option>
           <option value="UII">Única(ii)</option>
           <option value="ALI">Alimentação</option>
           <option value="SVC">Serviços</option>
@@ -6386,7 +6386,7 @@ init();
           <option value="04">4ª Parcela</option>
           <option value="05">5ª Parcela</option>
           <option value="U">Única</option>
-          <option value="UI">Única(i)</option>
+          <option value="UI">Única Capina</option>
           <option value="UII">Única(ii)</option>
           <option value="ALI">Alimentação</option>
           <option value="SVC">Serviços</option>
@@ -7967,7 +7967,7 @@ function renderDespesas() {
     const tcPai  = tcVinc?.tcPaiId ? (state.tcs||[]).find(t => String(t.id) === String(tcVinc.tcPaiId)) : null;
     const tcLine1 = tcVinc ? (tcVinc.tcPaiId ? `Adit. ${tcVinc.numero}` : `TC ${tcVinc.numero}`) : '—';
     const tcLine2 = tcVinc?.tcPaiId && tcPai ? `<span style="color:var(--text-dim);font-size:10px">TC ${tcPai.numero}</span>` : '';
-    const parNomesDesp = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única','UI':'Única(i)','UII':'Única(ii)','ALI':'Alim.','SVC':'Serv.','MAT':'Mat.'};
+    const parNomesDesp = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única','UI':'Única Capina','UII':'Única(ii)','ALI':'Alim.','SVC':'Serv.','MAT':'Mat.'};
     const parcelaLabel = parNomesDesp[d.parcela] || d.parcela;
     const nfData  = fmtDate(d.nfData) || '—';
     const nfNum   = d.nfNum || '—';
@@ -10460,7 +10460,7 @@ function imprimirAba(nomeAba, filtros) {
     const alertas = [];
 
     // Cópia da lógica de renderAlertas
-    const parcelaNomesAlerta = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única','UI':'Única(i)','UII':'Única(ii)','ALI':'Alimentação','SVC':'Serviços','MAT':'Materialidade'};
+    const parcelaNomesAlerta = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única','UI':'Única Capina','UII':'Única(ii)','ALI':'Alimentação','SVC':'Serviços','MAT':'Materialidade'};
     const tipoNomesAl = { custeio:'Custeio', capital:'Capital', alem:'Além dos Muros', obras:'Obras', capina:'Capina' };
     const tipoChavesAl = ['custeio','capital','alem','obras','capina'];
     const SIT_ENTREGUE_TC = ['aprovada', 'analise', 'ajuste', 'ressalvas'];
@@ -10877,7 +10877,7 @@ function onDashAcompTCChange() {
   const despParcelas = state.despesas.filter(d => String(d.tcVinculo)===String(tcId)).map(d=>d.parcela).filter(Boolean);
   const parcelas = [...new Set([...pvParcelas, ...despParcelas])].sort();
 
-  const parNomes = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única'};
+  const parNomes = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única','UI':'Única Capina','UII':'Única(ii)'};
   parcelas.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p;
@@ -10913,9 +10913,7 @@ function renderDashAcomp() {
   const tc = (state.tcs||[]).find(t => String(t.id) === String(tcId));
   if (!tc) { el.innerHTML = '<div style="font-size:12px;color:var(--accent-red);padding:12px">TC não encontrado.</div>'; return; }
 
-  const parNomes = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única'};
-
-  // ── FILTRO PRECISO: despesas vinculadas EXATAMENTE a este tcId e esta parcela ──
+  const parNomes = {'01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única','UI':'Única Capina','UII':'Única(ii)'};
   let despesas = state.despesas.filter(d =>
     String(d.tcVinculo) === String(tcId) &&
     d.parcela === parcela
@@ -12365,7 +12363,7 @@ function renderAlertas() {
 
   const hoje = new Date(); hoje.setHours(0,0,0,0);
   const tcs = state.tcs || [];
-  const parcelaNomesAlerta = { '01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única','UI':'Única(i)','UII':'Única(ii)','ALI':'Alimentação','SVC':'Serviços','MAT':'Materialidade' };
+  const parcelaNomesAlerta = { '01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única','UI':'Única Capina','UII':'Única(ii)','ALI':'Alimentação','SVC':'Serviços','MAT':'Materialidade' };
   const SIT_ENTREGUE = ['aprovada', 'analise', 'ajuste', 'ressalvas'];
   const tipoNomesAlerta = { custeio:'Custeio', capital:'Capital', alem:'Além dos Muros', obras:'Obras', capina:'Capina' };
   const tipoChaves = ['custeio','capital','alem','obras','capina'];
@@ -13047,7 +13045,7 @@ function pvVinculoOptions(excludeId) {
 
 function renderPVTable() {
   const tbody = document.getElementById('pv-tbody');
-  const parcelaNomes = { '01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única','UI':'Única(i)','UII':'Única(ii)','ALI':'Alimentação','SVC':'Serviços','MAT':'Materialidade' };
+  const parcelaNomes = { '01':'1ª','02':'2ª','03':'3ª','04':'4ª','05':'5ª','U':'Única','UI':'Única Capina','UII':'Única(ii)','ALI':'Alimentação','SVC':'Serviços','MAT':'Materialidade' };
   const parcelaOpts = ['01','02','03','04','05','U','UI','UII','ALI','SVC','MAT'];
 
   tbody.innerHTML = _pvRows.map((r, i) => {
@@ -15138,7 +15136,7 @@ const PG_STATUS_OPT = [
   { v:'em_andamento', l:'🟡 Em andamento' },
   { v:'ok',           l:'✅ OK' },
 ];
-const PG_PAR_NOMES = {'01':'1ª Parcela','02':'2ª Parcela','03':'3ª Parcela','04':'4ª Parcela','05':'5ª Parcela','U':'Parcela Única','UI':'Parcela Única (i)','UII':'Parcela Única (ii)','ALI':'Alimentação','SVC':'Serviços','MAT':'Materialidade'};
+const PG_PAR_NOMES = {'01':'1ª Parcela','02':'2ª Parcela','03':'3ª Parcela','04':'4ª Parcela','05':'5ª Parcela','U':'Parcela Única','UI':'Parcela Única Capina','UII':'Parcela Única (ii)','ALI':'Alimentação','SVC':'Serviços','MAT':'Materialidade'};
 
 // ── rowToTc helper (usa mesmo formato do main) ──
 function pgRowToTc(r) {
