@@ -9366,10 +9366,7 @@ function imprimirAba(nomeAba, filtros) {
         const tcLabel = tc.ehAditivo ? `Aditivo ${tc.numero}` : `TC ${tc.numero}`;
         const distribuicao = TIPOS_R.filter(t2 => _pm(pv[tipoKeyR[t2]]||'0') > 0)
           .map(t2 => `${_tl(t2)} ${_fmt(_pm(pv[tipoKeyR[t2]]||'0'))}`).join(' · ') || '—';
-        const totalPrevisto = TIPOS_R.reduce((s,t2) => {
-          const cr = (typeof getCreditoReal==='function') ? getCreditoReal(tcId, parcela, t2) : null;
-          return s + (cr ? cr.credito : _pm(pv[tipoKeyR[t2]]||'0'));
-        }, 0);
+        const totalPrevisto = TIPOS_R.reduce((s,t2) => s + _pm(pv[tipoKeyR[t2]]||'0'), 0);
         const totalGasto = (state.despesas||[])
           .filter(d => String(d.tcVinculo) === String(tcId) && d.parcela === parcela)
           .reduce((s,d) => s + _pm(d.valor), 0);
@@ -10764,11 +10761,9 @@ function renderQuadroResumo() {
       return `<span class="tipo-pill tipo-${t2}" style="font-size:10px;white-space:nowrap">${tipoLabel(t2)} · ${fmtMoney(v)}</span>`;
     }).join(' ');
 
-    // Valor / Utilização: total previsto (crédito real) x total gasto
-    const totalPrevisto = TIPOS.reduce((s,t2) => {
-      const cr = getCreditoReal(tcId, parcela, t2);
-      return s + (cr ? cr.credito : parseMoney(pv[tipoKey[t2]]||'0'));
-    }, 0);
+    // Valor / Utilização: valor exato registrado nesta parcela (sem somar
+    // rendimentos nem saldo repassado de outras parcelas) x total gasto
+    const totalPrevisto = TIPOS.reduce((s,t2) => s + parseMoney(pv[tipoKey[t2]]||'0'), 0);
     const totalGasto = (state.despesas||[])
       .filter(d => String(d.tcVinculo) === String(tcId) && d.parcela === parcela)
       .reduce((s,d) => s + parseMoney(d.valor), 0);
