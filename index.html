@@ -12694,6 +12694,11 @@ function getCreditoReal(tcId, parcela, tipo) {
 
   // 3. Carry-over de saldo: EXCLUSIVO para CUSTEIO, MESMO tcId, parcelas anteriores
   //    Não cruza entre TC pai e aditivo — cada um é isolado pelo seu tcId
+  //    Só entra no carry-over o saldo de parcelas JÁ CREDITADAS (dinheiro que
+  //    efetivamente entrou). Uma parcela "a cair" (situação = não creditada)
+  //    não pode emprestar seu valor configurado para a parcela seguinte —
+  //    isso inflaria o previsto de parcelas futuras com dinheiro que ainda
+  //    nem existe na conta.
   let saldoAnterior = 0;
   if (tipo === 'CUSTEIO') {
     const idxAtual = PARCELA_ORDER.indexOf(parcela);
@@ -12702,6 +12707,8 @@ function getCreditoReal(tcId, parcela, tipo) {
     saldoAnterior = parcelasAnteriores.reduce((acc, p) => {
       const pvAnt = (state.parcelaValores||[]).find(v => String(v.tcId) === String(tcId) && v.parcela === p);
       if (!pvAnt) return acc;
+      const sitAnt = (typeof getSituacao === 'function') ? getSituacao(tcId, p) : '';
+      if (sitAnt === 'nao_creditada') return acc; // ainda não caiu: não há saldo real a repassar
       const baseAnt = parseMoney(pvAnt.custeio||'0,00');
       // Rendimentos da parcela anterior também compõem o crédito custeio disponível
       const rendAnt = parseMoney(pvAnt.rendimentos||'0,00');
