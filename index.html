@@ -10698,9 +10698,17 @@ function renderDashVisaoTermos() {
       // Monta lista de { tcItemId, parcela } únicos (sem duplicar por tcId+parcela)
       const parcelaKeys = [];
       const seenKeys = new Set();
+      // Uma parcela com "Vínculo (complementa)" preenchido é um COMPLEMENTO de outra —
+      // seu valor já entra na soma da parcela-base via getCreditoReal. Por isso ela não
+      // deve virar uma linha própria aqui (senão o mesmo total aparece duas vezes); ela
+      // é apenas citada dentro da linha da parcela-base (ver "citações" mais abaixo).
+      const isVinculoChild = (tcIdChk, parcelaChk) => {
+        const pvR = (state.parcelaValores||[]).find(v => String(v.tcId)===String(tcIdChk) && v.parcela===parcelaChk);
+        return !!(pvR && pvR.vinculoTcId);
+      };
       [...allPvRows, ...allSitRows].forEach(r => {
         const key = `${r.tcId}||${r.parcela}`;
-        if (!seenKeys.has(key)) { seenKeys.add(key); parcelaKeys.push({ tcId: r.tcId, parcela: r.parcela }); }
+        if (!seenKeys.has(key) && !isVinculoChild(r.tcId, r.parcela)) { seenKeys.add(key); parcelaKeys.push({ tcId: r.tcId, parcela: r.parcela }); }
       });
       // Ordena: TC pai primeiro, depois aditivos; dentro de cada um, por nome de parcela
       parcelaKeys.sort((a, b) => {
@@ -10739,16 +10747,30 @@ function renderDashVisaoTermos() {
             const cr = getCreditoReal(itemId, p, _tipoKeyMap6[t.k]||t.k.toUpperCase());
             return s + (cr ? cr.credito : t.v);
           }, 0);
-          const gastoTotal = state.despesas.filter(d => String(d.tcVinculo)===String(itemId) && d.parcela===p)
+          const citacoes = (state.parcelaValores||[]).filter(v => String(v.vinculoTcId||'')===String(itemId) && v.parcela===p);
+          // Gasto: soma as despesas desta origem + das origens complementares (citações),
+          // já que juntas formam uma única "bolsa" de dinheiro para esta parcela.
+          const idsGastoGrupo = [String(itemId), ...citacoes.map(v=>String(v.tcId))];
+          const gastoTotal = state.despesas.filter(d => idsGastoGrupo.includes(String(d.tcVinculo)) && d.parcela===p)
             .reduce((s,d) => s+parseMoney(d.valor), 0);
           const pct = total>0 ? Math.round(gastoTotal/total*100) : 0;
           const pctColor = pct>=90 ? 'var(--accent-red)' : pct>=60 ? 'var(--accent3)' : 'var(--accent2)';
+          // Citações: outras parcelas (de qualquer TC/Aditivo do sistema) que apontam
+          // "Vínculo (complementa)" para esta — o valor delas já está somado no `total`
+          // acima (via getCreditoReal), então aqui só exibimos uma nota informativa.
+          const citacoesHtml = citacoes.map(v => {
+            const vTc = (state.tcs||[]).find(t => String(t.id)===String(v.tcId));
+            const vLbl = vTc ? (vTc.tcPaiId ? `Adit. ${vTc.numero}` : `TC ${vTc.numero}`) : '—';
+            const vVal = ['custeio','capital','alem','obras','capina'].reduce((s,k)=>s+parseMoney(v[k]||'0'),0);
+            return `<span class="badge" style="font-size:9.5px;background:rgba(246,166,35,.12);color:var(--accent3);border-color:rgba(246,166,35,.3)" title="Valor complementar vindo de ${vLbl}">+ ${vLbl} · R$ ${fmtMoneyStr(vVal)}</span>`;
+          }).join(' ');
           const tiposHtml = tipos.length
             ? tipos.map(t=>`<span style="font-size:12px;padding:3px 10px;border-radius:10px;background:var(--surface3);color:var(--text-muted);border:1px solid var(--border);font-weight:500;letter-spacing:0.1px">${tipoLblsDash[t.k]||t.k}: <span style="font-family:'DM Mono',monospace;color:var(--text)">R$ ${fmtMoneyStr(t.v)}</span></span>`).join('')
             : `<span style="font-size:12px;color:var(--text-dim)">—</span>`;
           return `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="abrirAcompParcela('${itemId}','${p}')" title="Clique para acompanhar">
             <td style="padding:11px 14px;white-space:nowrap;vertical-align:middle">
               <span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:10px;background:${itemBg};color:${itemColor}">${itemLabel}</span>
+              ${citacoesHtml ? `<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">${citacoesHtml}</div>` : ''}
             </td>
             <td style="padding:11px 14px;white-space:nowrap;vertical-align:middle">
               <span style="font-size:13px;font-weight:600;color:var(--text)">${parNomes[p]||p} Parcela</span>
