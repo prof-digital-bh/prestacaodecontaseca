@@ -7239,7 +7239,7 @@ async function carregarDados() {
     supa.from('tcs').select('*').order('criado_em'),
     supa.from('despesas').select('*').order('criado_em'),
     supa.from('fornecedores').select('*').order('criado_em'),
-    supa.from('checklist_states').select('*'),
+    supa.from('checklist_states').select('chave,marcado,obs_texto'),
     supa.from('configuracoes').select('*'),
     supa.from('parcela_valores').select('*').order('parcela'),
     supa.from('parcela_situacoes').select('*')
@@ -7251,11 +7251,13 @@ async function carregarDados() {
   state.checkStates = {};
   window._docsObrigState = {};
   const doiMeta = {}; // chave -> marcado (pendente=true)
+  const doiObsTexto = {}; // chave -> obs_texto salvo no Supabase
   (checksData || []).forEach(r => {
     if (r.chave.endsWith('__meta')) {
       doiMeta[r.chave.replace('__meta','')] = r.marcado; // marcado=true means pendente
     } else {
       state.checkStates[r.chave] = r.marcado;
+      if (r.chave.startsWith('doi_') && r.obs_texto) doiObsTexto[r.chave] = r.obs_texto;
     }
   });
   // Build _docsObrigState from doi_ entries
@@ -7264,13 +7266,13 @@ async function carregarDados() {
     const isOk   = !!state.checkStates[chave];
     const isPend = !!doiMeta[chave];
     const estado = isOk ? 'ok' : isPend ? 'pendente' : '';
-    window._docsObrigState[chave] = { estado, obs: '' };
+    window._docsObrigState[chave] = { estado, obs: doiObsTexto[chave] || '' };
   });
   // Also cover meta entries with no matching ok entry
   Object.keys(doiMeta).forEach(chave => {
     if (!chave.startsWith('doi_')) return;
     if (!window._docsObrigState[chave]) {
-      window._docsObrigState[chave] = { estado: doiMeta[chave] ? 'pendente' : '', obs: '' };
+      window._docsObrigState[chave] = { estado: doiMeta[chave] ? 'pendente' : '', obs: doiObsTexto[chave] || '' };
     }
   });
   (confsData || []).forEach(r => {
@@ -8906,10 +8908,11 @@ function salvarDoiObs(chave) {
   if (!_docsObrigState[chave]) _docsObrigState[chave] = { estado: '', obs: '' };
   _docsObrigState[chave].obs = obsEl.value.trim();
   const estado = _docsObrigState[chave].estado || '';
-  // Persiste o estado atual (obs fica só local por ora, estado no Supabase)
+  // Persiste o estado atual E o texto da observação (obs_texto) no Supabase
   supa.from('checklist_states').upsert({
     chave: chave,
     marcado: estado === 'ok',
+    obs_texto: _docsObrigState[chave].obs,
     atualizado_em: new Date().toISOString()
   }).then(({ error }) => {
     if (error) setSyncStatus('error'); else setSyncStatus('ok');
