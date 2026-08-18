@@ -7397,6 +7397,7 @@ function showSection(id) {
 function resetFormDespesa() {
   const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
   const hide   = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
+  const show   = (id) => { const el = document.getElementById(id); if (el) el.style.display = ''; };
 
   setVal('d-cnpj-busca', '');
   setVal('d-cnpj', '');
@@ -7410,26 +7411,29 @@ function resetFormDespesa() {
   setVal('d-valor', '');
   setVal('d-modalidade-pgto', '');
   setVal('d-descricao', '');
-  setVal('d-orcamentos', 'sim');
+  setVal('d-orcamentos', 'nao');
   setVal('d-orcamentos-pend', '');
-  setVal('d-certidoes', 'sim');
+  setVal('d-certidoes', 'nao');
   setVal('d-certidoes-pend', '');
-  setVal('d-cartao-cnpj', 'sim');
+  setVal('d-cartao-cnpj', 'nao');
   setVal('d-cartao-cnpj-pend', '');
-  setVal('d-comprovante-pgto', 'sim');
+  setVal('d-comprovante-pgto', 'nao');
   setVal('d-comprovante-pgto-pend', '');
-  setVal('d-contrato-nf', 'sim');
+  setVal('d-contrato-nf', 'nao');
   setVal('d-contrato-nf-pend', '');
-  setVal('d-justificativa', 'sim');
+  setVal('d-justificativa', 'nao');
   setVal('d-justificativa-pend', '');
   setVal('d-confirmacao-patrimonio', 'sim');
 
-  hide('field-orcamentos-pend');
-  hide('field-certidoes-pend');
-  hide('field-cartao-cnpj-pend');
-  hide('field-comprovante-pgto-pend');
-  hide('field-contrato-nf-pend');
-  hide('field-justificativa-pend');
+  // Campos nascem como "Não" (pendente) por padrão — os campos de justificativa
+  // já aparecem abertos para preenchimento, mas nada é obrigatório: o usuário
+  // pode trocar livremente para "Sim" ou "N/A" a qualquer momento, sem travar o salvamento.
+  show('field-orcamentos-pend');
+  show('field-certidoes-pend');
+  show('field-cartao-cnpj-pend');
+  show('field-comprovante-pgto-pend');
+  show('field-contrato-nf-pend');
+  show('field-justificativa-pend');
   hide('field-confirmacao-patrimonio');
   hide('field-subtipo');
   hide('aviso-pgto-especie');
