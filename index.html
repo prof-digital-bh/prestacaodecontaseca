@@ -7239,7 +7239,7 @@ async function carregarDados() {
     supa.from('tcs').select('*').order('criado_em'),
     supa.from('despesas').select('*').order('criado_em'),
     supa.from('fornecedores').select('*').order('criado_em'),
-    supa.from('checklist_states').select('chave,marcado,obs_texto'),
+    supa.from('checklist_states').select('*'),
     supa.from('configuracoes').select('*'),
     supa.from('parcela_valores').select('*').order('parcela'),
     supa.from('parcela_situacoes').select('*')
@@ -7251,13 +7251,11 @@ async function carregarDados() {
   state.checkStates = {};
   window._docsObrigState = {};
   const doiMeta = {}; // chave -> marcado (pendente=true)
-  const doiObsTexto = {}; // chave -> obs_texto salvo no Supabase
   (checksData || []).forEach(r => {
     if (r.chave.endsWith('__meta')) {
       doiMeta[r.chave.replace('__meta','')] = r.marcado; // marcado=true means pendente
     } else {
       state.checkStates[r.chave] = r.marcado;
-      if (r.chave.startsWith('doi_') && r.obs_texto) doiObsTexto[r.chave] = r.obs_texto;
     }
   });
   // Build _docsObrigState from doi_ entries
@@ -7266,13 +7264,13 @@ async function carregarDados() {
     const isOk   = !!state.checkStates[chave];
     const isPend = !!doiMeta[chave];
     const estado = isOk ? 'ok' : isPend ? 'pendente' : '';
-    window._docsObrigState[chave] = { estado, obs: doiObsTexto[chave] || '' };
+    window._docsObrigState[chave] = { estado, obs: '' };
   });
   // Also cover meta entries with no matching ok entry
   Object.keys(doiMeta).forEach(chave => {
     if (!chave.startsWith('doi_')) return;
     if (!window._docsObrigState[chave]) {
-      window._docsObrigState[chave] = { estado: doiMeta[chave] ? 'pendente' : '', obs: doiObsTexto[chave] || '' };
+      window._docsObrigState[chave] = { estado: doiMeta[chave] ? 'pendente' : '', obs: '' };
     }
   });
   (confsData || []).forEach(r => {
@@ -8485,33 +8483,21 @@ function renderChecklist() {
 
   html += '</div>'; // end LEFT col
 
-  // RIGHT col: Anexos obrigatórios (sempre mostra quando há despesas filtradas)
+  // Agrupa despesas filtradas por combinação única de TC/Aditivo + Parcela — usado para
+  // escopar tanto os Anexos Obrigatórios quanto o Checklist de Assinaturas por parcela específica.
+  const gruposParcelaTc = _gruposParcelaTc(despesasFiltradas);
+
+  // RIGHT col: Anexos obrigatórios (um bloco por TC/Aditivo + Parcela presente no filtro)
   html += '<div>';
-  html += renderAnexosObrigatorios(despesasFiltradas, filtroTC, filtroParcela);
+  html += renderAnexosObrigatorios(despesasFiltradas, gruposParcelaTc);
   html += '</div>';
 
   html += '</div>'; // end 2-col grid
 
   // ── CARDS DE ASSINATURAS POR PARCELA ──
-  const parNomesAss = {'01':'1ª Parcela','02':'2ª Parcela','03':'3ª Parcela','04':'4ª Parcela','05':'5ª Parcela','U':'Parcela Única'};
-  // Determina parcelas únicas presentes nas despesas filtradas
-  const parcelasComTcs = [];
-  const _vistoParcTC = new Set();
-  despesasFiltradas.forEach(d => {
-    const pKey = String(d.tcVinculo||'x') + '_' + (d.parcela||'x');
-    if (!_vistoParcTC.has(pKey)) {
-      _vistoParcTC.add(pKey);
-      parcelasComTcs.push({ tcId: d.tcVinculo||'x', parcela: d.parcela||'x' });
-    }
-  });
-
-  if (parcelasComTcs.length) {
+  if (gruposParcelaTc.length) {
     html += '<div class="check-section-title" style="margin-top:28px;border-color:rgba(181,123,238,0.5);color:var(--alem)">🖊 Checklist de Assinaturas por Parcela</div>';
-    parcelasComTcs.forEach(({ tcId, parcela }) => {
-      const tcObj = (state.tcs||[]).find(t => String(t.id) === String(tcId));
-      const tcLabel = tcObj ? (tcObj.tcPaiId ? 'Aditivo ' + tcObj.numero : 'TC ' + tcObj.numero) : '';
-      const parLabel = parNomesAss[parcela] || ('Parcela ' + parcela);
-      const fullLabel = [tcLabel, parLabel].filter(Boolean).join(' · ');
+    gruposParcelaTc.forEach(({ tcId, parcela, fullLabel }) => {
       html += renderCardAssinaturas(tcId, parcela, fullLabel);
     });
   }
@@ -8526,8 +8512,40 @@ if (!window._docsObrigState) window._docsObrigState = {};
 
 function _doiKey(prefixo, idx) { return 'doi_' + prefixo + '_' + idx; }
 
+// ── Agrupa despesas por combinação única de TC/Aditivo + Parcela ──
+// Usado para "escopar" tanto os Anexos Obrigatórios quanto o Checklist de Assinaturas
+// por parcela específica, em vez de compartilhar um único estado global por tipo de gasto.
+const _PAR_NOMES_GRUPO = {'01':'1ª Parcela','02':'2ª Parcela','03':'3ª Parcela','04':'4ª Parcela','05':'5ª Parcela','U':'Parcela Única'};
+function _gruposParcelaTc(despesas) {
+  const grupos = [];
+  const visto = new Set();
+  despesas.forEach(d => {
+    const tcId = d.tcVinculo || 'x';
+    const parcela = d.parcela || 'x';
+    const escopo = String(tcId) + '_' + String(parcela);
+    if (visto.has(escopo)) return;
+    visto.add(escopo);
+    const tcObj = (state.tcs||[]).find(t => String(t.id) === String(tcId));
+    const tcLabel = tcObj ? (tcObj.tcPaiId ? 'Aditivo ' + tcObj.numero : 'TC ' + tcObj.numero) : '';
+    const parcelaLabel = _PAR_NOMES_GRUPO[parcela] || (parcela !== 'x' ? 'Parcela ' + parcela : '');
+    const fullLabel = [tcLabel, parcelaLabel].filter(Boolean).join(' · ');
+    grupos.push({ tcId, parcela, escopo, tcLabel, parcelaLabel, fullLabel });
+  });
+  return grupos;
+}
+
 // ==================== ANEXOS OBRIGATÓRIOS (baseado no Manual SEDUC/FUNEC e Decreto 1134/2024) ====================
-function renderAnexosObrigatorios(despesasFiltradas, filtroTC, filtroParcela) {
+// Renderiza um bloco de Anexos Obrigatórios PARA CADA combinação de TC/Aditivo + Parcela presente
+// nas despesas filtradas — o estado de cada anexo (OK/Pendente) é salvo por combinação (escopo),
+// não globalmente por tipo de gasto.
+function renderAnexosObrigatorios(despesasFiltradas, grupos) {
+  if (!grupos || !grupos.length) grupos = _gruposParcelaTc(despesasFiltradas);
+  return grupos.map(g => renderAnexosObrigatoriosGrupo(despesasFiltradas, g)).join('');
+}
+
+function renderAnexosObrigatoriosGrupo(todasDespesasFiltradas, grupo) {
+  const { tcId, parcela, escopo, fullLabel } = grupo;
+  const despesasFiltradas = todasDespesasFiltradas.filter(d => String(d.tcVinculo||'x') === String(tcId) && String(d.parcela||'x') === String(parcela));
   const tipos = new Set(despesasFiltradas.map(d => d.tipo));
   const temCapital = tipos.has('CAPITAL');
   const temAlem    = tipos.has('ALEM_MUROS');
@@ -8563,7 +8581,7 @@ function renderAnexosObrigatorios(despesasFiltradas, filtroTC, filtroParcela) {
 
   // Helper: renderiza uma linha de anexo
   const renderLinhaAnexo = (anx) => {
-    const chave = _doiKey('anx', anx.key);
+    const chave = 'doi_anx_' + escopo + '_' + anx.key;
     const st    = (_docsObrigState[chave]||{}).estado || '';
     const obs   = (_docsObrigState[chave]||{}).obs || '';
     const isOk   = st === 'ok';
@@ -8607,8 +8625,8 @@ function renderAnexosObrigatorios(despesasFiltradas, filtroTC, filtroParcela) {
   // Helper: renderiza um bloco completo com cabeçalho, barra de progresso e lista
   const renderBloco = (titulo, icone, corAcento, corAcentoBg, corBorderBase, lista) => {
     const total = lista.length;
-    const oks   = lista.filter(a => (_docsObrigState[_doiKey('anx', a.key)]||{}).estado === 'ok').length;
-    const pends = lista.filter(a => (_docsObrigState[_doiKey('anx', a.key)]||{}).estado === 'pendente').length;
+    const oks   = lista.filter(a => (_docsObrigState['doi_anx_' + escopo + '_' + a.key]||{}).estado === 'ok').length;
+    const pends = lista.filter(a => (_docsObrigState['doi_anx_' + escopo + '_' + a.key]||{}).estado === 'pendente').length;
     const pct   = total ? Math.round(oks/total*100) : 0;
 
     const corHeader = pends > 0 ? 'rgba(240,80,96,0.10)' : oks===total ? 'rgba(56,217,169,0.08)' : corAcentoBg;
@@ -8640,7 +8658,7 @@ function renderAnexosObrigatorios(despesasFiltradas, filtroTC, filtroParcela) {
     return b;
   };
 
-  let h = `<div class="check-section-title" style="border-color:var(--accent3);color:var(--accent3)">📑 Anexos Obrigatórios — Prestação de Contas</div>`;
+  let h = `<div class="check-section-title" style="border-color:var(--accent3);color:var(--accent3)">📑 Anexos Obrigatórios — Prestação de Contas${fullLabel ? ' <span style="font-size:11px;font-weight:500;color:var(--text-muted)">— ' + fullLabel + '</span>' : ''}</div>`;
 
   // ── BLOCO 1: CAIXA ESCOLAR ──
   h += renderBloco(
@@ -8908,11 +8926,10 @@ function salvarDoiObs(chave) {
   if (!_docsObrigState[chave]) _docsObrigState[chave] = { estado: '', obs: '' };
   _docsObrigState[chave].obs = obsEl.value.trim();
   const estado = _docsObrigState[chave].estado || '';
-  // Persiste o estado atual E o texto da observação (obs_texto) no Supabase
+  // Persiste o estado atual (obs fica só local por ora, estado no Supabase)
   supa.from('checklist_states').upsert({
     chave: chave,
     marcado: estado === 'ok',
-    obs_texto: _docsObrigState[chave].obs,
     atualizado_em: new Date().toISOString()
   }).then(({ error }) => {
     if (error) setSyncStatus('error'); else setSyncStatus('ok');
@@ -9008,29 +9025,36 @@ function _calcProgressData(despesasFiltradas) {
   if (!despesasFiltradas) despesasFiltradas = _getDespesasFiltradas();
 
   // ── 1. ANEXOS OBRIGATÓRIOS ─────────────────────────────────────────────
-  const tipos = new Set(despesasFiltradas.map(d => d.tipo));
+  // Cada combinação de TC/Aditivo + Parcela tem seu próprio conjunto de anexos e estado (escopo),
+  // então somamos os totais por combinação em vez de tratar como um único bloco global.
   const TODOS_ANEXOS = ['anx1','anx2','anx3','anx4','anx5','anx6','anx7','anx8','anx9','anx10','anx11'];
   const COND = { anx6:'CAPITAL', anx7:'ALEM_MUROS', anx8:'OBRAS' };
-  const anexosAtivos = TODOS_ANEXOS.filter(k => {
-    const c = COND[k];
-    return !c || tipos.has(c);
-  });
+  const gruposAnx = _gruposParcelaTc(despesasFiltradas);
 
   let anxOk = 0, anxPend = 0;
   const anxPendLines = [];
-  anexosAtivos.forEach(k => {
-    const chave = _doiKey('anx', k);
-    const st = (window._docsObrigState[chave]||{}).estado || '';
-    const obs = (window._docsObrigState[chave]||{}).obs || '';
-    if (st === 'ok') { anxOk++; }
-    else {
-      anxPend++;
-      // Anexo IX é emitido pela SEDUC/FUNEC — não aparece na lista de pendências do prestador
-      if (k === 'anx9') return;
-      const lbl = _ANEXO_LABELS[k] || ('Anexo ' + k);
-      const isPend = st === 'pendente';
-      anxPendLines.push({ label: lbl, pend: isPend && obs ? obs : (isPend ? 'Marcado como pendente' : 'Não verificado'), tipo: isPend ? 'pendente' : 'nao_verificado', categoria: 'anexo' });
-    }
+  gruposAnx.forEach(grupo => {
+    const despesasGrupo = despesasFiltradas.filter(d => String(d.tcVinculo||'x') === String(grupo.tcId) && String(d.parcela||'x') === String(grupo.parcela));
+    const tiposGrupo = new Set(despesasGrupo.map(d => d.tipo));
+    const anexosAtivos = TODOS_ANEXOS.filter(k => {
+      const c = COND[k];
+      return !c || tiposGrupo.has(c);
+    });
+    anexosAtivos.forEach(k => {
+      const chave = 'doi_anx_' + grupo.escopo + '_' + k;
+      const st = (window._docsObrigState[chave]||{}).estado || '';
+      const obs = (window._docsObrigState[chave]||{}).obs || '';
+      if (st === 'ok') { anxOk++; }
+      else {
+        anxPend++;
+        // Anexo IX é emitido pela SEDUC/FUNEC — não aparece na lista de pendências do prestador
+        if (k === 'anx9') return;
+        const lblBase = _ANEXO_LABELS[k] || ('Anexo ' + k);
+        const lbl = grupo.fullLabel ? lblBase + ' — ' + grupo.fullLabel : lblBase;
+        const isPend = st === 'pendente';
+        anxPendLines.push({ label: lbl, pend: isPend && obs ? obs : (isPend ? 'Marcado como pendente' : 'Não verificado'), tipo: isPend ? 'pendente' : 'nao_verificado', categoria: 'anexo' });
+      }
+    });
   });
   const anxTotal = anexosAtivos.length;
 
@@ -9334,39 +9358,7 @@ function imprimirPendencias() {
     return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
   };
 
-  // ── Calcula a situação do prazo de entrega (mesma lógica usada em "Alertas e Prazos") ──
-  const _statusPrazoEntrega = (dataLimiteSrc) => {
-    if (!dataLimiteSrc) return { texto: 'Data limite não definida para esta parcela.', cor:'#555', bg:'#f1f5f9', border:'#cbd5e1' };
-    try {
-      const hoje = new Date(); hoje.setHours(0,0,0,0);
-      const dataLimite   = new Date(dataLimiteSrc + 'T00:00:00');
-      const prazoEntrega = new Date(dataLimite); prazoEntrega.setDate(prazoEntrega.getDate() + 30);
-      const diffGasto    = Math.round((dataLimite  - hoje) / 864e5);
-      const diffEntrega  = Math.round((prazoEntrega - hoje) / 864e5);
-      const limiteFmt = dataLimite.toLocaleDateString('pt-BR');
-      const prazoFmt  = prazoEntrega.toLocaleDateString('pt-BR');
-      if (diffEntrega < 0) {
-        return { texto: `🚨 Prazo VENCIDO — o prazo para entrega da prestação de contas venceu há ${Math.abs(diffEntrega)} dia(s) (era ${prazoFmt}).`, cor:'#c0392b', bg:'#fdecea', border:'#f5c6cb' };
-      }
-      if (diffGasto < 0) {
-        return { texto: `📋 Período de gastos encerrado em ${limiteFmt}. Restam ${diffEntrega} dia(s) para entregar a prestação de contas (até ${prazoFmt}).`, cor:'#c0392b', bg:'#fdecea', border:'#f5c6cb' };
-      }
-      if (diffGasto <= 7) {
-        return { texto: `⏰ Últimos ${diffGasto} dia(s) para gastar. Limite: ${limiteFmt}. Entrega até ${prazoFmt}.`, cor:'#c0392b', bg:'#fdecea', border:'#f5c6cb' };
-      }
-      if (diffGasto <= 15) {
-        return { texto: `⚠️ Atenção: ${diffGasto} dias restantes para o limite de gastos (${limiteFmt}). Entrega até ${prazoFmt}.`, cor:'#8a6100', bg:'#fff3cd', border:'#ffe08a' };
-      }
-      if (diffGasto <= 30) {
-        return { texto: `📅 Prazo de gastos vence em ${diffGasto} dias (${limiteFmt}). Entrega até ${prazoFmt}.`, cor:'#8a6100', bg:'#fff3cd', border:'#ffe08a' };
-      }
-      return { texto: `✅ Dentro do prazo — limite de gastos em ${limiteFmt} (${diffGasto} dias). Entrega até ${prazoFmt}.`, cor:'#166534', bg:'#dcfce7', border:'#86efac' };
-    } catch(e) {
-      return { texto: '', cor:'#555', bg:'#f1f5f9', border:'#cbd5e1' };
-    }
-  };
-
-  // ── Agrupa as pendências por Parcela (TC/Aditivo + Parcela), com Data Limite e situação do prazo ──
+  // ── Agrupa as pendências por Parcela (TC/Aditivo + Parcela), com data de término e alerta de atraso ──
   const despesasFiltGrp = _getDespesasFiltradas();
   const gruposMap = {};
   const gruposOrdem = [];
@@ -9377,9 +9369,24 @@ function imprimirPendencias() {
     const tcLbl = tcObj ? (tcObj.tcPaiId ? 'Aditivo ' + tcObj.numero : 'TC ' + tcObj.numero) : '';
     const parLbl = dsp.parcela ? (parNomes[dsp.parcela] || ('Parcela ' + dsp.parcela)) : '';
     const pv = (state.parcelaValores||[]).find(p => String(p.tcId) === String(dsp.tcVinculo) && p.parcela === dsp.parcela);
+    const dataTermino = pv?.dataTermino || '';
     const dataLimiteSrc = pv?.dataLimite || tcObj?.fim || null;
-    const statusPrazo = _statusPrazoEntrega(dataLimiteSrc);
-    gruposMap[key] = { tcId: dsp.tcVinculo||'x', parcela: dsp.parcela||'x', tcLabel: tcLbl, parcelaLabel: parLbl, dataLimite: dataLimiteSrc, statusPrazo, fornItens: [] };
+    let alerta = null;
+    if (dataLimiteSrc) {
+      try {
+        const hoje = new Date(); hoje.setHours(0,0,0,0);
+        const dataLimite   = new Date(dataLimiteSrc + 'T00:00:00');
+        const prazoEntrega = new Date(dataLimite); prazoEntrega.setDate(prazoEntrega.getDate() + 30);
+        const diffEntrega  = Math.round((prazoEntrega - hoje) / 864e5);
+        const diffGasto    = Math.round((dataLimite - hoje) / 864e5);
+        if (diffEntrega < 0) {
+          alerta = `Prazo de entrega da prestação de contas vencido há ${Math.abs(diffEntrega)} dia(s) — venceu em ${prazoEntrega.toLocaleDateString('pt-BR')}`;
+        } else if (diffGasto < 0) {
+          alerta = `Período de gastos encerrado em ${dataLimite.toLocaleDateString('pt-BR')} — entrega da prestação até ${prazoEntrega.toLocaleDateString('pt-BR')}`;
+        }
+      } catch(e) {}
+    }
+    gruposMap[key] = { tcId: dsp.tcVinculo||'x', parcela: dsp.parcela||'x', tcLabel: tcLbl, parcelaLabel: parLbl, dataTermino, alerta, fornItens: [] };
     gruposOrdem.push(key);
   });
 
@@ -9430,9 +9437,9 @@ function imprimirPendencias() {
       <div style="border:1px solid #dee2e6;border-radius:8px;padding:14px 16px;margin-bottom:14px;break-inside:avoid">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #eee">
           <div style="font-size:14px;font-weight:800;color:#1a1a2e">${[g.tcLabel, g.parcelaLabel].filter(Boolean).join(' · ') || 'Parcela'}</div>
-          <div style="font-size:12px;color:#555">Data Limite: <strong>${_fmtDataBR(g.dataLimite)}</strong></div>
+          <div style="font-size:12px;color:#555">Término: <strong>${_fmtDataBR(g.dataTermino)}</strong></div>
         </div>
-        ${g.statusPrazo && g.statusPrazo.texto ? `<div style="background:${g.statusPrazo.bg};border:1px solid ${g.statusPrazo.border};border-radius:6px;padding:7px 12px;font-size:12px;color:${g.statusPrazo.cor};font-weight:700;margin-bottom:10px">${g.statusPrazo.texto}</div>` : ''}
+        ${g.alerta ? `<div style="background:#fdecea;border:1px solid #f5c6cb;border-radius:6px;padding:7px 12px;font-size:12px;color:#c0392b;font-weight:700;margin-bottom:10px">⚠ ${g.alerta}</div>` : ''}
         ${anexosHtml}
         ${fornHtml}
       </div>`;
@@ -9458,6 +9465,8 @@ function imprimirPendencias() {
     .header-title { font-size: 18px; font-weight: 800; color: #1a1a2e; letter-spacing: -0.3px; }
     .header-sub { font-size: 12px; color: #555; margin-top: 3px; }
     .footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid #dee2e6; font-size: 11px; color: #888; display: flex; justify-content: space-between; }
+    .assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 32px; }
+    .ass-box { border-top: 1.5px solid #333; padding-top: 6px; text-align: center; font-size: 11.5px; color: #333; min-width: 220px; padding-left: 8px; padding-right: 8px; }
     .alerta { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #856404; margin-bottom: 18px; }
   </style></head><body>
 
@@ -9481,6 +9490,17 @@ function imprimirPendencias() {
     : `<div class="alerta">⚠ Este documento lista, por parcela, os itens que precisam ser providenciados antes do envio à SEDUC/FUNEC.</div>
        ${corpoPendencias}`
   }
+
+  <div class="assinaturas">
+    <div class="ass-box">
+      Prestador de Serviços / Responsável pelo levantamento<br>
+      <span style="font-size:10px;color:#888">Data: ___/___/______</span>
+    </div>
+    <div class="ass-box">
+      Presidente da Caixa Escolar<br>
+      <span style="font-size:10px;color:#888">Data: ___/___/______</span>
+    </div>
+  </div>
 
   <div class="footer">
     <span>Sistema de Prestação de Contas — gerado em ${dataHoje} · Decreto 1134/2024 · Manual SEDUC/FUNEC</span>
