@@ -9334,7 +9334,39 @@ function imprimirPendencias() {
     return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
   };
 
-  // ── Agrupa as pendências por Parcela (TC/Aditivo + Parcela), com data de término e alerta de atraso ──
+  // ── Calcula a situação do prazo de entrega (mesma lógica usada em "Alertas e Prazos") ──
+  const _statusPrazoEntrega = (dataLimiteSrc) => {
+    if (!dataLimiteSrc) return { texto: 'Data limite não definida para esta parcela.', cor:'#555', bg:'#f1f5f9', border:'#cbd5e1' };
+    try {
+      const hoje = new Date(); hoje.setHours(0,0,0,0);
+      const dataLimite   = new Date(dataLimiteSrc + 'T00:00:00');
+      const prazoEntrega = new Date(dataLimite); prazoEntrega.setDate(prazoEntrega.getDate() + 30);
+      const diffGasto    = Math.round((dataLimite  - hoje) / 864e5);
+      const diffEntrega  = Math.round((prazoEntrega - hoje) / 864e5);
+      const limiteFmt = dataLimite.toLocaleDateString('pt-BR');
+      const prazoFmt  = prazoEntrega.toLocaleDateString('pt-BR');
+      if (diffEntrega < 0) {
+        return { texto: `🚨 Prazo VENCIDO — o prazo para entrega da prestação de contas venceu há ${Math.abs(diffEntrega)} dia(s) (era ${prazoFmt}).`, cor:'#c0392b', bg:'#fdecea', border:'#f5c6cb' };
+      }
+      if (diffGasto < 0) {
+        return { texto: `📋 Período de gastos encerrado em ${limiteFmt}. Restam ${diffEntrega} dia(s) para entregar a prestação de contas (até ${prazoFmt}).`, cor:'#c0392b', bg:'#fdecea', border:'#f5c6cb' };
+      }
+      if (diffGasto <= 7) {
+        return { texto: `⏰ Últimos ${diffGasto} dia(s) para gastar. Limite: ${limiteFmt}. Entrega até ${prazoFmt}.`, cor:'#c0392b', bg:'#fdecea', border:'#f5c6cb' };
+      }
+      if (diffGasto <= 15) {
+        return { texto: `⚠️ Atenção: ${diffGasto} dias restantes para o limite de gastos (${limiteFmt}). Entrega até ${prazoFmt}.`, cor:'#8a6100', bg:'#fff3cd', border:'#ffe08a' };
+      }
+      if (diffGasto <= 30) {
+        return { texto: `📅 Prazo de gastos vence em ${diffGasto} dias (${limiteFmt}). Entrega até ${prazoFmt}.`, cor:'#8a6100', bg:'#fff3cd', border:'#ffe08a' };
+      }
+      return { texto: `✅ Dentro do prazo — limite de gastos em ${limiteFmt} (${diffGasto} dias). Entrega até ${prazoFmt}.`, cor:'#166534', bg:'#dcfce7', border:'#86efac' };
+    } catch(e) {
+      return { texto: '', cor:'#555', bg:'#f1f5f9', border:'#cbd5e1' };
+    }
+  };
+
+  // ── Agrupa as pendências por Parcela (TC/Aditivo + Parcela), com Data Limite e situação do prazo ──
   const despesasFiltGrp = _getDespesasFiltradas();
   const gruposMap = {};
   const gruposOrdem = [];
@@ -9345,24 +9377,9 @@ function imprimirPendencias() {
     const tcLbl = tcObj ? (tcObj.tcPaiId ? 'Aditivo ' + tcObj.numero : 'TC ' + tcObj.numero) : '';
     const parLbl = dsp.parcela ? (parNomes[dsp.parcela] || ('Parcela ' + dsp.parcela)) : '';
     const pv = (state.parcelaValores||[]).find(p => String(p.tcId) === String(dsp.tcVinculo) && p.parcela === dsp.parcela);
-    const dataTermino = pv?.dataTermino || '';
     const dataLimiteSrc = pv?.dataLimite || tcObj?.fim || null;
-    let alerta = null;
-    if (dataLimiteSrc) {
-      try {
-        const hoje = new Date(); hoje.setHours(0,0,0,0);
-        const dataLimite   = new Date(dataLimiteSrc + 'T00:00:00');
-        const prazoEntrega = new Date(dataLimite); prazoEntrega.setDate(prazoEntrega.getDate() + 30);
-        const diffEntrega  = Math.round((prazoEntrega - hoje) / 864e5);
-        const diffGasto    = Math.round((dataLimite - hoje) / 864e5);
-        if (diffEntrega < 0) {
-          alerta = `Prazo de entrega da prestação de contas vencido há ${Math.abs(diffEntrega)} dia(s) — venceu em ${prazoEntrega.toLocaleDateString('pt-BR')}`;
-        } else if (diffGasto < 0) {
-          alerta = `Período de gastos encerrado em ${dataLimite.toLocaleDateString('pt-BR')} — entrega da prestação até ${prazoEntrega.toLocaleDateString('pt-BR')}`;
-        }
-      } catch(e) {}
-    }
-    gruposMap[key] = { tcId: dsp.tcVinculo||'x', parcela: dsp.parcela||'x', tcLabel: tcLbl, parcelaLabel: parLbl, dataTermino, alerta, fornItens: [] };
+    const statusPrazo = _statusPrazoEntrega(dataLimiteSrc);
+    gruposMap[key] = { tcId: dsp.tcVinculo||'x', parcela: dsp.parcela||'x', tcLabel: tcLbl, parcelaLabel: parLbl, dataLimite: dataLimiteSrc, statusPrazo, fornItens: [] };
     gruposOrdem.push(key);
   });
 
@@ -9413,9 +9430,9 @@ function imprimirPendencias() {
       <div style="border:1px solid #dee2e6;border-radius:8px;padding:14px 16px;margin-bottom:14px;break-inside:avoid">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #eee">
           <div style="font-size:14px;font-weight:800;color:#1a1a2e">${[g.tcLabel, g.parcelaLabel].filter(Boolean).join(' · ') || 'Parcela'}</div>
-          <div style="font-size:12px;color:#555">Término: <strong>${_fmtDataBR(g.dataTermino)}</strong></div>
+          <div style="font-size:12px;color:#555">Data Limite: <strong>${_fmtDataBR(g.dataLimite)}</strong></div>
         </div>
-        ${g.alerta ? `<div style="background:#fdecea;border:1px solid #f5c6cb;border-radius:6px;padding:7px 12px;font-size:12px;color:#c0392b;font-weight:700;margin-bottom:10px">⚠ ${g.alerta}</div>` : ''}
+        ${g.statusPrazo && g.statusPrazo.texto ? `<div style="background:${g.statusPrazo.bg};border:1px solid ${g.statusPrazo.border};border-radius:6px;padding:7px 12px;font-size:12px;color:${g.statusPrazo.cor};font-weight:700;margin-bottom:10px">${g.statusPrazo.texto}</div>` : ''}
         ${anexosHtml}
         ${fornHtml}
       </div>`;
@@ -9441,8 +9458,6 @@ function imprimirPendencias() {
     .header-title { font-size: 18px; font-weight: 800; color: #1a1a2e; letter-spacing: -0.3px; }
     .header-sub { font-size: 12px; color: #555; margin-top: 3px; }
     .footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid #dee2e6; font-size: 11px; color: #888; display: flex; justify-content: space-between; }
-    .assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 32px; }
-    .ass-box { border-top: 1.5px solid #333; padding-top: 6px; text-align: center; font-size: 11.5px; color: #333; min-width: 220px; padding-left: 8px; padding-right: 8px; }
     .alerta { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #856404; margin-bottom: 18px; }
   </style></head><body>
 
@@ -9466,17 +9481,6 @@ function imprimirPendencias() {
     : `<div class="alerta">⚠ Este documento lista, por parcela, os itens que precisam ser providenciados antes do envio à SEDUC/FUNEC.</div>
        ${corpoPendencias}`
   }
-
-  <div class="assinaturas">
-    <div class="ass-box">
-      Prestador de Serviços / Responsável pelo levantamento<br>
-      <span style="font-size:10px;color:#888">Data: ___/___/______</span>
-    </div>
-    <div class="ass-box">
-      Presidente da Caixa Escolar<br>
-      <span style="font-size:10px;color:#888">Data: ___/___/______</span>
-    </div>
-  </div>
 
   <div class="footer">
     <span>Sistema de Prestação de Contas — gerado em ${dataHoje} · Decreto 1134/2024 · Manual SEDUC/FUNEC</span>
